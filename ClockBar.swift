@@ -1,0 +1,344 @@
+import SwiftUI
+import Cocoa
+
+// MARK: - Config Model
+
+struct ClockConfig: Codable {
+    var schedule: Schedule
+    var lateThresholdMin: Int
+    var randomDelayMax: Int
+    var server: ServerConfig
+    var autopunchEnabled: Bool
+
+    struct Schedule: Codable {
+        var clockin: String
+        var clockout: String
+    }
+
+    struct ServerConfig: Codable {
+        var port: Int
+        var token: String
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case schedule
+        case lateThresholdMin = "late_threshold_min"
+        case randomDelayMax = "random_delay_max"
+        case server
+        case autopunchEnabled = "autopunch_enabled"
+    }
+
+    static let `default` = ClockConfig(
+        schedule: .init(clockin: "09:00", clockout: "18:00"),
+        lateThresholdMin: 20,
+        randomDelayMax: 900,
+        server: .init(port: 8104, token: ""),
+        autopunchEnabled: true
+    )
+}
+
+// MARK: - Status Model
+
+struct PunchStatus: Codable {
+    let date: String?
+    let clockIn: String?
+    let clockOut: String?
+    let clockInCode: Int?
+    let error: String?
+}
+
+// MARK: - Config Manager
+
+class ConfigManager {
+    static let configPath = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent(".104/config.json")
+
+    static func load() -> ClockConfig {
+        guard let data = try? Data(contentsOf: configPath),
+              let config = try? JSONDecoder().decode(ClockConfig.self, from: data)
+        else { return .default }
+        return config
+    }
+
+    static func save(_ config: ClockConfig) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(config) else { return }
+        try? data.write(to: configPath, options: .atomic)
+    }
+}
+
+// MARK: - Clock Service
+
+class ClockService {
+    static let pythonPath = "/opt/homebrew/bin/python3"
+
+    static var scriptPath: String {
+        let bundlePath = Bundle.main.bundlePath
+        let dir = (bundlePath as NSString).deletingLastPathComponent
+        return (dir as NSString).appendingPathComponent("clock104.py")
+    }
+
+    static func run(_ args: [String]) -> (output: String, success: Bool) {
+        let proc = Process()
+        let pipe = Pipe()
+        proc.executableURL = URL(fileURLWithPath: pythonPath)
+        proc.arguments = [scriptPath] + args
+        proc.standardOutput = pipe
+        proc.standardError = pipe
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            return (output, proc.terminationStatus == 0)
+        } catch {
+            return (error.localizedDescription, false)
+        }
+    }
+
+    static func getStatus() -> PunchStatus? {
+        let (output, success) = run(["status"])
+        guard success, let data = output.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(PunchStatus.self, from: data)
+    }
+
+    static func punch() -> String {
+        let (output, _) = run(["punch"])
+        return output.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func scheduleInstall() {
+        _ = run(["schedule", "install"])
+    }
+}
+
+// MARK: - View Model
+
+@MainActor
+class StatusViewModel: ObservableObject {
+    @Published var status: PunchStatus?
+    @Published var config: ClockConfig = ConfigManager.load()
+    @Published var isPunching = false
+    @Published var serverRunning = false
+    @Published var lastRefresh: Date?
+
+    private var timer: Timer?
+    private var serverProcess: Process?
+
+    var clockInTime: Date {
+        get { timeStringToDate(config.schedule.clockin) }
+        set { config.schedule.clockin = dateToTimeString(newValue); saveAndReload() }
+    }
+
+    var clockOutTime: Date {
+        get { timeStringToDate(config.schedule.clockout) }
+        set { config.schedule.clockout = dateToTimeString(newValue); saveAndReload() }
+    }
+
+    func start() {
+        refresh()
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+    }
+
+    func refresh() {
+        Task.detached {
+            let s = ClockService.getStatus()
+            await MainActor.run {
+                self.status = s
+                self.lastRefresh = Date()
+            }
+        }
+    }
+
+    func punchNow() {
+        isPunching = true
+        Task.detached {
+            _ = ClockService.punch()
+            let s = ClockService.getStatus()
+            await MainActor.run {
+                self.status = s
+                self.isPunching = false
+            }
+        }
+    }
+
+    func toggleAutopunch() {
+        config.autopunchEnabled.toggle()
+        saveAndReload()
+    }
+
+    func toggleServer() {
+        if serverRunning {
+            stopServer()
+        } else {
+            startServer()
+        }
+    }
+
+    func saveAndReload() {
+        ConfigManager.save(config)
+        ClockService.scheduleInstall()
+    }
+
+    private func startServer() {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: ClockService.pythonPath)
+        proc.arguments = [ClockService.scriptPath, "serve", "--port", String(config.server.port)]
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        proc.terminationHandler = { [weak self] _ in
+            DispatchQueue.main.async { self?.serverRunning = false }
+        }
+        do {
+            try proc.run()
+            serverProcess = proc
+            serverRunning = true
+        } catch {
+            serverRunning = false
+        }
+    }
+
+    private func stopServer() {
+        serverProcess?.terminate()
+        serverProcess = nil
+        serverRunning = false
+    }
+
+    private func timeStringToDate(_ str: String) -> Date {
+        let parts = str.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return Date() }
+        var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        comps.hour = parts[0]
+        comps.minute = parts[1]
+        return Calendar.current.date(from: comps) ?? Date()
+    }
+
+    private func dateToTimeString(_ date: Date) -> String {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0)
+    }
+
+    deinit {
+        timer?.invalidate()
+        serverProcess?.terminate()
+    }
+}
+
+// MARK: - Views
+
+struct ContentView: View {
+    @ObservedObject var vm: StatusViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Text("104 Clock").font(.headline)
+                Spacer()
+                Button(action: { vm.refresh() }) {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+            }
+
+            Divider()
+
+            // Status
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Today").font(.subheadline).foregroundStyle(.secondary)
+                HStack {
+                    Label(vm.status?.clockIn ?? "--:--", systemImage: "sunrise")
+                    Spacer()
+                    Label(vm.status?.clockOut ?? "--:--", systemImage: "sunset")
+                }
+                .font(.system(.title2, design: .monospaced))
+            }
+
+            Divider()
+
+            // Schedule
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Schedule").font(.subheadline).foregroundStyle(.secondary)
+                HStack {
+                    Text("Clock In")
+                    Spacer()
+                    DatePicker("", selection: $vm.clockInTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .frame(width: 80)
+                }
+                HStack {
+                    Text("Clock Out")
+                    Spacer()
+                    DatePicker("", selection: $vm.clockOutTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .frame(width: 80)
+                }
+            }
+
+            Divider()
+
+            // Actions
+            Button(action: { vm.punchNow() }) {
+                HStack {
+                    Spacer()
+                    if vm.isPunching {
+                        ProgressView().controlSize(.small)
+                        Text("Punching...")
+                    } else {
+                        Image(systemName: "hand.tap")
+                        Text("Punch Now")
+                    }
+                    Spacer()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(vm.isPunching)
+
+            Toggle("Auto-punch", isOn: Binding(
+                get: { vm.config.autopunchEnabled },
+                set: { _ in vm.toggleAutopunch() }
+            ))
+
+            HStack {
+                Toggle("HTTP Server", isOn: Binding(
+                    get: { vm.serverRunning },
+                    set: { _ in vm.toggleServer() }
+                ))
+                Spacer()
+                if vm.serverRunning {
+                    Text(":\(vm.config.server.port)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
+            Button("Quit") { NSApp.terminate(nil) }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+        .frame(width: 260)
+        .onAppear { vm.start() }
+    }
+}
+
+// MARK: - App
+
+@main
+struct ClockBarApp: App {
+    @StateObject private var vm = StatusViewModel()
+
+    var body: some Scene {
+        MenuBarExtra {
+            ContentView(vm: vm)
+        } label: {
+            Image(systemName: "clock")
+        }
+        .menuBarExtraStyle(.window)
+    }
+}
