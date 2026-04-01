@@ -6,7 +6,6 @@ Automated clock-in/out for [104](https://pro.104.com.tw) on macOS.
 
 - **clock104.py** — CLI and launchd automation for punching, scheduling, and an HTTP API server
 - **ClockBar/** — SwiftUI menu bar app for quick status checks and manual punches
-- **Notify/** — Helper app for native macOS notifications
 
 ## Requirements
 
@@ -48,7 +47,7 @@ Opens ClockBar in the menu bar with live status, schedule controls, and a punch 
 
 | Target      | Description                          |
 |-------------|--------------------------------------|
-| `build`     | Compile Notify.app and ClockBar.app  |
+| `build`     | Compile ClockBar.app                 |
 | `menubar`   | Build and launch ClockBar            |
 | `install`   | Build + install launchd schedules    |
 | `uninstall` | Remove launchd schedules             |
