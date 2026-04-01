@@ -1,5 +1,7 @@
 import SwiftUI
 import Cocoa
+import UserNotifications
+import ServiceManagement
 
 // MARK: - Config Model
 
@@ -68,14 +70,45 @@ class ConfigManager {
     }
 }
 
+// MARK: - Notification Manager
+
+class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationManager()
+
+    func setup() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    func send(_ title: String, body: String, sound: UNNotificationSound = .default) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = sound
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler handler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        handler([.banner, .sound])
+    }
+}
+
 // MARK: - Clock Service
 
 class ClockService {
     static let pythonPath = "/opt/homebrew/bin/python3"
 
     static var scriptPath: String {
-        let bundlePath = Bundle.main.bundlePath
-        let dir = (bundlePath as NSString).deletingLastPathComponent
+        if let resourcePath = Bundle.main.path(forResource: "clock104", ofType: "py") {
+            return resourcePath
+        }
+        let dir = (Bundle.main.bundlePath as NSString).deletingLastPathComponent
         return (dir as NSString).appendingPathComponent("clock104.py")
     }
 
@@ -154,6 +187,8 @@ class StatusViewModel: ObservableObject {
     }
 
     func punchNow() {
+        let beforeIn = status?.clockIn
+        let beforeOut = status?.clockOut
         isPunching = true
         Task.detached {
             _ = ClockService.punch()
@@ -161,8 +196,33 @@ class StatusViewModel: ObservableObject {
             await MainActor.run {
                 self.status = s
                 self.isPunching = false
+                if let s = s, s.error == nil {
+                    if s.clockIn != beforeIn, let t = s.clockIn {
+                        NotificationManager.shared.send("104 Clock", body: "Clocked in at \(t)")
+                    } else if s.clockOut != beforeOut, let t = s.clockOut {
+                        NotificationManager.shared.send("104 Clock", body: "Clocked out at \(t)")
+                    }
+                } else {
+                    NotificationManager.shared.send("104 Clock", body: "Punch failed",
+                        sound: UNNotificationSound(named: UNNotificationSoundName("Basso")))
+                }
             }
         }
+    }
+
+    var launchAtLogin: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    func toggleLaunchAtLogin() {
+        do {
+            if launchAtLogin {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+            objectWillChange.send()
+        } catch {}
     }
 
     func toggleAutopunch() {
@@ -302,6 +362,11 @@ struct ContentView: View {
                 set: { _ in vm.toggleAutopunch() }
             ))
 
+            Toggle("Launch at Login", isOn: Binding(
+                get: { vm.launchAtLogin },
+                set: { _ in vm.toggleLaunchAtLogin() }
+            ))
+
             HStack {
                 Toggle("HTTP Server", isOn: Binding(
                     get: { vm.serverRunning },
@@ -323,7 +388,10 @@ struct ContentView: View {
         }
         .padding()
         .frame(width: 260)
-        .onAppear { vm.start() }
+        .onAppear {
+            NotificationManager.shared.setup()
+            vm.start()
+        }
     }
 }
 

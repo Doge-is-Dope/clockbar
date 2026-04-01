@@ -16,11 +16,15 @@ Automated clock-in/out for [104](https://pro.104.com.tw) on macOS.
 ## Setup
 
 ```sh
-# Build the Swift apps
-make build
-
-# Install launchd auto-punch schedules (default: 09:00 / 18:00)
+# Build and install to /Applications + set up launchd schedules
 make install
+```
+
+Or for development:
+
+```sh
+make build      # Compile in project directory
+make menubar    # Build and launch from project directory
 ```
 
 ## Usage
@@ -41,7 +45,7 @@ python3 clock104.py serve               # Start HTTP API on :8104
 make menubar
 ```
 
-Opens ClockBar in the menu bar with live status, schedule controls, and a punch button.
+Opens ClockBar in the menu bar with live status, schedule controls, punch button with notifications, and a login item toggle.
 
 ### Makefile Targets
 
@@ -49,8 +53,8 @@ Opens ClockBar in the menu bar with live status, schedule controls, and a punch 
 |-------------|--------------------------------------|
 | `build`     | Compile ClockBar.app                 |
 | `menubar`   | Build and launch ClockBar            |
-| `install`   | Build + install launchd schedules    |
-| `uninstall` | Remove launchd schedules             |
+| `install`   | Build, copy to /Applications, install launchd schedules |
+| `uninstall` | Remove from /Applications and launchd schedules         |
 | `status`    | Show launchd job state               |
 | `clean`     | Delete compiled .app bundles         |
 
