@@ -17,8 +17,9 @@ struct ContentView: View {
             rowDivider
             quitRow
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
         .frame(width: 300)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var summarySection: some View {
@@ -58,11 +59,9 @@ struct ContentView: View {
             Button(action: { vm.punchNow() }) {
                 HStack(spacing: 10) {
                     if vm.isPunching {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "hand.tap.fill")
+                        Image(systemName: "progress.indicator")
                             .font(.system(size: 14, weight: .medium))
+                            .symbolEffect(.rotate, isActive: true)
                     }
 
                     Text(vm.isPunching ? "Punching…" : punchButtonTitle)
@@ -122,11 +121,11 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, 12)
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(editorFill)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
                 )
                 .padding(.horizontal, 8)
@@ -144,7 +143,7 @@ struct ContentView: View {
     private var sessionActionRow: some View {
         Group {
             if vm.isAuthenticated {
-                MenuPanelButton(action: { vm.signOut() }) { _ in
+                MenuPanelButton(action: { vm.signOut() }, hoverColor: .red.opacity(0.12)) { _ in
                     HStack(spacing: 10) {
                         Text("Sign Out")
                             .font(.system(size: 14, weight: .regular))
@@ -241,6 +240,7 @@ struct ContentView: View {
 private struct MenuPanelButton<Label: View>: View {
     let action: () -> Void
     var isEnabled = true
+    var hoverColor: Color = Color(nsColor: .labelColor).opacity(0.08)
     @ViewBuilder let label: (Bool) -> Label
 
     @State private var isHovered = false
@@ -250,14 +250,14 @@ private struct MenuPanelButton<Label: View>: View {
         Button(action: action) {
             label(isHighlighted)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 6)
                 .frame(minHeight: 30)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(backgroundColor)
         )
         .opacity(isEnabled ? 1 : 0.55)
@@ -274,7 +274,7 @@ private struct MenuPanelButton<Label: View>: View {
     }
 
     private var backgroundColor: Color {
-        isHighlighted ? Color(nsColor: .labelColor).opacity(0.08) : .clear
+        isHighlighted ? hoverColor : .clear
     }
 }
 
@@ -300,10 +300,11 @@ private struct MenuPanelToggleRow: View {
         .padding(.horizontal, 10)
         .frame(minHeight: 30)
         .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(isHovered ? Color(nsColor: .labelColor).opacity(0.08) : .clear)
         )
         .contentShape(Rectangle())
+        .onTapGesture { isOn.toggle() }
         .onHover { isHovered = $0 }
     }
 }
@@ -325,7 +326,7 @@ struct ClockBarApp: App {
             ContentView(vm: vm)
         } label: {
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
-                Image(systemName: "clock")
+                Image(systemName: vm.bannerText != nil ? "clock.badge.exclamationmark" : "clock")
             }
         }
         .menuBarExtraStyle(.window)

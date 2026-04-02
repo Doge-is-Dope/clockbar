@@ -1,62 +1,54 @@
 # 104 Clock
 
-Automated clock-in/out for [104](https://pro.104.com.tw) on macOS.
+Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 
 ## Components
 
-- **clock104.py** — CLI and launchd automation for punching, scheduling, and an HTTP API server
-- **ClockBar/** — SwiftUI menu bar app for quick status checks and manual punches
+- **ClockBar/** — SwiftUI menu bar app with in-app 104 login, status refresh, manual punch, and schedule editing
+- **clockbar-helper** — Bundled Swift helper used by launchd for scheduled auto-punch runs
 
 ## Requirements
 
-- macOS with Homebrew Python 3 (`/opt/homebrew/bin/python3`)
-- [agent-browser](https://www.npmjs.com/package/agent-browser) for cookie extraction from Chrome
-- Active 104 session in Chrome
+- macOS 13+
+- A valid 104 account that can sign in through the app
 
 ## Setup
 
 ```sh
-# Build and install to /Applications + set up launchd schedules
+# Build the app bundle locally
+make build
+
+# Install to /Applications and install launchd jobs
 make install
 ```
 
-Or for development:
-
-```sh
-make build      # Compile in project directory
-make menubar    # Build and launch from project directory
-```
-
-## Usage
-
-### CLI
-
-```sh
-python3 clock104.py status              # Today's punch records
-python3 clock104.py punch               # Clock in or out
-python3 clock104.py auto clockin        # Smart auto-punch (for launchd)
-python3 clock104.py schedule status     # Show launchd job state + logs
-python3 clock104.py serve               # Start HTTP API on :8104
-```
-
-### Menu Bar App
+For development:
 
 ```sh
 make menubar
 ```
 
-Opens ClockBar in the menu bar with live status, schedule controls, punch button with notifications, and a login item toggle.
+## Usage
 
-### Makefile Targets
+Launch ClockBar from the menu bar, sign in through the built-in 104 web view, and then use the app to:
 
-| Target      | Description                          |
-|-------------|--------------------------------------|
-| `build`     | Compile ClockBar.app                 |
-| `menubar`   | Build and launch ClockBar            |
-| `install`   | Build, copy to /Applications, install launchd schedules |
-| `uninstall` | Remove from /Applications and launchd schedules         |
-| `status`    | Show launchd job state               |
-| `clean`     | Delete compiled .app bundles         |
+- view today’s clock-in / clock-out status
+- punch manually
+- change scheduled auto-punch times
+- enable or disable auto-punch
+
+Scheduled jobs are managed by the bundled helper executable rather than Python.
+
+## Makefile Targets
+
+| Target      | Description |
+|-------------|-------------|
+| `build`     | Compile `ClockBar.app` and bundle the helper |
+| `menubar`   | Build and launch ClockBar |
+| `install`   | Copy to `/Applications` and install launchd schedules |
+| `uninstall` | Remove launchd schedules and delete `/Applications/ClockBar.app` |
+| `status`    | Show launchd job state and recent auto-punch logs |
+| `clean`     | Delete the local build output |
 
 ## Configuration
 
@@ -72,4 +64,10 @@ Config lives at `~/.104/config.json`:
 }
 ```
 
-Disable auto-punch temporarily: `touch ~/.104/autopunch-disabled`
+The `server` block is kept for config compatibility but is no longer used by the Swift runtime.
+
+Disable auto-punch temporarily with:
+
+```sh
+touch ~/.104/autopunch-disabled
+```
