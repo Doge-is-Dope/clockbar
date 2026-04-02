@@ -1,412 +1,343 @@
+import AppKit
 import SwiftUI
-import Cocoa
-import UserNotifications
-import ServiceManagement
-
-// MARK: - Config Model
-
-struct ClockConfig: Codable {
-    var schedule: Schedule
-    var lateThresholdMin: Int
-    var randomDelayMax: Int
-    var server: ServerConfig
-    var autopunchEnabled: Bool
-
-    struct Schedule: Codable {
-        var clockin: String
-        var clockout: String
-    }
-
-    struct ServerConfig: Codable {
-        var port: Int
-        var token: String
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case schedule
-        case lateThresholdMin = "late_threshold_min"
-        case randomDelayMax = "random_delay_max"
-        case server
-        case autopunchEnabled = "autopunch_enabled"
-    }
-
-    static let `default` = ClockConfig(
-        schedule: .init(clockin: "09:00", clockout: "18:00"),
-        lateThresholdMin: 20,
-        randomDelayMax: 900,
-        server: .init(port: 8104, token: ""),
-        autopunchEnabled: true
-    )
-}
-
-// MARK: - Status Model
-
-struct PunchStatus: Codable {
-    let date: String?
-    let clockIn: String?
-    let clockOut: String?
-    let clockInCode: Int?
-    let error: String?
-}
-
-// MARK: - Config Manager
-
-class ConfigManager {
-    static let configPath = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".104/config.json")
-
-    static func load() -> ClockConfig {
-        guard let data = try? Data(contentsOf: configPath),
-              let config = try? JSONDecoder().decode(ClockConfig.self, from: data)
-        else { return .default }
-        return config
-    }
-
-    static func save(_ config: ClockConfig) {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(config) else { return }
-        try? data.write(to: configPath, options: .atomic)
-    }
-}
-
-// MARK: - Notification Manager
-
-class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
-    static let shared = NotificationManager()
-
-    func setup() {
-        let center = UNUserNotificationCenter.current()
-        center.delegate = self
-        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
-    }
-
-    func send(_ title: String, body: String, sound: UNNotificationSound = .default) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = sound
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
-    }
-
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification,
-        withCompletionHandler handler: @escaping (UNNotificationPresentationOptions) -> Void
-    ) {
-        handler([.banner, .sound])
-    }
-}
-
-// MARK: - Clock Service
-
-class ClockService {
-    static let pythonPath = "/opt/homebrew/bin/python3"
-
-    static var scriptPath: String {
-        if let resourcePath = Bundle.main.path(forResource: "clock104", ofType: "py") {
-            return resourcePath
-        }
-        let dir = (Bundle.main.bundlePath as NSString).deletingLastPathComponent
-        return (dir as NSString).appendingPathComponent("clock104.py")
-    }
-
-    static func run(_ args: [String]) -> (output: String, success: Bool) {
-        let proc = Process()
-        let pipe = Pipe()
-        proc.executableURL = URL(fileURLWithPath: pythonPath)
-        proc.arguments = [scriptPath] + args
-        proc.standardOutput = pipe
-        proc.standardError = pipe
-        do {
-            try proc.run()
-            proc.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8) ?? ""
-            return (output, proc.terminationStatus == 0)
-        } catch {
-            return (error.localizedDescription, false)
-        }
-    }
-
-    static func getStatus() -> PunchStatus? {
-        let (output, success) = run(["status"])
-        guard success, let data = output.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(PunchStatus.self, from: data)
-    }
-
-    static func punch() -> String {
-        let (output, _) = run(["punch"])
-        return output.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    static func scheduleInstall() {
-        _ = run(["schedule", "install"])
-    }
-}
-
-// MARK: - View Model
-
-@MainActor
-class StatusViewModel: ObservableObject {
-    @Published var status: PunchStatus?
-    @Published var config: ClockConfig = ConfigManager.load()
-    @Published var isPunching = false
-    @Published var serverRunning = false
-    @Published var lastRefresh: Date?
-
-    private var timer: Timer?
-    private var serverProcess: Process?
-
-    var clockInTime: Date {
-        get { timeStringToDate(config.schedule.clockin) }
-        set { config.schedule.clockin = dateToTimeString(newValue); saveAndReload() }
-    }
-
-    var clockOutTime: Date {
-        get { timeStringToDate(config.schedule.clockout) }
-        set { config.schedule.clockout = dateToTimeString(newValue); saveAndReload() }
-    }
-
-    func start() {
-        refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
-        }
-    }
-
-    func refresh() {
-        Task.detached {
-            let s = ClockService.getStatus()
-            await MainActor.run {
-                self.status = s
-                self.lastRefresh = Date()
-            }
-        }
-    }
-
-    func punchNow() {
-        let beforeIn = status?.clockIn
-        let beforeOut = status?.clockOut
-        isPunching = true
-        Task.detached {
-            _ = ClockService.punch()
-            let s = ClockService.getStatus()
-            await MainActor.run {
-                self.status = s
-                self.isPunching = false
-                if let s = s, s.error == nil {
-                    if s.clockIn != beforeIn, let t = s.clockIn {
-                        NotificationManager.shared.send("104 Clock", body: "Clocked in at \(t)")
-                    } else if s.clockOut != beforeOut, let t = s.clockOut {
-                        NotificationManager.shared.send("104 Clock", body: "Clocked out at \(t)")
-                    }
-                } else {
-                    NotificationManager.shared.send("104 Clock", body: "Punch failed",
-                        sound: UNNotificationSound(named: UNNotificationSoundName("Basso")))
-                }
-            }
-        }
-    }
-
-    var launchAtLogin: Bool {
-        SMAppService.mainApp.status == .enabled
-    }
-
-    func toggleLaunchAtLogin() {
-        do {
-            if launchAtLogin {
-                try SMAppService.mainApp.unregister()
-            } else {
-                try SMAppService.mainApp.register()
-            }
-            objectWillChange.send()
-        } catch {}
-    }
-
-    func toggleAutopunch() {
-        config.autopunchEnabled.toggle()
-        saveAndReload()
-    }
-
-    func toggleServer() {
-        if serverRunning {
-            stopServer()
-        } else {
-            startServer()
-        }
-    }
-
-    func saveAndReload() {
-        ConfigManager.save(config)
-        ClockService.scheduleInstall()
-    }
-
-    private func startServer() {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: ClockService.pythonPath)
-        proc.arguments = [ClockService.scriptPath, "serve", "--port", String(config.server.port)]
-        proc.standardOutput = FileHandle.nullDevice
-        proc.standardError = FileHandle.nullDevice
-        proc.terminationHandler = { [weak self] _ in
-            DispatchQueue.main.async { self?.serverRunning = false }
-        }
-        do {
-            try proc.run()
-            serverProcess = proc
-            serverRunning = true
-        } catch {
-            serverRunning = false
-        }
-    }
-
-    private func stopServer() {
-        serverProcess?.terminate()
-        serverProcess = nil
-        serverRunning = false
-    }
-
-    private func timeStringToDate(_ str: String) -> Date {
-        let parts = str.split(separator: ":").compactMap { Int($0) }
-        guard parts.count == 2 else { return Date() }
-        var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        comps.hour = parts[0]
-        comps.minute = parts[1]
-        return Calendar.current.date(from: comps) ?? Date()
-    }
-
-    private func dateToTimeString(_ date: Date) -> String {
-        let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
-        return String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0)
-    }
-
-    deinit {
-        timer?.invalidate()
-        serverProcess?.terminate()
-    }
-}
-
-// MARK: - Views
 
 struct ContentView: View {
     @ObservedObject var vm: StatusViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Text("104 Clock").font(.headline)
-                Spacer()
-                Button(action: { vm.refresh() }) {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.borderless)
-            }
-
-            Divider()
-
-            // Status
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Today").font(.subheadline).foregroundStyle(.secondary)
-                HStack {
-                    Label(vm.status?.clockIn ?? "--:--", systemImage: "sunrise")
-                    Spacer()
-                    Label(vm.status?.clockOut ?? "--:--", systemImage: "sunset")
-                }
-                .font(.system(.title2, design: .monospaced))
-            }
-
-            Divider()
-
-            // Schedule
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Schedule").font(.subheadline).foregroundStyle(.secondary)
-                HStack {
-                    Text("Clock In")
-                    Spacer()
-                    DatePicker("", selection: $vm.clockInTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .frame(width: 80)
-                }
-                HStack {
-                    Text("Clock Out")
-                    Spacer()
-                    DatePicker("", selection: $vm.clockOutTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                        .frame(width: 80)
-                }
-            }
-
-            Divider()
-
-            // Actions
-            Button(action: { vm.punchNow() }) {
-                HStack {
-                    Spacer()
-                    if vm.isPunching {
-                        ProgressView().controlSize(.small)
-                        Text("Punching...")
-                    } else {
-                        Image(systemName: "hand.tap")
-                        Text("Punch Now")
-                    }
-                    Spacer()
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(vm.isPunching)
-
-            Toggle("Auto-punch", isOn: Binding(
-                get: { vm.config.autopunchEnabled },
-                set: { _ in vm.toggleAutopunch() }
-            ))
-
-            Toggle("Launch at Login", isOn: Binding(
-                get: { vm.launchAtLogin },
-                set: { _ in vm.toggleLaunchAtLogin() }
-            ))
-
-            HStack {
-                Toggle("HTTP Server", isOn: Binding(
-                    get: { vm.serverRunning },
-                    set: { _ in vm.toggleServer() }
-                ))
-                Spacer()
-                if vm.serverRunning {
-                    Text(":\(vm.config.server.port)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Divider()
-
-            Button("Quit") { NSApp.terminate(nil) }
-                .buttonStyle(.borderless)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            summarySection
+            rowDivider
+            actionsSection
+            rowDivider
+            automationSection
+            rowDivider
+            sessionActionRow
+            rowDivider
+            quitRow
         }
-        .padding()
-        .frame(width: 260)
-        .onAppear {
-            NotificationManager.shared.setup()
-            vm.start()
+        .padding(.vertical, 8)
+        .frame(width: 300)
+    }
+
+    private var summarySection: some View {
+        VStack(alignment: .trailing, spacing: 12) {
+            HStack(spacing: 0) {
+                StatusMetric(
+                    title: "Clock In",
+                    value: vm.status?.clockIn ?? "--:--"
+                )
+
+                StatusMetric(
+                    title: "Clock Out",
+                    value: vm.status?.clockOut ?? "--:--"
+                )
+            }
+            
+            if let authStatusText {
+                Text(authStatusText)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+
+            if let errorText {
+                Label(errorText, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private var actionsSection: some View {
+        VStack(spacing: 4) {
+            Button(action: { vm.punchNow() }) {
+                HStack(spacing: 10) {
+                    if vm.isPunching {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "hand.tap.fill")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+
+                    Text(vm.isPunching ? "Punching…" : punchButtonTitle)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(PunchButtonStyle())
+            .disabled(vm.isPunching)
+            .padding(.horizontal, 4)
+            .padding(.bottom, 4)
+
+            VStack(spacing: 0) {
+                MenuPanelButton(action: toggleScheduleExpanded) { _ in
+                    HStack(spacing: 10) {
+                        Text("Schedule")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundStyle(Color(nsColor: .labelColor))
+
+                        Spacer(minLength: 8)
+
+                        Text("\(vm.config.schedule.clockin) - \(vm.config.schedule.clockout)")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color(nsColor: .labelColor))
+                            .rotationEffect(.degrees(vm.scheduleExpanded ? 90 : 0))
+                            .animation(.easeInOut(duration: 0.25), value: vm.scheduleExpanded)
+                    }
+                }
+
+                VStack(spacing: 0) {
+                    ScheduleRow(
+                        title: "Clock In",
+                        time: Binding(
+                            get: { vm.config.schedule.clockin },
+                            set: { vm.updateSchedule(clockIn: $0) }
+                        ),
+                        onChanged: {}
+                    )
+
+                    Rectangle()
+                        .fill(Color(nsColor: .separatorColor).opacity(0.55))
+                        .frame(height: 0.5)
+
+                    ScheduleRow(
+                        title: "Clock Out",
+                        time: Binding(
+                            get: { vm.config.schedule.clockout },
+                            set: { vm.updateSchedule(clockOut: $0) }
+                        ),
+                        onChanged: {}
+                    )
+                }
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(editorFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
+                )
+                .padding(.horizontal, 8)
+                .padding(.top, 4)
+                .frame(maxHeight: vm.scheduleExpanded ? .none : 0, alignment: .top)
+                .clipped()
+                .opacity(vm.scheduleExpanded ? 1 : 0)
+                .allowsHitTesting(vm.scheduleExpanded)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+
+    private var sessionActionRow: some View {
+        Group {
+            if vm.isAuthenticated {
+                MenuPanelButton(action: { vm.signOut() }) { _ in
+                    HStack(spacing: 10) {
+                        Text("Sign Out")
+                            .font(.system(size: 14, weight: .regular))
+                        Spacer(minLength: 8)
+                    }
+                    .foregroundStyle(.red)
+                }
+            } else {
+                MenuPanelButton(action: { vm.beginAuthentication() }, isEnabled: !vm.isAuthenticating) { _ in
+                    HStack(spacing: 10) {
+                        Text(vm.isAuthenticating ? "Signing In…" : "Sign In")
+                            .font(.system(size: 14, weight: .regular))
+                        Spacer(minLength: 8)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+
+    private var automationSection: some View {
+        VStack(spacing: 4) {
+            MenuPanelToggleRow(
+                title: "Auto-punch",
+                isOn: Binding(
+                    get: { vm.config.autopunchEnabled },
+                    set: { vm.setAutopunchEnabled($0) }
+                )
+            )
+
+            Text("Automatically clocks in and out at the scheduled times on workdays.")
+                .font(.system(size: 10, weight: .regular))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+
+    private var quitRow: some View {
+        MenuPanelButton(action: { NSApp.terminate(nil) }) { _ in
+            HStack(spacing: 10) {
+                Text("Quit ClockBar")
+                    .font(.system(size: 14, weight: .regular))
+                Spacer(minLength: 8)
+            }
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+    }
+
+    private var rowDivider: some View {
+        Rectangle()
+            .fill(Color(nsColor: .separatorColor).opacity(0.45))
+            .frame(height: 0.5)
+            .padding(.horizontal, 8)
+    }
+
+    private var authStatusText: String? {
+        let text = vm.authStatusText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
+    }
+
+    private var errorText: String? {
+        vm.bannerText?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var punchButtonTitle: String {
+        if vm.status?.clockIn == nil {
+            return "Clock In Now"
+        }
+
+        if vm.status?.clockOut == nil {
+            return "Clock Out Now"
+        }
+
+        return "Punch Now"
+    }
+
+    private var editorFill: Color {
+        Color(nsColor: colorScheme == .dark ? .quaternaryLabelColor : .windowBackgroundColor)
+            .opacity(colorScheme == .dark ? 0.35 : 0.96)
+    }
+
+    private func toggleScheduleExpanded() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            vm.scheduleExpanded.toggle()
         }
     }
 }
 
-// MARK: - App
+private struct MenuPanelButton<Label: View>: View {
+    let action: () -> Void
+    var isEnabled = true
+    @ViewBuilder let label: (Bool) -> Label
+
+    @State private var isHovered = false
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: action) {
+            label(isHighlighted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .frame(minHeight: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(backgroundColor)
+        )
+        .opacity(isEnabled ? 1 : 0.55)
+        .onHover { isHovered = $0 }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+
+    private var isHighlighted: Bool {
+        isEnabled && (isHovered || isPressed)
+    }
+
+    private var backgroundColor: Color {
+        isHighlighted ? Color(nsColor: .labelColor).opacity(0.08) : .clear
+    }
+}
+
+private struct MenuPanelToggleRow: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(Color(nsColor: .labelColor))
+
+            Spacer(minLength: 8)
+
+            Toggle("", isOn: $isOn)
+                .toggleStyle(.switch)
+                .tint(Color(nsColor: .labelColor))
+                .labelsHidden()
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 30)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(isHovered ? Color(nsColor: .labelColor).opacity(0.08) : .clear)
+        )
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+    }
+}
 
 @main
+@MainActor
 struct ClockBarApp: App {
-    @StateObject private var vm = StatusViewModel()
+    @StateObject private var vm: StatusViewModel
+
+    init() {
+        NotificationManager.shared.setup()
+        let viewModel = StatusViewModel()
+        viewModel.start()
+        _vm = StateObject(wrappedValue: viewModel)
+    }
 
     var body: some Scene {
         MenuBarExtra {
             ContentView(vm: vm)
         } label: {
-            Image(systemName: "clock")
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
+                Image(systemName: "clock")
+            }
         }
         .menuBarExtraStyle(.window)
     }
+}
+
+#Preview("Light") {
+    ContentView(vm: StatusViewModel())
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    ContentView(vm: StatusViewModel())
+        .preferredColorScheme(.dark)
 }
