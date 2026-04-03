@@ -6,7 +6,6 @@ struct ClockConfig: Codable, Equatable {
     var schedule: Schedule
     var lateThresholdMin: Int
     var randomDelayMax: Int
-    var server: ServerConfig
     var autopunchEnabled: Bool
     var wakeEnabled: Bool
     var wakeBeforeMin: Int
@@ -25,16 +24,10 @@ struct ClockConfig: Codable, Equatable {
         }
     }
 
-    struct ServerConfig: Codable, Equatable {
-        var port: Int
-        var token: String
-    }
-
     enum CodingKeys: String, CodingKey {
         case schedule
         case lateThresholdMin = "late_threshold_min"
         case randomDelayMax = "random_delay_max"
-        case server
         case autopunchEnabled = "autopunch_enabled"
         case wakeEnabled = "wake_enabled"
         case wakeBeforeMin = "wake_before_min"
@@ -44,7 +37,6 @@ struct ClockConfig: Codable, Equatable {
         schedule: .init(clockin: "09:00", clockout: "18:00"),
         lateThresholdMin: 20,
         randomDelayMax: 900,
-        server: .init(port: 8104, token: ""),
         autopunchEnabled: true,
         wakeEnabled: false,
         wakeBeforeMin: 5

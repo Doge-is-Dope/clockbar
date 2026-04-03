@@ -48,7 +48,7 @@ struct ScheduleRow: View {
     }
 
     private func persist(_ value: Date) {
-        let newTime = Self.storageFormatter.string(from: value)
+        let newTime = DateFormatter.shortTimeFormatter.string(from: value)
         guard newTime != time else { return }
         time = newTime
         onChanged()
@@ -65,14 +65,6 @@ struct ScheduleRow: View {
             ?? startOfDay
     }
 
-    private static let storageFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
 }
 
 #Preview("Light") {

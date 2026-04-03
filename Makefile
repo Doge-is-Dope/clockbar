@@ -3,8 +3,13 @@
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 
 APP_SOURCES := \
+	ClockBar/Paths.swift \
+	ClockBar/Utilities.swift \
 	ClockBar/DesignSystem.swift \
 	ClockBar/Services.swift \
+	ClockBar/Scheduler.swift \
+	ClockBar/AutoPunch.swift \
+	ClockBar/AuthWindowController.swift \
 	ClockBar/Components/PunchButtonStyle.swift \
 	ClockBar/Components/ScheduleRow.swift \
 	ClockBar/Components/StatusMetric.swift \
@@ -13,8 +18,12 @@ APP_SOURCES := \
 	ClockBar/StatusViewModel.swift
 
 HELPER_SOURCES := \
+	ClockBar/Paths.swift \
+	ClockBar/Utilities.swift \
 	ClockBar/Models.swift \
 	ClockBar/Services.swift \
+	ClockBar/Scheduler.swift \
+	ClockBar/AutoPunch.swift \
 	ClockBarHelper.swift
 
 build: ClockBar.app
@@ -32,7 +41,7 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
 	codesign --force --sign - ClockBar.app
 
 menubar: ClockBar.app
-	-pkill -x clockbar
+	-pkill -x clockbar 2>/dev/null
 	open ClockBar.app
 
 install: ClockBar.app

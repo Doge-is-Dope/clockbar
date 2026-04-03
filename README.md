@@ -76,12 +76,9 @@ Config lives at `~/.104/config.json`:
   "random_delay_max": 900,
   "autopunch_enabled": true,
   "wake_enabled": false,
-  "wake_before_min": 5,
-  "server": { "port": 8104, "token": "" }
+  "wake_before_min": 5
 }
 ```
-
-The `server` block is kept for config compatibility but is no longer used by the Swift runtime.
 
 Disable auto-punch temporarily with:
 

@@ -235,12 +235,11 @@ struct ContentView: View {
     }
 
     private var authStatusText: String? {
-        let text = vm.authStatusText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? nil : text
+        vm.authStatusText.trimmedNonEmpty
     }
 
     private var errorText: String? {
-        vm.bannerText?.trimmingCharacters(in: .whitespacesAndNewlines)
+        vm.bannerText?.trimmedNonEmpty
     }
 
     private var punchButtonTitle: String {
