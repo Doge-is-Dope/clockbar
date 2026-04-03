@@ -11,6 +11,8 @@ struct ClockConfig: Codable {
     var randomDelayMax: Int
     var server: ServerConfig
     var autopunchEnabled: Bool
+    var wakeEnabled: Bool
+    var wakeBeforeMin: Int
 
     struct Schedule: Codable {
         var clockin: String
@@ -28,6 +30,8 @@ struct ClockConfig: Codable {
         case randomDelayMax = "random_delay_max"
         case server
         case autopunchEnabled = "autopunch_enabled"
+        case wakeEnabled = "wake_enabled"
+        case wakeBeforeMin = "wake_before_min"
     }
 
     static let `default` = ClockConfig(
@@ -35,7 +39,9 @@ struct ClockConfig: Codable {
         lateThresholdMin: 20,
         randomDelayMax: 900,
         server: .init(port: 8104, token: ""),
-        autopunchEnabled: true
+        autopunchEnabled: true,
+        wakeEnabled: false,
+        wakeBeforeMin: 5
     )
 }
 
@@ -230,6 +236,29 @@ class StatusViewModel: ObservableObject {
         saveAndReload()
     }
 
+    func toggleWake() {
+        config.wakeEnabled.toggle()
+        ConfigManager.save(config)
+        if config.wakeEnabled {
+            // Compute wake time: clockin minus wake_before_min
+            let parts = config.schedule.clockin.split(separator: ":").compactMap { Int($0) }
+            if parts.count == 2 {
+                var comps = DateComponents()
+                comps.hour = parts[0]
+                comps.minute = parts[1]
+                if let clockin = Calendar.current.date(from: comps) {
+                    let wake = clockin.addingTimeInterval(-Double(config.wakeBeforeMin) * 60)
+                    let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
+                    let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
+                    _ = runWithAdmin("pmset repeat wake MTWRF \(wakeTime)")
+                }
+            }
+        } else {
+            _ = runWithAdmin("pmset repeat cancel")
+        }
+        ClockService.scheduleInstall()
+    }
+
     func toggleServer() {
         if serverRunning {
             stopServer()
@@ -279,6 +308,22 @@ class StatusViewModel: ObservableObject {
     private func dateToTimeString(_ date: Date) -> String {
         let comps = Calendar.current.dateComponents([.hour, .minute], from: date)
         return String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0)
+    }
+
+    private func runWithAdmin(_ command: String) -> Bool {
+        let script = "do shell script \"\(command)\" with administrator privileges"
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        proc.arguments = ["-e", script]
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+            return proc.terminationStatus == 0
+        } catch {
+            return false
+        }
     }
 
     deinit {
@@ -361,6 +406,18 @@ struct ContentView: View {
                 get: { vm.config.autopunchEnabled },
                 set: { _ in vm.toggleAutopunch() }
             ))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Wake on Schedule", isOn: Binding(
+                    get: { vm.config.wakeEnabled },
+                    set: { _ in vm.toggleWake() }
+                ))
+                if vm.config.wakeEnabled {
+                    Label("Requires AC power (plugged in)", systemImage: "powerplug")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Toggle("Launch at Login", isOn: Binding(
                 get: { vm.launchAtLogin },
