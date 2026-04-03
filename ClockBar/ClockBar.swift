@@ -27,11 +27,13 @@ struct ContentView: View {
             HStack(spacing: 0) {
                 StatusMetric(
                     title: "Clock In",
+                    icon: "arrow.down.to.line",
                     value: vm.status?.clockIn ?? "--:--"
                 )
 
                 StatusMetric(
                     title: "Clock Out",
+                    icon: "arrow.up.to.line",
                     value: vm.status?.clockOut ?? "--:--"
                 )
             }
@@ -79,7 +81,7 @@ struct ContentView: View {
             if vm.isAuthenticated {
                 MenuPanelButton(action: { vm.signOut() }, hoverColor: .red.opacity(AppStyle.Opacity.destructiveHover)) { _ in
                     HStack(spacing: AppStyle.Spacing.lg) {
-                        Text("Sign Out")
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                             .font(AppStyle.Font.body)
                         Spacer(minLength: AppStyle.Spacing.md)
                     }
@@ -88,7 +90,7 @@ struct ContentView: View {
             } else {
                 MenuPanelButton(action: { vm.beginAuthentication() }, isEnabled: !vm.isAuthenticating) { _ in
                     HStack(spacing: AppStyle.Spacing.lg) {
-                        Text(vm.isAuthenticating ? "Signing In…" : "Sign In")
+                        Label(vm.isAuthenticating ? "Signing In…" : "Sign In", systemImage: "person.crop.circle")
                             .font(AppStyle.Font.body)
                         Spacer(minLength: AppStyle.Spacing.md)
                     }
@@ -104,6 +106,7 @@ struct ContentView: View {
         VStack(spacing: AppStyle.Spacing.xs) {
             MenuPanelToggleRow(
                 title: "Auto-punch",
+                icon: "clock.arrow.2.circlepath",
                 isOn: Binding(
                     get: { vm.config.autopunchEnabled },
                     set: { newValue in
@@ -121,9 +124,13 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     MenuPanelButton(action: toggleScheduleExpanded) { _ in
                         HStack(spacing: AppStyle.Spacing.lg) {
-                            Text("Schedule")
-                                .font(AppStyle.Font.body)
-                                .foregroundStyle(Color(nsColor: .labelColor))
+                            Label {
+                                Text("Schedule")
+                            } icon: {
+                                Image(systemName: "calendar")
+                            }
+                            .font(AppStyle.Font.body)
+                            .foregroundStyle(Color(nsColor: .labelColor))
 
                             Spacer(minLength: AppStyle.Spacing.md)
 
@@ -139,6 +146,12 @@ struct ContentView: View {
                                 .animation(AppStyle.Animation.standard, value: vm.scheduleExpanded)
                         }
                     }
+                    
+                    Text("Skips weekends and public holidays.")
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.leading, AppStyle.Spacing.md)
 
                     VStack(spacing: 0) {
                         ScheduleRow(
@@ -188,7 +201,7 @@ struct ContentView: View {
     private var quitRow: some View {
         MenuPanelButton(action: { NSApp.terminate(nil) }) { _ in
             HStack(spacing: AppStyle.Spacing.lg) {
-                Text("Quit")
+                Label("Quit", systemImage: "power")
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
             }
@@ -281,15 +294,22 @@ private struct MenuPanelButton<Label: View>: View {
 
 private struct MenuPanelToggleRow: View {
     let title: String
+    var icon: String = ""
     @Binding var isOn: Bool
 
     @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: AppStyle.Spacing.lg) {
-            Text(title)
-                .font(AppStyle.Font.body)
-                .foregroundStyle(Color(nsColor: .labelColor))
+            Label {
+                Text(title)
+            } icon: {
+                if !icon.isEmpty {
+                    Image(systemName: icon)
+                }
+            }
+            .font(AppStyle.Font.body)
+            .foregroundStyle(Color(nsColor: .labelColor))
 
             Spacer(minLength: AppStyle.Spacing.md)
 
