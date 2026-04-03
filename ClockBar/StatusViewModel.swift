@@ -105,15 +105,7 @@ final class StatusViewModel: ObservableObject {
     func setAutopunchEnabled(_ isEnabled: Bool) {
         guard config.autopunchEnabled != isEnabled else { return }
         config.autopunchEnabled = isEnabled
-        let pendingConfig = config
-        Task.detached { [weak self] in
-            do {
-                try ClockService.saveConfig(pendingConfig)
-                await self?.setStatusNote(nil)
-            } catch {
-                await self?.setStatusNote("Failed to save auto-punch setting: \(error.localizedDescription)")
-            }
-        }
+        saveAndReload()
     }
 
     func updateSchedule(clockIn: String? = nil, clockOut: String? = nil) {
