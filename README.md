@@ -68,6 +68,8 @@ Config lives at `~/.104/config.json`:
   "late_threshold_min": 20,
   "random_delay_max": 900,
   "autopunch_enabled": true,
+  "wake_enabled": false,
+  "wake_before_min": 5,
   "server": { "port": 8104, "token": "" }
 }
 ```

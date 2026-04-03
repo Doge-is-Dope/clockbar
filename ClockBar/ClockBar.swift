@@ -237,26 +237,52 @@ class StatusViewModel: ObservableObject {
     }
 
     func toggleWake() {
-        config.wakeEnabled.toggle()
+        let enabling = !config.wakeEnabled
+        config.wakeEnabled = enabling
         ConfigManager.save(config)
-        if config.wakeEnabled {
-            // Compute wake time: clockin minus wake_before_min
-            let parts = config.schedule.clockin.split(separator: ":").compactMap { Int($0) }
-            if parts.count == 2 {
+        objectWillChange.send()
+
+        // Capture values for background use
+        let clockinStr = config.schedule.clockin
+        let wakeBeforeMin = config.wakeBeforeMin
+
+        Task.detached {
+            let success: Bool
+            if enabling {
+                let parts = clockinStr.split(separator: ":").compactMap { Int($0) }
+                guard parts.count == 2 else {
+                    await MainActor.run { self.revertWake(!enabling) }
+                    return
+                }
                 var comps = DateComponents()
                 comps.hour = parts[0]
                 comps.minute = parts[1]
-                if let clockin = Calendar.current.date(from: comps) {
-                    let wake = clockin.addingTimeInterval(-Double(config.wakeBeforeMin) * 60)
-                    let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
-                    let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
-                    _ = runWithAdmin("pmset repeat wake MTWRF \(wakeTime)")
+                guard let clockin = Calendar.current.date(from: comps) else {
+                    await MainActor.run { self.revertWake(!enabling) }
+                    return
+                }
+                let wake = clockin.addingTimeInterval(-Double(wakeBeforeMin) * 60)
+                let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
+                let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
+                success = Self.runWithAdmin("pmset repeat wake MTWRF \(wakeTime)")
+            } else {
+                success = Self.runWithAdmin("pmset repeat cancel")
+            }
+
+            await MainActor.run {
+                if success {
+                    ClockService.scheduleInstall()
+                } else {
+                    self.revertWake(!enabling)
                 }
             }
-        } else {
-            _ = runWithAdmin("pmset repeat cancel")
         }
-        ClockService.scheduleInstall()
+    }
+
+    private func revertWake(_ value: Bool) {
+        config.wakeEnabled = value
+        ConfigManager.save(config)
+        objectWillChange.send()
     }
 
     func toggleServer() {
@@ -310,7 +336,7 @@ class StatusViewModel: ObservableObject {
         return String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0)
     }
 
-    private func runWithAdmin(_ command: String) -> Bool {
+    private nonisolated static func runWithAdmin(_ command: String) -> Bool {
         let script = "do shell script \"\(command)\" with administrator privileges"
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
