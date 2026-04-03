@@ -50,6 +50,7 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.horizontal, AppStyle.Spacing.xxl)
@@ -192,19 +193,17 @@ struct ContentView: View {
                     .opacity(vm.scheduleExpanded ? 1 : 0)
                     .allowsHitTesting(vm.scheduleExpanded)
                 }
-            }
 
-            MenuPanelToggleRow(
-                title: "Wake on Schedule",
-                icon: "powersleep",
-                isOn: Binding(
-                    get: { vm.config.wakeEnabled },
-                    set: { _ in vm.toggleWake() }
+                MenuPanelToggleRow(
+                    title: "Wake on Schedule",
+                    icon: "powersleep",
+                    isOn: Binding(
+                        get: { vm.config.wakeEnabled },
+                        set: { _ in vm.toggleWake() }
+                    )
                 )
-            )
 
-            if vm.config.wakeEnabled {
-                Text("Requires AC power (plugged in).")
+                Text("Wake your Mac for auto-punch. Requires AC power.")
                     .font(AppStyle.Font.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)

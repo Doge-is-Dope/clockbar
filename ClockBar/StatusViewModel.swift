@@ -60,6 +60,9 @@ final class StatusViewModel: ObservableObject {
         guard timer == nil else { return }
         ensureLaunchAtLogin()
         reloadScheduleState()
+        if scheduleState.mismatchSummary != nil {
+            saveAndReload()
+        }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
