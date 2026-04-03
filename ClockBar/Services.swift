@@ -154,6 +154,7 @@ enum AuthStore {
     private static let account = "default"
 
     static func loadSession() -> StoredSession? {
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" { return nil }
         var query = baseQuery
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
