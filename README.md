@@ -54,6 +54,15 @@ Launch ClockBar from the menu bar, sign in through the built-in 104 web view, an
 
 Scheduled jobs are managed by the bundled helper executable rather than Python.
 
+Helper CLI commands:
+
+```sh
+./ClockBar.app/Contents/MacOS/clockbar-helper config
+./ClockBar.app/Contents/MacOS/clockbar-helper status
+./ClockBar.app/Contents/MacOS/clockbar-helper auto clockin --dry-run
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule status
+```
+
 ## Makefile Targets
 
 | Target      | Description |

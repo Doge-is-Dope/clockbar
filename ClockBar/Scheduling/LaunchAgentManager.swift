@@ -1,39 +1,5 @@
 import Foundation
 
-// MARK: - Holiday Store
-
-enum HolidayStore {
-    static func isHoliday(on date: Date = Date()) async -> Bool {
-        let calendar = Calendar(identifier: .gregorian)
-        let year = calendar.component(.year, from: date)
-        let cacheURL = holidayDirectory.appendingPathComponent("\(year).json")
-
-        if !FileManager.default.fileExists(atPath: cacheURL.path) {
-            try? FileManager.default.createDirectory(at: holidayDirectory, withIntermediateDirectories: true)
-            if let url = URL(string: "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/\(year).json"),
-               let (data, response) = try? await URLSession.shared.data(from: url),
-               (response as? HTTPURLResponse)?.statusCode == 200 {
-                try? data.write(to: cacheURL, options: .atomic)
-            }
-        }
-
-        guard let data = try? Data(contentsOf: cacheURL),
-              let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-        else {
-            return calendar.isDateInWeekend(date)
-        }
-
-        let todayString = DateFormatter.taiwanHolidayFormatter.string(from: date)
-        for entry in entries where (entry["date"] as? String) == todayString {
-            return (entry["isHoliday"] as? Bool) ?? false
-        }
-
-        return calendar.isDateInWeekend(date)
-    }
-}
-
-// MARK: - Launch Agent Manager
-
 enum LaunchAgentManager {
     static func install(config: ClockConfig, helperExecutablePath: String? = nil) throws -> ScheduleState {
         let helperPath = helperExecutablePath ?? bundledHelperExecutablePath()
@@ -47,13 +13,27 @@ enum LaunchAgentManager {
         for action in ClockAction.allCases {
             let plistPath = plistPath(for: action)
             _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, plistPath.path])
-            let plist = try generatePlist(action: action, config: config, helperExecutablePath: helperPath)
-            let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+
+            let plist = try generatePlist(
+                action: action,
+                config: config,
+                helperExecutablePath: helperPath
+            )
+            let data = try PropertyListSerialization.data(
+                fromPropertyList: plist,
+                format: .xml,
+                options: 0
+            )
             try data.write(to: plistPath, options: .atomic)
 
-            let bootstrap = Shell.run("/bin/launchctl", arguments: ["bootstrap", guiDomain, plistPath.path])
+            let bootstrap = Shell.run(
+                "/bin/launchctl",
+                arguments: ["bootstrap", guiDomain, plistPath.path]
+            )
             guard bootstrap.status == 0 else {
-                throw Clock104Error.scheduler(bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines))
+                throw Clock104Error.scheduler(
+                    bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
             }
         }
 
@@ -117,7 +97,9 @@ enum LaunchAgentManager {
         output.append(contentsOf: lines)
         output.append("")
         output.append("=== auto-punch ===")
-        output.append("  \(config.autopunchEnabled && !FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path) ? "enabled" : "DISABLED")")
+        output.append(
+            "  \(config.autopunchEnabled && !FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path) ? "enabled" : "DISABLED")"
+        )
         output.append("")
         output.append("=== recent logs ===")
         if let data = try? String(contentsOf: autoPunchLogPath, encoding: .utf8) {
@@ -125,6 +107,7 @@ enum LaunchAgentManager {
         } else {
             output.append("  (no logs yet)")
         }
+
         return output.joined(separator: "\n")
     }
 
@@ -157,8 +140,10 @@ enum LaunchAgentManager {
             "EnvironmentVariables": [
                 "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             ],
-            "StandardOutPath": cacheDirectory.appendingPathComponent("launchd-\(action.rawValue).stdout.log").path,
-            "StandardErrorPath": cacheDirectory.appendingPathComponent("launchd-\(action.rawValue).stderr.log").path,
+            "StandardOutPath": cacheDirectory
+                .appendingPathComponent("launchd-\(action.rawValue).stdout.log").path,
+            "StandardErrorPath": cacheDirectory
+                .appendingPathComponent("launchd-\(action.rawValue).stderr.log").path,
         ]
     }
 
@@ -170,15 +155,21 @@ enum LaunchAgentManager {
               let hour = calendar["Hour"] as? Int,
               let minute = calendar["Minute"] as? Int
         else { return nil }
+
         return ScheduledTime(hour: hour, minute: minute)
     }
 
     private static func loadedTime(for action: ClockAction) -> ScheduledTime? {
-        let result = Shell.run("/bin/launchctl", arguments: ["print", "\(guiDomain)/\(action.launchdLabel)"])
+        let result = Shell.run(
+            "/bin/launchctl",
+            arguments: ["print", "\(guiDomain)/\(action.launchdLabel)"]
+        )
         guard result.status == 0 else { return nil }
+
         let hour = result.stdout.firstInteger(matching: #""Hour" => ([0-9]+)"#)
         let minute = result.stdout.firstInteger(matching: #""Minute" => ([0-9]+)"#)
         guard let hour, let minute else { return nil }
+
         return ScheduledTime(hour: hour, minute: minute)
     }
 

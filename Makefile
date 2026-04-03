@@ -3,27 +3,63 @@
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 
 APP_SOURCES := \
-	ClockBar/Paths.swift \
-	ClockBar/Utilities.swift \
-	ClockBar/DesignSystem.swift \
-	ClockBar/Services.swift \
-	ClockBar/Scheduler.swift \
-	ClockBar/AutoPunch.swift \
-	ClockBar/AuthWindowController.swift \
-	ClockBar/Components/PunchButtonStyle.swift \
-	ClockBar/Components/ScheduleRow.swift \
-	ClockBar/Components/StatusMetric.swift \
-	ClockBar/Models.swift \
-	ClockBar/ClockBar.swift \
-	ClockBar/StatusViewModel.swift
+	ClockBar/Support/AppPaths.swift \
+	ClockBar/Support/AutoPunchLog.swift \
+	ClockBar/Support/ClockStoreCoding.swift \
+	ClockBar/Support/ConfigManager.swift \
+	ClockBar/Support/DateFormatters.swift \
+	ClockBar/Support/NotificationManager.swift \
+	ClockBar/Support/Shell.swift \
+	ClockBar/Support/StringExtensions.swift \
+	ClockBar/Support/SystemUI.swift \
+	ClockBar/Models/ClockAction.swift \
+	ClockBar/Models/ClockConfig.swift \
+	ClockBar/Models/PunchStatus.swift \
+	ClockBar/Models/ScheduledTime.swift \
+	ClockBar/Models/ScheduleState.swift \
+	ClockBar/Models/StoredSession.swift \
+	ClockBar/API/Clock104API.swift \
+	ClockBar/API/Clock104Error.swift \
+	ClockBar/API/ClockService.swift \
+	ClockBar/Auth/AuthStore.swift \
+	ClockBar/Auth/AuthWindowController.swift \
+	ClockBar/Scheduling/AutoPunchEngine.swift \
+	ClockBar/Scheduling/HolidayStore.swift \
+	ClockBar/Scheduling/LaunchAgentManager.swift \
+	ClockBar/Scheduling/PowerStateMonitor.swift \
+	ClockBar/App/StatusViewModel.swift \
+	ClockBar/App/ClockBarApp.swift \
+	ClockBar/UI/ContentView.swift \
+	ClockBar/UI/DesignSystem.swift \
+	ClockBar/UI/MenuPanelButton.swift \
+	ClockBar/UI/MenuPanelToggleRow.swift \
+	ClockBar/UI/PunchButtonStyle.swift \
+	ClockBar/UI/ScheduleRow.swift \
+	ClockBar/UI/StatusMetric.swift
 
 HELPER_SOURCES := \
-	ClockBar/Paths.swift \
-	ClockBar/Utilities.swift \
-	ClockBar/Models.swift \
-	ClockBar/Services.swift \
-	ClockBar/Scheduler.swift \
-	ClockBar/AutoPunch.swift \
+	ClockBar/Support/AppPaths.swift \
+	ClockBar/Support/AutoPunchLog.swift \
+	ClockBar/Support/ClockStoreCoding.swift \
+	ClockBar/Support/ConfigManager.swift \
+	ClockBar/Support/DateFormatters.swift \
+	ClockBar/Support/Shell.swift \
+	ClockBar/Support/StringExtensions.swift \
+	ClockBar/Support/SystemUI.swift \
+	ClockBar/Models/ClockAction.swift \
+	ClockBar/Models/ClockConfig.swift \
+	ClockBar/Models/PunchStatus.swift \
+	ClockBar/Models/ScheduledTime.swift \
+	ClockBar/Models/ScheduleState.swift \
+	ClockBar/Models/StoredSession.swift \
+	ClockBar/API/Clock104API.swift \
+	ClockBar/API/Clock104Error.swift \
+	ClockBar/API/ClockService.swift \
+	ClockBar/Auth/AuthStore.swift \
+	ClockBar/Scheduling/AutoPunchEngine.swift \
+	ClockBar/Scheduling/HolidayStore.swift \
+	ClockBar/Scheduling/LaunchAgentManager.swift \
+	ClockBar/Scheduling/PowerStateMonitor.swift \
 	ClockBarHelper.swift
 
 build: ClockBar.app

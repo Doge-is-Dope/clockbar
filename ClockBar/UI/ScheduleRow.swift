@@ -5,7 +5,6 @@ import SwiftUI
 struct ScheduleRow: View {
     let title: String
     @Binding var time: String
-    let onChanged: () -> Void
 
     @State private var selection = Date()
 
@@ -51,7 +50,6 @@ struct ScheduleRow: View {
         let newTime = DateFormatter.shortTimeFormatter.string(from: value)
         guard newTime != time else { return }
         time = newTime
-        onChanged()
         NSApp.keyWindow?.makeFirstResponder(nil)
     }
 
@@ -69,9 +67,9 @@ struct ScheduleRow: View {
 
 #Preview("Light") {
     VStack(spacing: 0) {
-        ScheduleRow(title: "Clock In", time: .constant("09:00"), onChanged: {})
+        ScheduleRow(title: "Clock In", time: .constant("09:00"))
         Divider()
-        ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
+        ScheduleRow(title: "Clock Out", time: .constant("18:00"))
     }
     .padding(AppStyle.Spacing.xl)
     .frame(width: AppStyle.Layout.panelWidth)
@@ -80,9 +78,9 @@ struct ScheduleRow: View {
 
 #Preview("Dark") {
     VStack(spacing: 0) {
-        ScheduleRow(title: "Clock In", time: .constant("09:00"), onChanged: {})
+        ScheduleRow(title: "Clock In", time: .constant("09:00"))
         Divider()
-        ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
+        ScheduleRow(title: "Clock Out", time: .constant("18:00"))
     }
     .padding(AppStyle.Spacing.xl)
     .frame(width: AppStyle.Layout.panelWidth)

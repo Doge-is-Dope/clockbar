@@ -18,6 +18,11 @@ struct ClockBarHelper {
         }
 
         switch command {
+        case "config":
+            let config = ConfigManager.load()
+            let data = try JSONEncoder.clockStore.encode(config)
+            print(String(decoding: data, as: UTF8.self))
+
         case "status":
             let status = await ClockService.getStatus()
             let data = try JSONEncoder.clockStore.encode(status)
@@ -29,10 +34,14 @@ struct ClockBarHelper {
             print(String(decoding: data, as: UTF8.self))
 
         case "auto":
-            guard arguments.count >= 2, let action = ClockAction(rawValue: arguments[1]) else {
-                throw Clock104Error.api("Usage: clockbar-helper auto clockin|clockout")
+            let dryRun = arguments.contains("--dry-run")
+            let actionArguments = arguments.dropFirst().filter { $0 != "--dry-run" }
+            guard let actionArgument = actionArguments.first,
+                  actionArguments.count == 1,
+                  let action = ClockAction(rawValue: actionArgument) else {
+                throw Clock104Error.api("Usage: clockbar-helper auto clockin|clockout [--dry-run]")
             }
-            let code = await AutoPunchEngine.run(action: action)
+            let code = await AutoPunchEngine.run(action: action, dryRun: dryRun)
             Darwin.exit(code)
 
         case "schedule":
@@ -64,9 +73,10 @@ struct ClockBarHelper {
 
     private static let helperUsage = """
     Usage:
+      clockbar-helper config
       clockbar-helper status
       clockbar-helper punch
-      clockbar-helper auto clockin|clockout
+      clockbar-helper auto clockin|clockout [--dry-run]
       clockbar-helper schedule install|remove|status
     """
 }

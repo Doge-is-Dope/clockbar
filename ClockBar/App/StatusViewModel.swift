@@ -12,7 +12,6 @@ final class StatusViewModel: ObservableObject {
     @Published var scheduleExpanded = false
     @Published var isAuthenticated = false
     @Published var isAuthenticating = false
-    @Published var lastRefresh: Date?
     @Published var scheduleState: ScheduleState
     @Published var statusNote: String?
 
@@ -74,7 +73,6 @@ final class StatusViewModel: ObservableObject {
 
         guard isAuthenticated else {
             status = .error("Sign in to 104 to enable status and punching.")
-            lastRefresh = Date()
             return
         }
 
@@ -98,10 +96,6 @@ final class StatusViewModel: ObservableObject {
             let updatedStatus = await ClockService.punch()
             await self?.finishPunch(with: updatedStatus, beforeIn: beforeIn, beforeOut: beforeOut)
         }
-    }
-
-    func toggleAutopunch() {
-        setAutopunchEnabled(!config.autopunchEnabled)
     }
 
     func setAutopunchEnabled(_ isEnabled: Bool) {
@@ -225,7 +219,6 @@ final class StatusViewModel: ObservableObject {
         if !isPunching, status != updatedStatus {
             status = updatedStatus
         }
-        lastRefresh = Date()
         isRefreshing = false
     }
 
@@ -233,7 +226,6 @@ final class StatusViewModel: ObservableObject {
         syncSessionState()
         status = updatedStatus
         isPunching = false
-        lastRefresh = Date()
 
         if updatedStatus.error == nil {
             if updatedStatus.clockIn != beforeIn, let time = updatedStatus.clockIn {
@@ -258,10 +250,6 @@ final class StatusViewModel: ObservableObject {
     private func finishScheduleInstallFailure(config: ClockConfig, error: Error) {
         scheduleState = ClockService.currentScheduleState(config: config)
         statusNote = "Saved schedule, but launchd reload failed: \(error.localizedDescription)"
-    }
-
-    private func setStatusNote(_ message: String?) {
-        statusNote = message
     }
 
     private func ensureLaunchAtLogin() {
@@ -308,11 +296,4 @@ final class StatusViewModel: ObservableObject {
         formatter.timeStyle = .short
         return formatter
     }()
-}
-
-extension String {
-    var trimmedNonEmpty: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
 }

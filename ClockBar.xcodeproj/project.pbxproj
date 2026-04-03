@@ -7,27 +7,77 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A2000001 /* ClockBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001 /* ClockBar.swift */; };
-		A2000002 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* Models.swift */; };
-		A2000003 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* Services.swift */; };
-		A2000004 /* StatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* StatusViewModel.swift */; };
-		A2000006 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* StatusMetric.swift */; };
-		A2000007 /* ScheduleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000009 /* ScheduleRow.swift */; };
-		A2000009 /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000B /* PunchButtonStyle.swift */; };
-		A200000A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000C /* DesignSystem.swift */; };
+		A2000001 /* ClockBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001 /* ClockBarApp.swift */; };
+		A2000002 /* StatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* StatusViewModel.swift */; };
+		A2000003 /* AuthWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* AuthWindowController.swift */; };
+		A2000004 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* AuthStore.swift */; };
+		A2000005 /* Clock104API.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000007 /* Clock104API.swift */; };
+		A2000006 /* Clock104Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* Clock104Error.swift */; };
+		A2000007 /* ClockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000009 /* ClockService.swift */; };
+		A2000008 /* ClockAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000A /* ClockAction.swift */; };
+		A2000009 /* ClockConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000B /* ClockConfig.swift */; };
+		A200000A /* PunchStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000C /* PunchStatus.swift */; };
+		A200000B /* ScheduledTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000D /* ScheduledTime.swift */; };
+		A200000C /* ScheduleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000E /* ScheduleState.swift */; };
+		A200000D /* StoredSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000F /* StoredSession.swift */; };
+		A200000E /* AutoPunchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* AutoPunchEngine.swift */; };
+		A200000F /* HolidayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* HolidayStore.swift */; };
+		A2000010 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* LaunchAgentManager.swift */; };
+		A2000011 /* PowerStateMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* PowerStateMonitor.swift */; };
+		A2000012 /* AppPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* AppPaths.swift */; };
+		A2000013 /* AutoPunchLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* AutoPunchLog.swift */; };
+		A2000014 /* ClockStoreCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* ClockStoreCoding.swift */; };
+		A2000015 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* ConfigManager.swift */; };
+		A2000016 /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* DateFormatters.swift */; };
+		A2000017 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019 /* NotificationManager.swift */; };
+		A2000018 /* Shell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A /* Shell.swift */; };
+		A2000019 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001B /* StringExtensions.swift */; };
+		A200001A /* SystemUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C /* SystemUI.swift */; };
+		A200001B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001D /* ContentView.swift */; };
+		A200001C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* DesignSystem.swift */; };
+		A200001D /* MenuPanelButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001F /* MenuPanelButton.swift */; };
+		A200001E /* MenuPanelToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020 /* MenuPanelToggleRow.swift */; };
+		A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
+		A2000020 /* ScheduleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000022 /* ScheduleRow.swift */; };
+		A2000021 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000023 /* StatusMetric.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000001 /* ClockBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBar.swift; sourceTree = "<group>"; };
+		A1000001 /* ClockBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBarApp.swift; sourceTree = "<group>"; };
 		A1000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000003 /* ClockBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClockBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A1000004 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		A1000005 /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
-		A1000006 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
-		A1000008 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
-		A1000009 /* ScheduleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRow.swift; sourceTree = "<group>"; };
-		A100000B /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
-		A100000C /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A1000004 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
+		A1000005 /* AuthWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthWindowController.swift; sourceTree = "<group>"; };
+		A1000006 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		A1000007 /* Clock104API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock104API.swift; sourceTree = "<group>"; };
+		A1000008 /* Clock104Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock104Error.swift; sourceTree = "<group>"; };
+		A1000009 /* ClockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockService.swift; sourceTree = "<group>"; };
+		A100000A /* ClockAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockAction.swift; sourceTree = "<group>"; };
+		A100000B /* ClockConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockConfig.swift; sourceTree = "<group>"; };
+		A100000C /* PunchStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchStatus.swift; sourceTree = "<group>"; };
+		A100000D /* ScheduledTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduledTime.swift; sourceTree = "<group>"; };
+		A100000E /* ScheduleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleState.swift; sourceTree = "<group>"; };
+		A100000F /* StoredSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSession.swift; sourceTree = "<group>"; };
+		A1000010 /* AutoPunchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchEngine.swift; sourceTree = "<group>"; };
+		A1000011 /* HolidayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayStore.swift; sourceTree = "<group>"; };
+		A1000012 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
+		A1000013 /* PowerStateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerStateMonitor.swift; sourceTree = "<group>"; };
+		A1000014 /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
+		A1000015 /* AutoPunchLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchLog.swift; sourceTree = "<group>"; };
+		A1000016 /* ClockStoreCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockStoreCoding.swift; sourceTree = "<group>"; };
+		A1000017 /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
+		A1000018 /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
+		A1000019 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		A100001A /* Shell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shell.swift; sourceTree = "<group>"; };
+		A100001B /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		A100001C /* SystemUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemUI.swift; sourceTree = "<group>"; };
+		A100001D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A100001E /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A100001F /* MenuPanelButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelButton.swift; sourceTree = "<group>"; };
+		A1000020 /* MenuPanelToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelToggleRow.swift; sourceTree = "<group>"; };
+		A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
+		A1000022 /* ScheduleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRow.swift; sourceTree = "<group>"; };
+		A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,12 +102,13 @@
 		A3000002 /* ClockBar */ = {
 			isa = PBXGroup;
 			children = (
-				A3000004 /* Components */,
-				A1000001 /* ClockBar.swift */,
-				A100000C /* DesignSystem.swift */,
-				A1000004 /* Models.swift */,
-				A1000005 /* Services.swift */,
-				A1000006 /* StatusViewModel.swift */,
+				A3000004 /* App */,
+				A3000005 /* API */,
+				A3000006 /* Auth */,
+				A3000007 /* Models */,
+				A3000008 /* Scheduling */,
+				A3000009 /* Support */,
+				A300000A /* UI */,
 				A1000002 /* Info.plist */,
 			);
 			path = ClockBar;
@@ -71,14 +122,86 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A3000004 /* Components */ = {
+		A3000004 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				A100000B /* PunchButtonStyle.swift */,
-				A1000009 /* ScheduleRow.swift */,
-				A1000008 /* StatusMetric.swift */,
+				A1000001 /* ClockBarApp.swift */,
+				A1000004 /* StatusViewModel.swift */,
 			);
-			path = Components;
+			path = App;
+			sourceTree = "<group>";
+		};
+		A3000005 /* API */ = {
+			isa = PBXGroup;
+			children = (
+				A1000007 /* Clock104API.swift */,
+				A1000008 /* Clock104Error.swift */,
+				A1000009 /* ClockService.swift */,
+			);
+			path = API;
+			sourceTree = "<group>";
+		};
+		A3000006 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A1000006 /* AuthStore.swift */,
+				A1000005 /* AuthWindowController.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A3000007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A100000A /* ClockAction.swift */,
+				A100000B /* ClockConfig.swift */,
+				A100000C /* PunchStatus.swift */,
+				A100000D /* ScheduledTime.swift */,
+				A100000E /* ScheduleState.swift */,
+				A100000F /* StoredSession.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A3000008 /* Scheduling */ = {
+			isa = PBXGroup;
+			children = (
+				A1000010 /* AutoPunchEngine.swift */,
+				A1000011 /* HolidayStore.swift */,
+				A1000012 /* LaunchAgentManager.swift */,
+				A1000013 /* PowerStateMonitor.swift */,
+			);
+			path = Scheduling;
+			sourceTree = "<group>";
+		};
+		A3000009 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				A1000014 /* AppPaths.swift */,
+				A1000015 /* AutoPunchLog.swift */,
+				A1000016 /* ClockStoreCoding.swift */,
+				A1000017 /* ConfigManager.swift */,
+				A1000018 /* DateFormatters.swift */,
+				A1000019 /* NotificationManager.swift */,
+				A100001A /* Shell.swift */,
+				A100001B /* StringExtensions.swift */,
+				A100001C /* SystemUI.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		A300000A /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				A100001D /* ContentView.swift */,
+				A100001E /* DesignSystem.swift */,
+				A100001F /* MenuPanelButton.swift */,
+				A1000020 /* MenuPanelToggleRow.swift */,
+				A1000021 /* PunchButtonStyle.swift */,
+				A1000022 /* ScheduleRow.swift */,
+				A1000023 /* StatusMetric.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -133,14 +256,39 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A2000001 /* ClockBar.swift in Sources */,
-				A2000002 /* Models.swift in Sources */,
-				A2000003 /* Services.swift in Sources */,
-				A2000004 /* StatusViewModel.swift in Sources */,
-				A2000006 /* StatusMetric.swift in Sources */,
-				A2000007 /* ScheduleRow.swift in Sources */,
-				A2000009 /* PunchButtonStyle.swift in Sources */,
-				A200000A /* DesignSystem.swift in Sources */,
+				A2000001 /* ClockBarApp.swift in Sources */,
+				A2000002 /* StatusViewModel.swift in Sources */,
+				A2000003 /* AuthWindowController.swift in Sources */,
+				A2000004 /* AuthStore.swift in Sources */,
+				A2000005 /* Clock104API.swift in Sources */,
+				A2000006 /* Clock104Error.swift in Sources */,
+				A2000007 /* ClockService.swift in Sources */,
+				A2000008 /* ClockAction.swift in Sources */,
+				A2000009 /* ClockConfig.swift in Sources */,
+				A200000A /* PunchStatus.swift in Sources */,
+				A200000B /* ScheduledTime.swift in Sources */,
+				A200000C /* ScheduleState.swift in Sources */,
+				A200000D /* StoredSession.swift in Sources */,
+				A200000E /* AutoPunchEngine.swift in Sources */,
+				A200000F /* HolidayStore.swift in Sources */,
+				A2000010 /* LaunchAgentManager.swift in Sources */,
+				A2000011 /* PowerStateMonitor.swift in Sources */,
+				A2000012 /* AppPaths.swift in Sources */,
+				A2000013 /* AutoPunchLog.swift in Sources */,
+				A2000014 /* ClockStoreCoding.swift in Sources */,
+				A2000015 /* ConfigManager.swift in Sources */,
+				A2000016 /* DateFormatters.swift in Sources */,
+				A2000017 /* NotificationManager.swift in Sources */,
+				A2000018 /* Shell.swift in Sources */,
+				A2000019 /* StringExtensions.swift in Sources */,
+				A200001A /* SystemUI.swift in Sources */,
+				A200001B /* ContentView.swift in Sources */,
+				A200001C /* DesignSystem.swift in Sources */,
+				A200001D /* MenuPanelButton.swift in Sources */,
+				A200001E /* MenuPanelToggleRow.swift in Sources */,
+				A200001F /* PunchButtonStyle.swift in Sources */,
+				A2000020 /* ScheduleRow.swift in Sources */,
+				A2000021 /* StatusMetric.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
