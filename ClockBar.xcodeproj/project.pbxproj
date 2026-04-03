@@ -14,6 +14,7 @@
 		A2000006 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* StatusMetric.swift */; };
 		A2000007 /* ScheduleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000009 /* ScheduleRow.swift */; };
 		A2000009 /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000B /* PunchButtonStyle.swift */; };
+		A200000A /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000C /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		A1000008 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
 		A1000009 /* ScheduleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRow.swift; sourceTree = "<group>"; };
 		A100000B /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
+		A100000C /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +54,7 @@
 			children = (
 				A3000004 /* Components */,
 				A1000001 /* ClockBar.swift */,
+				A100000C /* DesignSystem.swift */,
 				A1000004 /* Models.swift */,
 				A1000005 /* Services.swift */,
 				A1000006 /* StatusViewModel.swift */,
@@ -137,6 +140,7 @@
 				A2000006 /* StatusMetric.swift in Sources */,
 				A2000007 /* ScheduleRow.swift in Sources */,
 				A2000009 /* PunchButtonStyle.swift in Sources */,
+				A200000A /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
