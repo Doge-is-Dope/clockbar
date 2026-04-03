@@ -6,7 +6,7 @@ struct PunchButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .padding(.horizontal, AppStyle.Spacing.xxl)
-            .padding(.vertical, 13)
+            .padding(.vertical, AppStyle.Spacing.xl)
             .background(
                 RoundedRectangle(cornerRadius: AppStyle.Radius.medium, style: .continuous)
                     .fill(backgroundColor(configuration))

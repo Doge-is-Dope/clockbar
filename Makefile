@@ -7,7 +7,6 @@ APP_SOURCES := \
 	ClockBar/Services.swift \
 	ClockBar/Components/PunchButtonStyle.swift \
 	ClockBar/Components/ScheduleRow.swift \
-	ClockBar/Components/SettingsToggleRow.swift \
 	ClockBar/Components/StatusMetric.swift \
 	ClockBar/Models.swift \
 	ClockBar/ClockBar.swift \

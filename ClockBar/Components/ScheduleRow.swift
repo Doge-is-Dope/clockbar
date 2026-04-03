@@ -82,7 +82,7 @@ struct ScheduleRow: View {
         ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
     }
     .padding(AppStyle.Spacing.xl)
-    .frame(width: 268)
+    .frame(width: AppStyle.Layout.panelWidth)
     .preferredColorScheme(.light)
 }
 
@@ -93,6 +93,6 @@ struct ScheduleRow: View {
         ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
     }
     .padding(AppStyle.Spacing.xl)
-    .frame(width: 268)
+    .frame(width: AppStyle.Layout.panelWidth)
     .preferredColorScheme(.dark)
 }

@@ -126,7 +126,7 @@ struct ContentView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator), lineWidth: 1)
+                        .strokeBorder(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator), lineWidth: AppStyle.Layout.borderWidth)
                 )
                 .padding(.horizontal, AppStyle.Spacing.md)
                 .padding(.top, AppStyle.Spacing.xs)

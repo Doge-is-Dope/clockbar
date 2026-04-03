@@ -62,5 +62,6 @@ enum AppStyle {
         static let scheduleRowMinHeight: CGFloat = 34
         static let dividerHeight: CGFloat = 0.5
         static let punchButtonScale: CGFloat = 0.985
+        static let borderWidth: CGFloat = 1
     }
 }
