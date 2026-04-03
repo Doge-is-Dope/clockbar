@@ -55,88 +55,22 @@ struct ContentView: View {
     }
 
     private var actionsSection: some View {
-        VStack(spacing: AppStyle.Spacing.xs) {
-            Button(action: { vm.punchNow() }) {
-                HStack(spacing: AppStyle.Spacing.lg) {
-                    if vm.isPunching {
-                        Image(systemName: "progress.indicator")
-                            .font(AppStyle.Font.bodyMedium)
-                            .symbolEffect(.rotate, isActive: true)
-                    }
-
-                    Text(vm.isPunching ? "Punching…" : punchButtonTitle)
+        Button(action: { vm.punchNow() }) {
+            HStack(spacing: AppStyle.Spacing.lg) {
+                if vm.isPunching {
+                    Image(systemName: "progress.indicator")
                         .font(AppStyle.Font.bodyMedium)
+                        .symbolEffect(.rotate, isActive: true)
                 }
-                .frame(maxWidth: .infinity)
+
+                Text(vm.isPunching ? "Punching…" : punchButtonTitle)
+                    .font(AppStyle.Font.bodyMedium)
             }
-            .buttonStyle(PunchButtonStyle())
-            .disabled(vm.isPunching)
-            .padding(.horizontal, AppStyle.Spacing.xs)
-            .padding(.bottom, AppStyle.Spacing.xs)
-
-            VStack(spacing: 0) {
-                MenuPanelButton(action: toggleScheduleExpanded) { _ in
-                    HStack(spacing: AppStyle.Spacing.lg) {
-                        Text("Schedule")
-                            .font(AppStyle.Font.body)
-                            .foregroundStyle(Color(nsColor: .labelColor))
-
-                        Spacer(minLength: AppStyle.Spacing.md)
-
-                        Text("\(vm.config.schedule.clockin) - \(vm.config.schedule.clockout)")
-                            .font(AppStyle.Font.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
-                        Image(systemName: "chevron.right")
-                            .font(AppStyle.Font.chevron)
-                            .foregroundStyle(Color(nsColor: .labelColor))
-                            .rotationEffect(.degrees(vm.scheduleExpanded ? 90 : 0))
-                            .animation(AppStyle.Animation.standard, value: vm.scheduleExpanded)
-                    }
-                }
-
-                VStack(spacing: 0) {
-                    ScheduleRow(
-                        title: "Clock In",
-                        time: Binding(
-                            get: { vm.config.schedule.clockin },
-                            set: { vm.updateSchedule(clockIn: $0) }
-                        ),
-                        onChanged: {}
-                    )
-
-                    Rectangle()
-                        .fill(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator))
-                        .frame(height: AppStyle.Layout.dividerHeight)
-
-                    ScheduleRow(
-                        title: "Clock Out",
-                        time: Binding(
-                            get: { vm.config.schedule.clockout },
-                            set: { vm.updateSchedule(clockOut: $0) }
-                        ),
-                        onChanged: {}
-                    )
-                }
-                .padding(.horizontal, AppStyle.Spacing.xl)
-                .background(
-                    RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
-                        .fill(editorFill)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator), lineWidth: AppStyle.Layout.borderWidth)
-                )
-                .padding(.horizontal, AppStyle.Spacing.md)
-                .padding(.top, AppStyle.Spacing.xs)
-                .frame(maxHeight: vm.scheduleExpanded ? .none : 0, alignment: .top)
-                .clipped()
-                .opacity(vm.scheduleExpanded ? 1 : 0)
-                .allowsHitTesting(vm.scheduleExpanded)
-            }
+            .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, AppStyle.Spacing.md)
+        .buttonStyle(PunchButtonStyle())
+        .disabled(vm.isPunching)
+        .padding(.horizontal, AppStyle.Spacing.xl)
         .padding(.vertical, AppStyle.Spacing.sm)
     }
 
@@ -172,13 +106,80 @@ struct ContentView: View {
                 title: "Auto-punch",
                 isOn: Binding(
                     get: { vm.config.autopunchEnabled },
-                    set: { vm.setAutopunchEnabled($0) }
+                    set: { newValue in
+                        vm.setAutopunchEnabled(newValue)
+                        if !newValue {
+                            withAnimation(AppStyle.Animation.standard) {
+                                vm.scheduleExpanded = false
+                            }
+                        }
+                    }
                 )
             )
 
-            Text("Automatically clocks in and out at the scheduled times on workdays.")
-                .font(AppStyle.Font.caption)
-                .foregroundStyle(.tertiary)
+            if vm.config.autopunchEnabled {
+                VStack(spacing: 0) {
+                    MenuPanelButton(action: toggleScheduleExpanded) { _ in
+                        HStack(spacing: AppStyle.Spacing.lg) {
+                            Text("Schedule")
+                                .font(AppStyle.Font.body)
+                                .foregroundStyle(Color(nsColor: .labelColor))
+
+                            Spacer(minLength: AppStyle.Spacing.md)
+
+                            Text("\(vm.config.schedule.clockin) - \(vm.config.schedule.clockout)")
+                                .font(AppStyle.Font.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+
+                            Image(systemName: "chevron.right")
+                                .font(AppStyle.Font.chevron)
+                                .foregroundStyle(Color(nsColor: .labelColor))
+                                .rotationEffect(.degrees(vm.scheduleExpanded ? 90 : 0))
+                                .animation(AppStyle.Animation.standard, value: vm.scheduleExpanded)
+                        }
+                    }
+
+                    VStack(spacing: 0) {
+                        ScheduleRow(
+                            title: "Clock In",
+                            time: Binding(
+                                get: { vm.config.schedule.clockin },
+                                set: { vm.updateSchedule(clockIn: $0) }
+                            ),
+                            onChanged: {}
+                        )
+
+                        Rectangle()
+                            .fill(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator))
+                            .frame(height: AppStyle.Layout.dividerHeight)
+
+                        ScheduleRow(
+                            title: "Clock Out",
+                            time: Binding(
+                                get: { vm.config.schedule.clockout },
+                                set: { vm.updateSchedule(clockOut: $0) }
+                            ),
+                            onChanged: {}
+                        )
+                    }
+                    .padding(.horizontal, AppStyle.Spacing.xl)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
+                            .fill(editorFill)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
+                            .strokeBorder(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator), lineWidth: AppStyle.Layout.borderWidth)
+                    )
+                    .padding(.horizontal, AppStyle.Spacing.md)
+                    .padding(.top, AppStyle.Spacing.xs)
+                    .frame(maxHeight: vm.scheduleExpanded ? .none : 0, alignment: .top)
+                    .clipped()
+                    .opacity(vm.scheduleExpanded ? 1 : 0)
+                    .allowsHitTesting(vm.scheduleExpanded)
+                }
+            }
         }
         .padding(.horizontal, AppStyle.Spacing.md)
         .padding(.vertical, AppStyle.Spacing.sm)

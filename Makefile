@@ -32,6 +32,7 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
 	codesign --force --sign - ClockBar.app
 
 menubar: ClockBar.app
+	-pkill -x clockbar
 	open ClockBar.app
 
 install: ClockBar.app
