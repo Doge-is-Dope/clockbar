@@ -5,70 +5,64 @@ struct PunchButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppStyle.Spacing.xxl)
             .padding(.vertical, 13)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppStyle.Radius.medium, style: .continuous)
                     .fill(backgroundColor(configuration))
             )
             .foregroundStyle(foregroundColor)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? AppStyle.Layout.punchButtonScale : 1)
+            .animation(AppStyle.Animation.micro, value: configuration.isPressed)
     }
 
     private func backgroundColor(_ configuration: Configuration) -> Color {
         if colorScheme == .dark {
-            return Color.white.opacity(configuration.isPressed ? 0.78 : 0.84)
+            return Color.white.opacity(configuration.isPressed ? AppStyle.Opacity.pressed : AppStyle.Opacity.normal)
         }
 
-        return Color.black.opacity(configuration.isPressed ? 0.78 : 0.84)
+        return Color.black.opacity(configuration.isPressed ? AppStyle.Opacity.pressed : AppStyle.Opacity.normal)
     }
 
     private var foregroundColor: Color {
         if colorScheme == .dark {
-            return Color.black.opacity(0.96)
+            return Color.black.opacity(AppStyle.Opacity.foreground)
         }
 
-        return Color.white.opacity(0.96)
+        return Color.white.opacity(AppStyle.Opacity.foreground)
     }
 }
 
 #Preview("Light") {
     Button(action: {}) {
-        HStack(spacing: 10) {
+        HStack(spacing: AppStyle.Spacing.lg) {
             Image(systemName: "hand.tap.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppStyle.Font.bodyMedium)
             Text("Clock In Now")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppStyle.Font.bodyMedium)
             Spacer()
-            Text("Auto on")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
     }
     .buttonStyle(PunchButtonStyle())
     .padding()
-    .frame(width: 332)
+    .frame(width: AppStyle.Layout.panelWidth)
     .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
     Button(action: {}) {
-        HStack(spacing: 10) {
+        HStack(spacing: AppStyle.Spacing.lg) {
             Image(systemName: "hand.tap.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppStyle.Font.bodyMedium)
             Text("Clock In Now")
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppStyle.Font.bodyMedium)
             Spacer()
-            Text("Auto on")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
     }
     .buttonStyle(PunchButtonStyle())
     .padding()
-    .frame(width: 332)
+    .frame(width: AppStyle.Layout.panelWidth)
     .preferredColorScheme(.dark)
 }

@@ -17,13 +17,13 @@ struct ContentView: View {
             rowDivider
             quitRow
         }
-        .padding(.vertical, 4)
-        .frame(width: 300)
+        .padding(.vertical, AppStyle.Spacing.xs)
+        .frame(width: AppStyle.Layout.panelWidth)
         .fixedSize(horizontal: false, vertical: true)
     }
 
     private var summarySection: some View {
-        VStack(alignment: .trailing, spacing: 12) {
+        VStack(alignment: .trailing, spacing: AppStyle.Spacing.xl) {
             HStack(spacing: 0) {
                 StatusMetric(
                     title: "Clock In",
@@ -35,64 +35,64 @@ struct ContentView: View {
                     value: vm.status?.clockOut ?? "--:--"
                 )
             }
-            
+
             if let authStatusText {
                 Text(authStatusText)
-                    .font(.system(size: 10))
+                    .font(AppStyle.Font.caption)
                     .foregroundStyle(.tertiary)
             }
 
             if let errorText {
                 Label(errorText, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppStyle.Font.subheadlineMedium)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, AppStyle.Spacing.xxl)
+        .padding(.vertical, AppStyle.Spacing.lg)
     }
 
     private var actionsSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppStyle.Spacing.xs) {
             Button(action: { vm.punchNow() }) {
-                HStack(spacing: 10) {
+                HStack(spacing: AppStyle.Spacing.lg) {
                     if vm.isPunching {
                         Image(systemName: "progress.indicator")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(AppStyle.Font.bodyMedium)
                             .symbolEffect(.rotate, isActive: true)
                     }
 
                     Text(vm.isPunching ? "Punching…" : punchButtonTitle)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppStyle.Font.bodyMedium)
                 }
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(PunchButtonStyle())
             .disabled(vm.isPunching)
-            .padding(.horizontal, 4)
-            .padding(.bottom, 4)
+            .padding(.horizontal, AppStyle.Spacing.xs)
+            .padding(.bottom, AppStyle.Spacing.xs)
 
             VStack(spacing: 0) {
                 MenuPanelButton(action: toggleScheduleExpanded) { _ in
-                    HStack(spacing: 10) {
+                    HStack(spacing: AppStyle.Spacing.lg) {
                         Text("Schedule")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(AppStyle.Font.body)
                             .foregroundStyle(Color(nsColor: .labelColor))
 
-                        Spacer(minLength: 8)
+                        Spacer(minLength: AppStyle.Spacing.md)
 
                         Text("\(vm.config.schedule.clockin) - \(vm.config.schedule.clockout)")
-                            .font(.system(size: 12, weight: .regular))
+                            .font(AppStyle.Font.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
 
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AppStyle.Font.chevron)
                             .foregroundStyle(Color(nsColor: .labelColor))
                             .rotationEffect(.degrees(vm.scheduleExpanded ? 90 : 0))
-                            .animation(.easeInOut(duration: 0.25), value: vm.scheduleExpanded)
+                            .animation(AppStyle.Animation.standard, value: vm.scheduleExpanded)
                     }
                 }
 
@@ -107,8 +107,8 @@ struct ContentView: View {
                     )
 
                     Rectangle()
-                        .fill(Color(nsColor: .separatorColor).opacity(0.55))
-                        .frame(height: 0.5)
+                        .fill(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator))
+                        .frame(height: AppStyle.Layout.dividerHeight)
 
                     ScheduleRow(
                         title: "Clock Out",
@@ -119,55 +119,55 @@ struct ContentView: View {
                         onChanged: {}
                     )
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppStyle.Spacing.xl)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                         .fill(editorFill)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator), lineWidth: 1)
                 )
-                .padding(.horizontal, 8)
-                .padding(.top, 4)
+                .padding(.horizontal, AppStyle.Spacing.md)
+                .padding(.top, AppStyle.Spacing.xs)
                 .frame(maxHeight: vm.scheduleExpanded ? .none : 0, alignment: .top)
                 .clipped()
                 .opacity(vm.scheduleExpanded ? 1 : 0)
                 .allowsHitTesting(vm.scheduleExpanded)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, AppStyle.Spacing.md)
+        .padding(.vertical, AppStyle.Spacing.sm)
     }
 
     private var sessionActionRow: some View {
         Group {
             if vm.isAuthenticated {
-                MenuPanelButton(action: { vm.signOut() }, hoverColor: .red.opacity(0.12)) { _ in
-                    HStack(spacing: 10) {
+                MenuPanelButton(action: { vm.signOut() }, hoverColor: .red.opacity(AppStyle.Opacity.destructiveHover)) { _ in
+                    HStack(spacing: AppStyle.Spacing.lg) {
                         Text("Sign Out")
-                            .font(.system(size: 14, weight: .regular))
-                        Spacer(minLength: 8)
+                            .font(AppStyle.Font.body)
+                        Spacer(minLength: AppStyle.Spacing.md)
                     }
                     .foregroundStyle(.red)
                 }
             } else {
                 MenuPanelButton(action: { vm.beginAuthentication() }, isEnabled: !vm.isAuthenticating) { _ in
-                    HStack(spacing: 10) {
+                    HStack(spacing: AppStyle.Spacing.lg) {
                         Text(vm.isAuthenticating ? "Signing In…" : "Sign In")
-                            .font(.system(size: 14, weight: .regular))
-                        Spacer(minLength: 8)
+                            .font(AppStyle.Font.body)
+                        Spacer(minLength: AppStyle.Spacing.md)
                     }
                     .foregroundStyle(.secondary)
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, AppStyle.Spacing.md)
+        .padding(.vertical, AppStyle.Spacing.sm)
     }
 
     private var automationSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppStyle.Spacing.xs) {
             MenuPanelToggleRow(
                 title: "Auto-punch",
                 isOn: Binding(
@@ -177,31 +177,31 @@ struct ContentView: View {
             )
 
             Text("Automatically clocks in and out at the scheduled times on workdays.")
-                .font(.system(size: 10, weight: .regular))
+                .font(AppStyle.Font.caption)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, AppStyle.Spacing.md)
+        .padding(.vertical, AppStyle.Spacing.sm)
     }
 
     private var quitRow: some View {
         MenuPanelButton(action: { NSApp.terminate(nil) }) { _ in
-            HStack(spacing: 10) {
-                Text("Quit ClockBar")
-                    .font(.system(size: 14, weight: .regular))
-                Spacer(minLength: 8)
+            HStack(spacing: AppStyle.Spacing.lg) {
+                Text("Quit")
+                    .font(AppStyle.Font.body)
+                Spacer(minLength: AppStyle.Spacing.md)
             }
             .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, AppStyle.Spacing.md)
+        .padding(.vertical, AppStyle.Spacing.sm)
     }
 
     private var rowDivider: some View {
         Rectangle()
-            .fill(Color(nsColor: .separatorColor).opacity(0.45))
-            .frame(height: 0.5)
-            .padding(.horizontal, 8)
+            .fill(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator))
+            .frame(height: AppStyle.Layout.dividerHeight)
+            .padding(.horizontal, AppStyle.Spacing.md)
     }
 
     private var authStatusText: String? {
@@ -227,11 +227,11 @@ struct ContentView: View {
 
     private var editorFill: Color {
         Color(nsColor: colorScheme == .dark ? .quaternaryLabelColor : .windowBackgroundColor)
-            .opacity(colorScheme == .dark ? 0.35 : 0.96)
+            .opacity(colorScheme == .dark ? AppStyle.Opacity.editorFillDark : AppStyle.Opacity.editorFillLight)
     }
 
     private func toggleScheduleExpanded() {
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(AppStyle.Animation.standard) {
             vm.scheduleExpanded.toggle()
         }
     }
@@ -240,7 +240,7 @@ struct ContentView: View {
 private struct MenuPanelButton<Label: View>: View {
     let action: () -> Void
     var isEnabled = true
-    var hoverColor: Color = Color(nsColor: .labelColor).opacity(0.08)
+    var hoverColor: Color = Color(nsColor: .labelColor).opacity(AppStyle.Opacity.hover)
     @ViewBuilder let label: (Bool) -> Label
 
     @State private var isHovered = false
@@ -250,17 +250,17 @@ private struct MenuPanelButton<Label: View>: View {
         Button(action: action) {
             label(isHighlighted)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 6)
-                .frame(minHeight: 30)
+                .padding(.horizontal, AppStyle.Spacing.sm)
+                .frame(minHeight: AppStyle.Layout.menuItemMinHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                 .fill(backgroundColor)
         )
-        .opacity(isEnabled ? 1 : 0.55)
+        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
         .onHover { isHovered = $0 }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
@@ -285,23 +285,23 @@ private struct MenuPanelToggleRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: AppStyle.Spacing.lg) {
             Text(title)
-                .font(.system(size: 14, weight: .regular))
+                .font(AppStyle.Font.body)
                 .foregroundStyle(Color(nsColor: .labelColor))
 
-            Spacer(minLength: 8)
+            Spacer(minLength: AppStyle.Spacing.md)
 
             Toggle("", isOn: $isOn)
                 .toggleStyle(.switch)
                 .tint(Color(nsColor: .labelColor))
                 .labelsHidden()
         }
-        .padding(.horizontal, 10)
-        .frame(minHeight: 30)
+        .padding(.horizontal, AppStyle.Spacing.sm)
+        .frame(minHeight: AppStyle.Layout.menuItemMinHeight)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(isHovered ? Color(nsColor: .labelColor).opacity(0.08) : .clear)
+            RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
+                .fill(isHovered ? Color(nsColor: .labelColor).opacity(AppStyle.Opacity.hover) : .clear)
         )
         .contentShape(Rectangle())
         .onTapGesture { isOn.toggle() }

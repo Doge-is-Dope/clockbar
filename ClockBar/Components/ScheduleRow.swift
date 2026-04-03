@@ -12,9 +12,9 @@ struct ScheduleRow: View {
     private let calendar = Calendar(identifier: .gregorian)
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: AppStyle.Spacing.xl) {
             Text(title)
-                .font(.system(size: 12, weight: .medium))
+                .font(AppStyle.Font.subheadlineMedium)
                 .foregroundStyle(.primary)
 
             Spacer(minLength: 0)
@@ -34,8 +34,8 @@ struct ScheduleRow: View {
             .datePickerStyle(.field)
             .fixedSize()
         }
-        .padding(.vertical, 12)
-        .frame(minHeight: 34, alignment: .center)
+        .padding(.vertical, AppStyle.Spacing.xl)
+        .frame(minHeight: AppStyle.Layout.scheduleRowMinHeight, alignment: .center)
         .onAppear {
             selection = date(from: time)
         }
@@ -65,9 +65,6 @@ struct ScheduleRow: View {
             ?? startOfDay
     }
 
-    private static let labelColumnWidth: CGFloat = 72
-    private static let inputColumnWidth: CGFloat = 118
-
     private static let storageFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -84,7 +81,7 @@ struct ScheduleRow: View {
         Divider()
         ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
     }
-    .padding(14)
+    .padding(AppStyle.Spacing.xl)
     .frame(width: 268)
     .preferredColorScheme(.light)
 }
@@ -95,7 +92,7 @@ struct ScheduleRow: View {
         Divider()
         ScheduleRow(title: "Clock Out", time: .constant("18:00"), onChanged: {})
     }
-    .padding(14)
+    .padding(AppStyle.Spacing.xl)
     .frame(width: 268)
     .preferredColorScheme(.dark)
 }

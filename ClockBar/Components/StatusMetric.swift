@@ -5,13 +5,13 @@ struct StatusMetric: View {
     let value: String
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: AppStyle.Spacing.sm) {
             Text(title)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(AppStyle.Font.metricTitle)
                 .foregroundStyle(.secondary)
 
             Text(value)
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .font(AppStyle.Font.largeTitle)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -25,5 +25,5 @@ struct StatusMetric: View {
         StatusMetric(title: "Clock Out", value: "--:--")
     }
     .padding()
-    .frame(width: 332)
+    .frame(width: AppStyle.Layout.panelWidth)
 }

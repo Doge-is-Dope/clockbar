@@ -3,6 +3,7 @@
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 
 APP_SOURCES := \
+	ClockBar/DesignSystem.swift \
 	ClockBar/Services.swift \
 	ClockBar/Components/PunchButtonStyle.swift \
 	ClockBar/Components/ScheduleRow.swift \

@@ -16,11 +16,11 @@ struct SettingsToggleRow<Trailing: View>: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: AppStyle.Spacing.lg) {
             Text(title)
-                .font(.system(size: 12.5, weight: .medium))
+                .font(AppStyle.Font.subheadlineMedium)
 
-            Spacer(minLength: 10)
+            Spacer(minLength: AppStyle.Spacing.lg)
 
             trailing
 
@@ -32,9 +32,9 @@ struct SettingsToggleRow<Trailing: View>: View {
 }
 
 #Preview {
-    VStack(spacing: 4) {
+    VStack(spacing: AppStyle.Spacing.xs) {
         SettingsToggleRow(title: "Auto-punch", isOn: .constant(true))
     }
     .padding()
-    .frame(width: 332)
+    .frame(width: AppStyle.Layout.panelWidth)
 }
