@@ -62,7 +62,8 @@ final class StatusViewModel: ObservableObject {
             saveAndReload()
         }
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(config.refreshInterval), repeats: true) { [weak self] _ in
+        let refreshInterval = TimeInterval(max(60, config.refreshInterval))
+        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
     }
