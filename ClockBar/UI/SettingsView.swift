@@ -43,38 +43,59 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
             sectionHeader("Schedule")
 
-            cardContainer {
-                SettingsCardRow(icon: "clock.arrow.2.circlepath", label: "Auto-punch", subtitle: "Skips weekends and public holidays.") {
-                    Toggle("", isOn: Binding(
-                        get: { viewModel.config.autopunchEnabled },
-                        set: { viewModel.setAutopunchEnabled($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                }
-
-                insetDivider
-
-                SettingsCardRow(icon: "sunrise", label: "Clock In") {
-                    TimeFieldPicker(
-                        date: $clockInDate,
-                        isEnabled: !viewModel.wakeSyncState.isApplying
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
+                cardContainer {
+                    SettingsCardRow(
+                        icon: "clock.arrow.2.circlepath",
+                        label: "Auto-punch",
+                        subtitle: "Clock in and out automatically at the times below."
                     ) {
-                        persistTime($0, for: .clockin)
+                        Toggle("", isOn: Binding(
+                            get: { viewModel.config.autopunchEnabled },
+                            set: { viewModel.setAutopunchEnabled($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .labelsHidden()
                     }
-                    .fixedSize()
+
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "sunrise",
+                        label: "Clock In",
+                        isEnabled: isScheduleEditingEnabled
+                    ) {
+                        TimeFieldPicker(
+                            date: $clockInDate,
+                            isEnabled: isScheduleEditingEnabled
+                        ) {
+                            persistTime($0, for: .clockin)
+                        }
+                        .fixedSize()
+                    }
+
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "sunset",
+                        label: "Clock Out",
+                        isEnabled: isScheduleEditingEnabled
+                    ) {
+                        TimeFieldPicker(
+                            date: $clockOutDate,
+                            isEnabled: isScheduleEditingEnabled
+                        ) {
+                            persistTime($0, for: .clockout)
+                        }
+                        .fixedSize()
+                    }
                 }
 
-                insetDivider
-
-                SettingsCardRow(icon: "sunset", label: "Clock Out") {
-                    TimeFieldPicker(date: $clockOutDate) {
-                        persistTime($0, for: .clockout)
-                    }
-                    .fixedSize()
-                }
+                Text("Runs on weekdays and skips public holidays.")
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, AppStyle.Spacing.xs)
             }
-
         }
     }
 
@@ -85,7 +106,7 @@ struct SettingsView: View {
             sectionHeader("Automation")
 
             cardContainer {
-                SettingsCardRow(icon: "bell.badge", label: "Late prompt threshold") {
+                SettingsCardRow(icon: "bell.badge", label: "Late reminder", subtitle: "Nudge after this long past clock-in time.") {
                     durationControl(
                         value: Binding(
                             get: { max(0, viewModel.config.lateThreshold) },
@@ -100,7 +121,7 @@ struct SettingsView: View {
 
                 SettingsCardRow(
                     icon: "dice",
-                    label: "Random delay max",
+                    label: "Random delay",
                     subtitle: delayRangeText
                 ) {
                     durationControl(
@@ -132,7 +153,7 @@ struct SettingsView: View {
 
                 insetDivider
 
-                SettingsCardRow(icon: "alarm", label: "Wake before clock in") {
+                SettingsCardRow(icon: "alarm", label: "Wake lead time", subtitle: "How early to wake your Mac before clock-in.") {
                     durationControl(
                         value: Binding(
                             get: { max(0, viewModel.config.wakeBefore) },
@@ -146,7 +167,7 @@ struct SettingsView: View {
 
                 insetDivider
 
-                SettingsCardRow(icon: "arrow.clockwise", label: "Status refresh interval") {
+                SettingsCardRow(icon: "arrow.clockwise", label: "Auto-refresh", subtitle: "How often to check your punch status.") {
                     durationControl(
                         value: Binding(
                             get: { max(60, viewModel.config.refreshInterval) },
@@ -227,6 +248,10 @@ struct SettingsView: View {
         viewModel.wakeSyncState.message ?? "Requires AC power and admin permission."
     }
 
+    private var isScheduleEditingEnabled: Bool {
+        viewModel.config.autopunchEnabled && !viewModel.wakeSyncState.isApplying
+    }
+
     private func addMinutes(_ minutes: Int, to time: String) -> String {
         let parts = time.split(separator: ":").compactMap { Int($0) }
         let h = parts.indices.contains(0) ? parts[0] : 0
@@ -272,6 +297,7 @@ private struct SettingsCardRow<Control: View>: View {
     let icon: String
     let label: String
     var subtitle: String? = nil
+    var isEnabled = true
     @ViewBuilder var control: () -> Control
 
     var body: some View {
@@ -304,6 +330,8 @@ private struct SettingsCardRow<Control: View>: View {
         }
         .frame(minHeight: AppStyle.Layout.settingsRowHeight)
         .padding(.horizontal, AppStyle.Spacing.cardPadding)
+        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
+        .disabled(!isEnabled)
     }
 }
 
