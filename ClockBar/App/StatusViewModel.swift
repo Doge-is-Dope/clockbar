@@ -62,7 +62,7 @@ final class StatusViewModel: ObservableObject {
             saveAndReload()
         }
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(config.refreshInterval), repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
     }
@@ -111,7 +111,7 @@ final class StatusViewModel: ObservableObject {
         objectWillChange.send()
 
         let clockinStr = config.schedule.clockin
-        let wakeBeforeMin = config.wakeBeforeMin
+        let wakeBefore = config.wakeBefore
 
         Task.detached { [weak self] in
             let success: Bool
@@ -123,7 +123,7 @@ final class StatusViewModel: ObservableObject {
                     await self?.revertWake(!enabling)
                     return
                 }
-                let wake = clockin.addingTimeInterval(-Double(wakeBeforeMin) * 60)
+                let wake = clockin.addingTimeInterval(-Double(wakeBefore))
                 let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
                 let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
                 success = Self.runWithAdmin("pmset repeat wake MTWRF \(wakeTime)")

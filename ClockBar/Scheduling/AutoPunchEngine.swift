@@ -52,7 +52,7 @@ enum AutoPunchEngine {
                 }
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (wake prompt)")
             }
-        } else if minutesLate > Double(config.lateThresholdMin) {
+        } else if minutesLate > Double(config.lateThreshold) / 60 {
             if dryRun {
                 print("[dry-run] Would ask late prompt for \(action.logLabel) at \(schedule.displayString)")
             } else {

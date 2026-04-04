@@ -2,11 +2,12 @@ import Foundation
 
 struct ClockConfig: Codable, Equatable {
     var schedule: Schedule
-    var lateThresholdMin: Int
+    var lateThreshold: Int
     var randomDelayMax: Int
     var autopunchEnabled: Bool
     var wakeEnabled: Bool
-    var wakeBeforeMin: Int
+    var wakeBefore: Int
+    var refreshInterval: Int
 
     struct Schedule: Codable, Equatable {
         var clockin: String
@@ -24,19 +25,21 @@ struct ClockConfig: Codable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case schedule
-        case lateThresholdMin = "late_threshold_min"
+        case lateThreshold = "late_threshold"
         case randomDelayMax = "random_delay_max"
         case autopunchEnabled = "autopunch_enabled"
         case wakeEnabled = "wake_enabled"
-        case wakeBeforeMin = "wake_before_min"
+        case wakeBefore = "wake_before"
+        case refreshInterval = "refresh_interval"
     }
 
     static let `default` = ClockConfig(
         schedule: .init(clockin: "09:00", clockout: "18:00"),
-        lateThresholdMin: 20,
+        lateThreshold: 1200,
         randomDelayMax: 900,
         autopunchEnabled: true,
         wakeEnabled: false,
-        wakeBeforeMin: 5
+        wakeBefore: 300,
+        refreshInterval: 1800
     )
 }
