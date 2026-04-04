@@ -41,11 +41,20 @@ final class AuthWindowController: NSWindowController, NSWindowDelegate, WKNaviga
     }
 
     func start() {
+        didFinish = false
+        lastCapturedCookies = []
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
 
-        if webView.url == nil, let url = URL(string: "https://pro.104.com.tw") {
-            webView.load(URLRequest(url: url))
+        let dataStore = webView.configuration.websiteDataStore
+        Task {
+            let records = await dataStore.dataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
+            await dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records)
+            await MainActor.run {
+                if let url = URL(string: "https://pro.104.com.tw") {
+                    self.webView.load(URLRequest(url: url))
+                }
+            }
         }
     }
 

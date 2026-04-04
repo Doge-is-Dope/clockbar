@@ -68,11 +68,11 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
 	mkdir -p ClockBar.app/Contents/MacOS
 	swiftc -o ClockBar.app/Contents/MacOS/clockbar $(APP_SOURCES) \
 		-target $(MACOS_TARGET) \
-		-framework SwiftUI -framework Cocoa -framework WebKit -framework UserNotifications -framework ServiceManagement -framework Security \
+		-framework SwiftUI -framework Cocoa -framework WebKit -framework UserNotifications -framework ServiceManagement \
 		-parse-as-library -O
 	swiftc -o ClockBar.app/Contents/MacOS/clockbar-helper $(HELPER_SOURCES) \
 		-target $(MACOS_TARGET) \
-		-framework UserNotifications -framework Security -O
+		-framework UserNotifications -O
 	cp ClockBar/Info.plist ClockBar.app/Contents/Info.plist
 	codesign --force --sign - ClockBar.app
 

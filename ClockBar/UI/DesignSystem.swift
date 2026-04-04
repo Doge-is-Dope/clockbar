@@ -38,7 +38,7 @@ enum AppStyle {
     enum Opacity {
         static let hover: Double = 0.08
         static let destructiveHover: Double = 0.12
-        static let separator: Double = 0.45
+        static let separator: Double = 0.7
         static let disabled: Double = 0.55
         static let pressed: Double = 0.78
         static let normal: Double = 0.84
@@ -57,12 +57,12 @@ enum AppStyle {
     // MARK: - Layout
 
     enum Layout {
-        static let panelWidth: CGFloat = 300
+        static let panelWidth: CGFloat = 280
         static let menuItemMinHeight: CGFloat = 30
         static let scheduleRowMinHeight: CGFloat = 34
-        static let dividerHeight: CGFloat = 0.5
+        static let dividerHeight: CGFloat = 1
         static let punchButtonScale: CGFloat = 0.985
         static let borderWidth: CGFloat = 1
-        static let loginWindowSize = NSRect(x: 0, y: 0, width: 980, height: 760)
+        static let loginWindowSize = NSRect(x: 0, y: 0, width: 480, height: 680)
     }
 }

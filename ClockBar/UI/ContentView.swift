@@ -7,17 +7,18 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            summarySection
-            rowDivider
-            actionsSection
-            rowDivider
-            automationSection
-            rowDivider
+            if viewModel.isAuthenticated {
+                summarySection
+                rowDivider
+                actionsSection
+                rowDivider
+                automationSection
+                rowDivider
+            }
             sessionActionRow
             rowDivider
             quitRow
         }
-        .padding(.vertical, AppStyle.Spacing.xs)
         .frame(width: AppStyle.Layout.panelWidth)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -108,8 +109,7 @@ struct ContentView: View {
                 }
             }
         }
-        .padding(.horizontal, AppStyle.Spacing.md)
-        .padding(.vertical, AppStyle.Spacing.sm)
+        .padding(AppStyle.Spacing.md)
     }
 
     private var automationSection: some View {
@@ -120,9 +120,9 @@ struct ContentView: View {
                 isOn: Binding(
                     get: { viewModel.config.autopunchEnabled },
                     set: { newValue in
-                        viewModel.setAutopunchEnabled(newValue)
-                        if !newValue {
-                            withAnimation(AppStyle.Animation.standard) {
+                        withAnimation(AppStyle.Animation.standard) {
+                            viewModel.setAutopunchEnabled(newValue)
+                            if !newValue {
                                 viewModel.scheduleExpanded = false
                             }
                         }
@@ -231,8 +231,7 @@ struct ContentView: View {
                     .padding(.leading, AppStyle.Spacing.md)
             }
         }
-        .padding(.horizontal, AppStyle.Spacing.md)
-        .padding(.vertical, AppStyle.Spacing.sm)
+        .padding(AppStyle.Spacing.md)
     }
 
     private var quitRow: some View {
@@ -244,8 +243,7 @@ struct ContentView: View {
             }
             .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, AppStyle.Spacing.md)
-        .padding(.vertical, AppStyle.Spacing.sm)
+        .padding(AppStyle.Spacing.md)
     }
 
     private var rowDivider: some View {

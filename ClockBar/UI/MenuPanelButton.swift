@@ -13,8 +13,7 @@ struct MenuPanelButton<Label: View>: View {
         Button(action: action) {
             label(isHighlighted)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppStyle.Spacing.sm)
-                .frame(minHeight: AppStyle.Layout.menuItemMinHeight)
+                .padding(AppStyle.Spacing.sm)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

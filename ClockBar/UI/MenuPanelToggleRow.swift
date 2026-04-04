@@ -26,8 +26,7 @@ struct MenuPanelToggleRow: View {
                 .tint(Color(nsColor: .labelColor))
                 .labelsHidden()
         }
-        .padding(.horizontal, AppStyle.Spacing.sm)
-        .frame(minHeight: AppStyle.Layout.menuItemMinHeight)
+        .padding(AppStyle.Spacing.sm)
         .background(
             RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                 .fill(
