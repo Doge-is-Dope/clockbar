@@ -5,6 +5,31 @@ import UserNotifications
 
 @MainActor
 final class StatusViewModel: ObservableObject {
+    enum WakeSyncState: Equatable {
+        case idle
+        case pending
+        case applying
+        case updated
+        case failed(String)
+
+        var message: String? {
+            switch self {
+            case .idle:
+                return nil
+            case .pending, .applying:
+                return "Updating..."
+            case .updated:
+                return "Updated"
+            case .failed(let message):
+                return message
+            }
+        }
+
+        var isApplying: Bool {
+            self == .applying
+        }
+    }
+
     @Published var status: PunchStatus?
     @Published var config: ClockConfig
     @Published var isPunching = false
@@ -14,10 +39,26 @@ final class StatusViewModel: ObservableObject {
     @Published var isAuthenticating = false
     @Published var scheduleState: ScheduleState
     @Published var statusNote: String?
+    @Published var wakeSyncState: WakeSyncState = .idle
 
     private var timer: Timer?
     private var didEnsureLaunchAtLogin = false
     private var authWindowController: AuthWindowController?
+    private var wakeApplyTask: Task<Void, Never>?
+    private var wakeSyncStateResetTask: Task<Void, Never>?
+    private var wakeRollbackSnapshot: WakeScheduleSnapshot?
+
+    private struct WakeScheduleSnapshot: Equatable {
+        var wakeEnabled: Bool
+        var wakeBefore: Int
+        var clockIn: String
+
+        init(config: ClockConfig) {
+            self.wakeEnabled = config.wakeEnabled
+            self.wakeBefore = config.wakeBefore
+            self.clockIn = config.schedule.clockin
+        }
+    }
 
     init() {
         let initialConfig = ConfigManager.load()
@@ -62,10 +103,7 @@ final class StatusViewModel: ObservableObject {
             saveAndReload()
         }
         refresh()
-        let refreshInterval = TimeInterval(max(60, config.refreshInterval))
-        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
-        }
+        installRefreshTimer()
     }
 
     func refresh() {
@@ -106,42 +144,18 @@ final class StatusViewModel: ObservableObject {
     }
 
     func toggleWake() {
+        guard !wakeSyncState.isApplying else { return }
+
+        let previousConfig = config
         let enabling = !config.wakeEnabled
         config.wakeEnabled = enabling
         try? ConfigManager.save(config)
-        objectWillChange.send()
-
-        let clockinStr = config.schedule.clockin
-        let wakeBefore = config.wakeBefore
-
-        Task.detached { [weak self] in
-            let success: Bool
-            if enabling {
-                guard let scheduled = ScheduledTime(string: clockinStr),
-                      let clockin = Calendar.current.date(
-                          bySettingHour: scheduled.hour, minute: scheduled.minute, second: 0, of: Date()
-                      ) else {
-                    await self?.revertWake(!enabling)
-                    return
-                }
-                let wake = clockin.addingTimeInterval(-Double(wakeBefore))
-                let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
-                let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
-                success = Self.runWithAdmin("pmset repeat wake MTWRF \(wakeTime)")
-            } else {
-                success = Self.runWithAdmin("pmset repeat cancel")
-            }
-
-            if success {
-                await self?.saveAndReload()
-            } else {
-                await self?.revertWake(!enabling)
-            }
-        }
+        requestWakeScheduleApply(revertingTo: previousConfig, debounce: false)
     }
 
     func updateSchedule(clockIn: String? = nil, clockOut: String? = nil) {
         var nextConfig = config
+        let previousConfig = config
 
         if let clockIn {
             nextConfig.schedule.clockin = clockIn
@@ -153,7 +167,51 @@ final class StatusViewModel: ObservableObject {
 
         guard nextConfig != config else { return }
         config = nextConfig
-        saveAndReload()
+
+        guard config.wakeEnabled, clockIn != nil else {
+            saveAndReload()
+            return
+        }
+
+        try? ConfigManager.save(config)
+        requestWakeScheduleApply(revertingTo: previousConfig, debounce: true)
+    }
+
+    func setLateThreshold(_ value: Int) {
+        updateConfig {
+            $0.lateThreshold = max(0, value)
+        }
+    }
+
+    func setRandomDelayMax(_ value: Int) {
+        updateConfig {
+            $0.randomDelayMax = max(0, value)
+        }
+    }
+
+    func setWakeBefore(_ value: Int) {
+        guard !wakeSyncState.isApplying else { return }
+
+        let wakeBefore = max(0, value)
+        guard config.wakeBefore != wakeBefore else { return }
+
+        let previousConfig = config
+        config.wakeBefore = wakeBefore
+
+        guard config.wakeEnabled else {
+            saveAndReload()
+            return
+        }
+
+        try? ConfigManager.save(config)
+        requestWakeScheduleApply(revertingTo: previousConfig, debounce: true)
+    }
+
+    func setRefreshInterval(_ value: Int) {
+        updateConfig {
+            $0.refreshInterval = max(60, value)
+        }
+        restartRefreshTimerIfNeeded()
     }
 
     func saveAndReload() {
@@ -265,10 +323,118 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
-    private func revertWake(_ value: Bool) {
-        config.wakeEnabled = value
-        try? ConfigManager.save(config)
-        objectWillChange.send()
+    private func updateConfig(_ mutate: (inout ClockConfig) -> Void) {
+        var nextConfig = config
+        mutate(&nextConfig)
+        guard nextConfig != config else { return }
+        config = nextConfig
+        saveAndReload()
+    }
+
+    private func installRefreshTimer() {
+        timer?.invalidate()
+        let refreshInterval = TimeInterval(max(60, config.refreshInterval))
+        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+    }
+
+    private func restartRefreshTimerIfNeeded() {
+        guard let timer else { return }
+        let currentInterval = TimeInterval(max(60, config.refreshInterval))
+        guard timer.timeInterval != currentInterval else { return }
+        installRefreshTimer()
+    }
+
+    private func requestWakeScheduleApply(revertingTo previousConfig: ClockConfig, debounce: Bool) {
+        if wakeRollbackSnapshot == nil {
+            wakeRollbackSnapshot = WakeScheduleSnapshot(config: previousConfig)
+        }
+
+        wakeSyncStateResetTask?.cancel()
+        wakeApplyTask?.cancel()
+        wakeSyncState = debounce ? .pending : .applying
+
+        let targetSnapshot = WakeScheduleSnapshot(config: config)
+        wakeApplyTask = Task { [weak self] in
+            if debounce {
+                try? await Task.sleep(nanoseconds: Self.wakeApplyDebounceNanoseconds)
+            }
+
+            guard !Task.isCancelled else { return }
+            await self?.performWakeScheduleApply(using: targetSnapshot)
+        }
+    }
+
+    private func performWakeScheduleApply(using snapshot: WakeScheduleSnapshot) async {
+        wakeSyncState = .applying
+
+        guard let command = Self.pmsetCommand(for: snapshot) else {
+            revertWakeSettings(message: "Invalid wake schedule time.")
+            return
+        }
+
+        let success = await Task.detached(priority: .userInitiated) {
+            Self.runWithAdmin(command)
+        }.value
+
+        guard !Task.isCancelled else { return }
+
+        if success {
+            wakeRollbackSnapshot = nil
+            wakeSyncState = .updated
+            scheduleWakeSyncStateReset()
+            saveAndReload()
+        } else {
+            revertWakeSettings(message: "Wake schedule permission was cancelled or failed.")
+        }
+    }
+
+    private func revertWakeSettings(message: String) {
+        wakeSyncStateResetTask?.cancel()
+
+        if let wakeRollbackSnapshot {
+            config.wakeEnabled = wakeRollbackSnapshot.wakeEnabled
+            config.wakeBefore = wakeRollbackSnapshot.wakeBefore
+            config.schedule.clockin = wakeRollbackSnapshot.clockIn
+            self.wakeRollbackSnapshot = nil
+            try? ConfigManager.save(config)
+            saveAndReload()
+        }
+
+        wakeSyncState = .failed(message)
+    }
+
+    private func scheduleWakeSyncStateReset() {
+        wakeSyncStateResetTask?.cancel()
+        wakeSyncStateResetTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.wakeSyncStateResetNanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.clearWakeSyncStateIfUpdated()
+        }
+    }
+
+    private func clearWakeSyncStateIfUpdated() {
+        guard wakeSyncState == .updated else { return }
+        wakeSyncState = .idle
+    }
+
+    private nonisolated static func pmsetCommand(for snapshot: WakeScheduleSnapshot) -> String? {
+        guard snapshot.wakeEnabled else {
+            return "pmset repeat cancel"
+        }
+
+        guard let scheduled = ScheduledTime(string: snapshot.clockIn),
+              let clockin = Calendar.current.date(
+                  bySettingHour: scheduled.hour, minute: scheduled.minute, second: 0, of: Date()
+              ) else {
+            return nil
+        }
+
+        let wake = clockin.addingTimeInterval(-Double(snapshot.wakeBefore))
+        let wakeComps = Calendar.current.dateComponents([.hour, .minute], from: wake)
+        let wakeTime = String(format: "%02d:%02d:00", wakeComps.hour ?? 0, wakeComps.minute ?? 0)
+        return "pmset repeat wake MTWRF \(wakeTime)"
     }
 
     private nonisolated static func runWithAdmin(_ command: String) -> Bool {
@@ -289,7 +455,12 @@ final class StatusViewModel: ObservableObject {
 
     deinit {
         timer?.invalidate()
+        wakeApplyTask?.cancel()
+        wakeSyncStateResetTask?.cancel()
     }
+
+    private static let wakeApplyDebounceNanoseconds: UInt64 = 800_000_000
+    private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()

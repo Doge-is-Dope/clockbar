@@ -22,5 +22,10 @@ struct ClockBarApp: App {
             }
         }
         .menuBarExtraStyle(.window)
+
+        Window("Settings", id: "settings") {
+            SettingsView(viewModel: viewModel)
+        }
+        .windowResizability(.contentSize)
     }
 }

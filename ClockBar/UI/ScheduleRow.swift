@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ScheduleRow: View {
     let title: String
+    var isEnabled = true
     @Binding var time: String
 
     @State private var selection = Date()
@@ -32,9 +33,11 @@ struct ScheduleRow: View {
             .labelsHidden()
             .datePickerStyle(.field)
             .fixedSize()
+            .disabled(!isEnabled)
         }
         .padding(.vertical, AppStyle.Spacing.xl)
         .frame(minHeight: AppStyle.Layout.scheduleRowMinHeight, alignment: .center)
+        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
         .onAppear {
             selection = date(from: time)
         }

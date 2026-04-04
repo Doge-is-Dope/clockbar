@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var viewModel: StatusViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -16,6 +17,8 @@ struct ContentView: View {
                 rowDivider
             }
             sessionActionRow
+            rowDivider
+            settingsRow
             rowDivider
             quitRow
         }
@@ -167,6 +170,7 @@ struct ContentView: View {
                     VStack(spacing: 0) {
                         ScheduleRow(
                             title: "Clock In",
+                            isEnabled: !viewModel.wakeSyncState.isApplying,
                             time: Binding(
                                 get: { viewModel.config.schedule.clockin },
                                 set: { viewModel.updateSchedule(clockIn: $0) }
@@ -218,6 +222,7 @@ struct ContentView: View {
                 MenuPanelToggleRow(
                     title: "Wake on Schedule",
                     icon: "powersleep",
+                    isEnabled: !viewModel.wakeSyncState.isApplying,
                     isOn: Binding(
                         get: { viewModel.config.wakeEnabled },
                         set: { _ in viewModel.toggleWake() }
@@ -238,6 +243,18 @@ struct ContentView: View {
         MenuPanelButton(action: { NSApp.terminate(nil) }) { _ in
             HStack(spacing: AppStyle.Spacing.lg) {
                 Label("Quit", systemImage: "power")
+                    .font(AppStyle.Font.body)
+                Spacer(minLength: AppStyle.Spacing.md)
+            }
+            .foregroundStyle(.secondary)
+        }
+        .padding(AppStyle.Spacing.md)
+    }
+
+    private var settingsRow: some View {
+        MenuPanelButton(action: showSettings) { _ in
+            HStack(spacing: AppStyle.Spacing.lg) {
+                Label("Settings...", systemImage: "gearshape")
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
             }
@@ -288,6 +305,11 @@ struct ContentView: View {
         withAnimation(AppStyle.Animation.standard) {
             viewModel.scheduleExpanded.toggle()
         }
+    }
+
+    private func showSettings() {
+        openWindow(id: "settings")
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 

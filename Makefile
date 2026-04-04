@@ -35,6 +35,7 @@ APP_SOURCES := \
 	ClockBar/UI/MenuPanelToggleRow.swift \
 	ClockBar/UI/PunchButtonStyle.swift \
 	ClockBar/UI/ScheduleRow.swift \
+	ClockBar/UI/SettingsView.swift \
 	ClockBar/UI/StatusMetric.swift
 
 HELPER_SOURCES := \

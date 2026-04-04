@@ -3,6 +3,7 @@ import SwiftUI
 struct MenuPanelToggleRow: View {
     let title: String
     var icon: String = ""
+    var isEnabled = true
     @Binding var isOn: Bool
 
     @State private var isHovered = false
@@ -25,18 +26,23 @@ struct MenuPanelToggleRow: View {
                 .toggleStyle(.switch)
                 .tint(Color(nsColor: .labelColor))
                 .labelsHidden()
+                .disabled(!isEnabled)
         }
         .padding(AppStyle.Spacing.sm)
         .background(
             RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                 .fill(
-                    isHovered
+                    isHovered && isEnabled
                         ? Color(nsColor: .labelColor).opacity(AppStyle.Opacity.hover)
                         : .clear
                 )
         )
+        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
         .contentShape(Rectangle())
-        .onTapGesture { isOn.toggle() }
+        .onTapGesture {
+            guard isEnabled else { return }
+            isOn.toggle()
+        }
         .onHover { isHovered = $0 }
     }
 }

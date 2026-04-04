@@ -37,9 +37,10 @@
 		A200001C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* DesignSystem.swift */; };
 		A200001D /* MenuPanelButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001F /* MenuPanelButton.swift */; };
 		A200001E /* MenuPanelToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020 /* MenuPanelToggleRow.swift */; };
-		A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
-		A2000020 /* ScheduleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000022 /* ScheduleRow.swift */; };
-		A2000021 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000023 /* StatusMetric.swift */; };
+			A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
+			A2000020 /* ScheduleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000022 /* ScheduleRow.swift */; };
+			A2000021 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000023 /* StatusMetric.swift */; };
+			A2000022 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,9 +76,10 @@
 		A100001E /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A100001F /* MenuPanelButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelButton.swift; sourceTree = "<group>"; };
 		A1000020 /* MenuPanelToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelToggleRow.swift; sourceTree = "<group>"; };
-		A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
-		A1000022 /* ScheduleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRow.swift; sourceTree = "<group>"; };
-		A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
+			A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
+			A1000022 /* ScheduleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRow.swift; sourceTree = "<group>"; };
+			A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
+			A1000024 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,6 +201,7 @@
 				A1000020 /* MenuPanelToggleRow.swift */,
 				A1000021 /* PunchButtonStyle.swift */,
 				A1000022 /* ScheduleRow.swift */,
+				A1000024 /* SettingsView.swift */,
 				A1000023 /* StatusMetric.swift */,
 			);
 			path = UI;
@@ -288,6 +291,7 @@
 				A200001E /* MenuPanelToggleRow.swift in Sources */,
 				A200001F /* PunchButtonStyle.swift in Sources */,
 				A2000020 /* ScheduleRow.swift in Sources */,
+				A2000022 /* SettingsView.swift in Sources */,
 				A2000021 /* StatusMetric.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
