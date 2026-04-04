@@ -219,21 +219,6 @@ struct ContentView: View {
                     .allowsHitTesting(viewModel.scheduleExpanded)
                 }
 
-                MenuPanelToggleRow(
-                    title: "Wake on Schedule",
-                    icon: "powersleep",
-                    isEnabled: !viewModel.wakeSyncState.isApplying,
-                    isOn: Binding(
-                        get: { viewModel.config.wakeEnabled },
-                        set: { _ in viewModel.toggleWake() }
-                    )
-                )
-
-                Text("Wake your Mac for auto-punch. Requires AC power.")
-                    .font(AppStyle.Font.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, AppStyle.Spacing.md)
             }
         }
         .padding(AppStyle.Spacing.md)

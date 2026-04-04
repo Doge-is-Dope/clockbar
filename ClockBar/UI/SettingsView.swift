@@ -11,8 +11,10 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-                scheduleSection
-                automationSection
+                autoPunchSection
+                wakeSection
+                appSection
+                accountActionButton
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -37,18 +39,17 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Schedule
+    // MARK: - Auto-punch
 
-    private var scheduleSection: some View {
+    private var autoPunchSection: some View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Schedule")
+            sectionHeader("Auto-punch")
 
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
                 cardContainer {
                     SettingsCardRow(
                         icon: "clock.arrow.2.circlepath",
                         label: "Auto-punch",
-                        subtitle: "Clock in and out automatically at the times below."
                     ) {
                         Toggle("", isOn: Binding(
                             get: { viewModel.config.autopunchEnabled },
@@ -89,9 +90,67 @@ struct SettingsView: View {
                         }
                         .fixedSize()
                     }
+
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "dice",
+                        label: "Random delay",
+                        subtitle: randomDelaySubtitle,
+                        isEnabled: isAutoPunchEditingEnabled
+                    ) {
+                        durationControl(
+                            value: Binding(
+                                get: { max(0, viewModel.config.randomDelayMax) },
+                                set: { viewModel.setRandomDelayMax($0) }
+                            ),
+                            range: 0...3600,
+                            step: 60,
+                            zeroLabel: "Off",
+                            isEnabled: isAutoPunchEditingEnabled
+                        )
+                    }
+
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "bell.badge",
+                        label: "Missed punch prompt",
+                        subtitle: "Ask before punching if the scheduled time has already passed.",
+                        isEnabled: isAutoPunchEditingEnabled
+                    ) {
+                        Toggle("", isOn: Binding(
+                            get: { viewModel.config.latePromptEnabled },
+                            set: { viewModel.setLatePromptEnabled($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                    }
+
+                    if viewModel.config.latePromptEnabled {
+                        insetDivider
+
+                        SettingsCardRow(
+                            icon: "clock.badge.questionmark",
+                            label: "Prompt after",
+                            subtitle: "How long past the scheduled time before asking.",
+                            isEnabled: isAutoPunchEditingEnabled
+                        ) {
+                            durationControl(
+                                value: Binding(
+                                    get: { max(0, viewModel.config.lateThreshold) },
+                                    set: { viewModel.setLateThreshold($0) }
+                                ),
+                                range: 0...3600,
+                                step: 60,
+                                zeroLabel: "Immediate",
+                                isEnabled: isAutoPunchEditingEnabled && viewModel.config.latePromptEnabled
+                            )
+                        }
+                    }
                 }
 
-                Text("Runs on weekdays and skips public holidays.")
+                Text("Runs Monday to Friday and skips public holidays.")
                     .font(AppStyle.Font.caption)
                     .foregroundStyle(.tertiary)
                     .padding(.leading, AppStyle.Spacing.xs)
@@ -99,46 +158,16 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Automation
+    // MARK: - Wake
 
-    private var automationSection: some View {
+    private var wakeSection: some View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Automation")
+            sectionHeader("Wake")
 
             cardContainer {
-                SettingsCardRow(icon: "bell.badge", label: "Late reminder", subtitle: "Nudge after this long past clock-in time.") {
-                    durationControl(
-                        value: Binding(
-                            get: { max(0, viewModel.config.lateThreshold) },
-                            set: { viewModel.setLateThreshold($0) }
-                        ),
-                        range: 0...3600,
-                        step: 60
-                    )
-                }
-
-                insetDivider
-
-                SettingsCardRow(
-                    icon: "dice",
-                    label: "Random delay",
-                    subtitle: delayRangeText
-                ) {
-                    durationControl(
-                        value: Binding(
-                            get: { max(0, viewModel.config.randomDelayMax) },
-                            set: { viewModel.setRandomDelayMax($0) }
-                        ),
-                        range: 0...3600,
-                        step: 60
-                    )
-                }
-
-                insetDivider
-
                 SettingsCardRow(
                     icon: "powersleep",
-                    label: "Wake on Schedule",
+                    label: "Wake for auto-punch",
                     subtitle: wakeScheduleSubtitle
                 ) {
                     Toggle("", isOn: Binding(
@@ -150,24 +179,21 @@ struct SettingsView: View {
                     .disabled(viewModel.wakeSyncState.isApplying)
                     .opacity(viewModel.wakeSyncState.isApplying ? AppStyle.Opacity.disabled : 1)
                 }
+            }
+        }
+    }
 
-                insetDivider
+    // MARK: - App
 
-                SettingsCardRow(icon: "alarm", label: "Wake lead time", subtitle: "How early to wake your Mac before clock-in.") {
-                    durationControl(
-                        value: Binding(
-                            get: { max(0, viewModel.config.wakeBefore) },
-                            set: { viewModel.setWakeBefore($0) }
-                        ),
-                        range: 0...3600,
-                        step: 60,
-                        isEnabled: viewModel.config.wakeEnabled && !viewModel.wakeSyncState.isApplying
-                    )
-                }
+    private var appSection: some View {
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
+            sectionHeader("App")
 
-                insetDivider
-
-                SettingsCardRow(icon: "arrow.clockwise", label: "Auto-refresh", subtitle: "How often to check your punch status.") {
+            cardContainer {
+                SettingsCardRow(
+                    icon: "arrow.triangle.2.circlepath",
+                    label: "Sync Status"
+                ) {
                     durationControl(
                         value: Binding(
                             get: { max(60, viewModel.config.refreshInterval) },
@@ -178,7 +204,6 @@ struct SettingsView: View {
                     )
                 }
             }
-
         }
     }
 
@@ -215,10 +240,11 @@ struct SettingsView: View {
         value: Binding<Int>,
         range: ClosedRange<Int>,
         step: Int,
+        zeroLabel: String? = nil,
         isEnabled: Bool = true
     ) -> some View {
         HStack(spacing: AppStyle.Spacing.sm) {
-            Text(durationText(value.wrappedValue))
+            Text(durationText(value.wrappedValue, zeroLabel: zeroLabel))
                 .font(AppStyle.Font.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(minWidth: AppStyle.Layout.durationLabelWidth, alignment: .trailing)
@@ -232,24 +258,89 @@ struct SettingsView: View {
         .disabled(!isEnabled)
     }
 
+    private var accountActionButton: some View {
+        Button {
+            if viewModel.isAuthenticated {
+                viewModel.signOut()
+            } else {
+                viewModel.beginAuthentication()
+            }
+        } label: {
+            HStack(spacing: AppStyle.Spacing.xl) {
+                Image(systemName: accountActionIcon)
+                    .font(AppStyle.Font.icon)
+                    .foregroundStyle(.secondary)
+                    .frame(
+                        width: AppStyle.Layout.iconBackgroundSize,
+                        height: AppStyle.Layout.iconBackgroundSize
+                    )
+
+                Text(accountActionTitle)
+                    .font(AppStyle.Font.body)
+                    .foregroundStyle(viewModel.isAuthenticated ? .red : .primary)
+
+                Spacer(minLength: AppStyle.Spacing.md)
+            }
+            .frame(minHeight: AppStyle.Layout.settingsRowHeight)
+            .padding(.horizontal, AppStyle.Spacing.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(viewModel.isAuthenticating)
+        .opacity(viewModel.isAuthenticating ? AppStyle.Opacity.disabled : 1)
+        .background(
+            RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous)
+                .fill(Color(nsColor: .labelColor).opacity(AppStyle.Opacity.cardFill))
+        )
+    }
+
     // MARK: - Helpers
 
-    private var delayRangeText: String? {
+    private var randomDelaySubtitle: String {
         let delay = max(0, viewModel.config.randomDelayMax)
-        guard delay > 0 else { return nil }
+        guard delay > 0 else {
+            return "Punch exactly at the scheduled times."
+        }
         let cin = viewModel.config.schedule.clockin
         let cout = viewModel.config.schedule.clockout
         let cinEnd = addMinutes(delay / 60, to: cin)
         let coutEnd = addMinutes(delay / 60, to: cout)
-        return "\(cin) – \(cinEnd) / \(cout) – \(coutEnd)"
+        return "In \(displayTime(cin)) – \(displayTime(cinEnd)), Out \(displayTime(cout)) – \(displayTime(coutEnd))."
     }
 
     private var wakeScheduleSubtitle: String {
-        viewModel.wakeSyncState.message ?? "Requires AC power and admin permission."
+        viewModel.wakeSyncState.message
+            ?? "Wakes before scheduled auto-punch when plugged in."
+    }
+
+    private var isAutoPunchEditingEnabled: Bool {
+        viewModel.config.autopunchEnabled
     }
 
     private var isScheduleEditingEnabled: Bool {
         viewModel.config.autopunchEnabled && !viewModel.wakeSyncState.isApplying
+    }
+
+    private var accountActionTitle: String {
+        if viewModel.isAuthenticated {
+            return "Sign Out"
+        }
+
+        return viewModel.isAuthenticating ? "Signing In..." : "Sign In"
+    }
+
+    private var accountActionIcon: String {
+        viewModel.isAuthenticated ? "rectangle.portrait.and.arrow.right" : "person.crop.circle"
+    }
+
+    private func displayTime(_ time: String) -> String {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        let h = parts.indices.contains(0) ? parts[0] : 0
+        let m = parts.indices.contains(1) ? parts[1] : 0
+        let period = h >= 12 ? "PM" : "AM"
+        let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        return String(format: "%d:%02d %@", h12, m, period)
     }
 
     private func addMinutes(_ minutes: Int, to time: String) -> String {
@@ -260,8 +351,11 @@ struct SettingsView: View {
         return String(format: "%02d:%02d", (total / 60) % 24, total % 60)
     }
 
-    private func durationText(_ seconds: Int) -> String {
+    private func durationText(_ seconds: Int, zeroLabel: String? = nil) -> String {
         let normalized = max(0, seconds)
+        if normalized == 0, let zeroLabel {
+            return zeroLabel
+        }
         if normalized < 60 || normalized % 60 != 0 {
             return "\(normalized)s"
         }
@@ -302,36 +396,38 @@ private struct SettingsCardRow<Control: View>: View {
 
     var body: some View {
         HStack(spacing: AppStyle.Spacing.xl) {
-            Image(systemName: icon)
-                .font(AppStyle.Font.icon)
-                .foregroundStyle(.secondary)
-                .frame(
-                    width: AppStyle.Layout.iconBackgroundSize,
-                    height: AppStyle.Layout.iconBackgroundSize
-                )
+            HStack(spacing: AppStyle.Spacing.xl) {
+                Image(systemName: icon)
+                    .font(AppStyle.Font.icon)
+                    .foregroundStyle(.secondary)
+                    .frame(
+                        width: AppStyle.Layout.iconBackgroundSize,
+                        height: AppStyle.Layout.iconBackgroundSize
+                    )
 
-            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
-                Text(label)
-                    .font(AppStyle.Font.body)
-                    .foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
+                    Text(label)
+                        .font(AppStyle.Font.body)
+                        .foregroundStyle(.primary)
 
-                if let subtitle {
-                    Text(subtitle)
-                        .font(AppStyle.Font.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(AppStyle.Font.caption)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                    }
                 }
             }
+            .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
 
             Spacer(minLength: AppStyle.Spacing.md)
 
             control()
+                .disabled(!isEnabled)
         }
         .frame(minHeight: AppStyle.Layout.settingsRowHeight)
         .padding(.horizontal, AppStyle.Spacing.cardPadding)
-        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
-        .disabled(!isEnabled)
     }
 }
 

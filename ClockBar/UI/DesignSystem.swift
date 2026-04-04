@@ -70,7 +70,7 @@ enum AppStyle {
         static let settingsRowHeight: CGFloat = 44
         static let iconBackgroundSize: CGFloat = 28
         static let durationLabelWidth: CGFloat = 36
-        static let settingsMinWidth: CGFloat = 420
+        static let settingsMinWidth: CGFloat = 480
         static let settingsIdealWidth: CGFloat = 520
         static let dividerHeight: CGFloat = 1
         static let punchButtonScale: CGFloat = 0.985
