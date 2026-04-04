@@ -18,7 +18,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(minWidth: 420, idealWidth: 520)
+        .frame(minWidth: AppStyle.Layout.settingsMinWidth, idealWidth: AppStyle.Layout.settingsIdealWidth)
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
             clockOutDate = date(from: viewModel.config.schedule.clockout)
@@ -200,7 +200,7 @@ struct SettingsView: View {
             Text(durationText(value.wrappedValue))
                 .font(AppStyle.Font.subheadline)
                 .foregroundStyle(.secondary)
-                .frame(minWidth: 36, alignment: .trailing)
+                .frame(minWidth: AppStyle.Layout.durationLabelWidth, alignment: .trailing)
 
             Stepper("", value: value, in: range, step: step)
                 .labelsHidden()
@@ -277,14 +277,14 @@ private struct SettingsCardRow<Control: View>: View {
     var body: some View {
         HStack(spacing: AppStyle.Spacing.xl) {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .medium))
+                .font(AppStyle.Font.icon)
                 .foregroundStyle(.secondary)
                 .frame(
                     width: AppStyle.Layout.iconBackgroundSize,
                     height: AppStyle.Layout.iconBackgroundSize
                 )
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
                 Text(label)
                     .font(AppStyle.Font.body)
                     .foregroundStyle(.primary)

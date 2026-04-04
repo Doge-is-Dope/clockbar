@@ -7,6 +7,7 @@ enum AppStyle {
     enum Font {
         static let largeTitle: SwiftUI.Font = .system(size: 28, weight: .semibold, design: .rounded)
         static let sectionTitle: SwiftUI.Font = .system(size: 14, weight: .semibold)
+        static let icon: SwiftUI.Font = .system(size: 13, weight: .medium)
         static let body: SwiftUI.Font = .system(size: 14, weight: .regular)
         static let bodyMedium: SwiftUI.Font = .system(size: 14, weight: .medium)
         static let subheadline: SwiftUI.Font = .system(size: 12, weight: .regular)
@@ -19,6 +20,7 @@ enum AppStyle {
     // MARK: - Spacing
 
     enum Spacing {
+        static let xxs: CGFloat = 2
         static let xs: CGFloat = 4
         static let sm: CGFloat = 6
         static let md: CGFloat = 8
@@ -67,6 +69,9 @@ enum AppStyle {
         static let scheduleRowMinHeight: CGFloat = 34
         static let settingsRowHeight: CGFloat = 44
         static let iconBackgroundSize: CGFloat = 28
+        static let durationLabelWidth: CGFloat = 36
+        static let settingsMinWidth: CGFloat = 420
+        static let settingsIdealWidth: CGFloat = 520
         static let dividerHeight: CGFloat = 1
         static let punchButtonScale: CGFloat = 0.985
         static let borderWidth: CGFloat = 1
