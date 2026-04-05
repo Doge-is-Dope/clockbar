@@ -14,13 +14,15 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 - **Schedule editor** — Collapsible time pickers to configure auto-punch times, persisted to config and synced with launchd
 - **Auto-punch** — launchd-scheduled jobs that automatically punch at configured times with smart guards:
   - Taiwan national holiday detection (cached annually)
-  - Late threshold prompts (configurable, default 20 min)
+  - Late threshold prompts (configurable, default 1200s / 20 min; toggle via `late_prompt_enabled`)
   - Mac wake detection to avoid misfires
   - Random delay (0–900s) for natural timing
   - Kill switch via `~/.104/autopunch-disabled`
 - **Web-based login** — Embedded WebKit window for 104 authentication with session cookies stored in macOS Keychain
 - **Launch at login** — Registers with `SMAppService` to start automatically on boot
-- **Auto-refresh** — Polls punch status every 60 seconds in the background
+- **Settings window** — Dedicated configuration window for schedule, auto-punch, reminders, wake, refresh interval, and sign out
+- **Wake schedule** — Uses `pmset schedule wake` to wake the Mac before scheduled auto-punch times (requires admin approval)
+- **Auto-refresh** — Polls punch status in the background (default every 30 minutes, configurable)
 
 ## Requirements
 
@@ -59,8 +61,9 @@ Helper CLI commands:
 ```sh
 ./ClockBar.app/Contents/MacOS/clockbar-helper config
 ./ClockBar.app/Contents/MacOS/clockbar-helper status
-./ClockBar.app/Contents/MacOS/clockbar-helper auto clockin --dry-run
-./ClockBar.app/Contents/MacOS/clockbar-helper schedule status
+./ClockBar.app/Contents/MacOS/clockbar-helper punch
+./ClockBar.app/Contents/MacOS/clockbar-helper auto clockin|clockout [--dry-run]
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule install|remove|status
 ```
 
 ## Makefile Targets
@@ -81,13 +84,17 @@ Config lives at `~/.104/config.json`:
 ```json
 {
   "schedule": { "clockin": "09:00", "clockout": "18:00" },
-  "late_threshold_min": 20,
+  "late_prompt_enabled": true,
+  "late_threshold": 1200,
   "random_delay_max": 900,
   "autopunch_enabled": true,
   "wake_enabled": false,
-  "wake_before_min": 5
+  "wake_before": 300,
+  "refresh_interval": 1800
 }
 ```
+
+All time-based values (`late_threshold`, `wake_before`, `random_delay_max`, `refresh_interval`) are in **seconds**.
 
 Disable auto-punch temporarily with:
 

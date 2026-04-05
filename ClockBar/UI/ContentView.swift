@@ -142,7 +142,7 @@ struct ContentView: View {
     private var settingsRow: some View {
         MenuPanelButton(action: showSettings) { _ in
             HStack(spacing: AppStyle.Spacing.lg) {
-                Label("Settings...", systemImage: "gearshape")
+                Label("Settings", systemImage: "gearshape")
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
             }
@@ -215,12 +215,22 @@ struct ContentView: View {
     }
 }
 
-#Preview("Light") {
-    ContentView(viewModel: StatusViewModel())
+#Preview("Signed In – Light") {
+    let vm = StatusViewModel()
+    vm.isAuthenticated = true
+    vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: nil, clockInCode: nil, error: nil)
+    return ContentView(viewModel: vm)
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark") {
-    ContentView(viewModel: StatusViewModel())
+#Preview("Signed In – Dark") {
+    let vm = StatusViewModel()
+    vm.isAuthenticated = true
+    vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: "18:15", clockInCode: nil, error: nil)
+    return ContentView(viewModel: vm)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Signed Out") {
+    ContentView(viewModel: StatusViewModel())
 }
