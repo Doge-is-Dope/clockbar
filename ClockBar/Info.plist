@@ -12,5 +12,7 @@
 	<string>APPL</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAccentColorName</key>
+	<string>AccentColor</string>
 </dict>
 </plist>

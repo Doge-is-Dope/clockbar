@@ -66,7 +66,11 @@ HELPER_SOURCES := \
 build: ClockBar.app
 
 ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
-	mkdir -p ClockBar.app/Contents/MacOS
+	mkdir -p ClockBar.app/Contents/MacOS ClockBar.app/Contents/Resources
+	actool ClockBar/Resources/Assets.xcassets \
+		--compile ClockBar.app/Contents/Resources \
+		--platform macosx --minimum-deployment-target 15.0 \
+		--output-partial-info-plist /dev/null
 	swiftc -o ClockBar.app/Contents/MacOS/clockbar $(APP_SOURCES) \
 		-target $(MACOS_TARGET) \
 		-framework SwiftUI -framework Cocoa -framework WebKit -framework UserNotifications -framework ServiceManagement \
