@@ -24,7 +24,7 @@ struct MenuPanelToggleRow: View {
 
             Toggle("", isOn: $isOn)
                 .toggleStyle(.switch)
-                .tint(AppStyle.Palette.label)
+                .tint(AppStyle.Palette.accent)
                 .labelsHidden()
                 .disabled(!isEnabled)
         }

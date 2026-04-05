@@ -104,7 +104,7 @@ struct SettingsView: View {
                         set: { viewModel.setAutopunchEnabled($0) }
                     ))
                     .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.label)
+                    .tint(AppStyle.Palette.accent)
                     .labelsHidden()
                 }
 
@@ -148,7 +148,7 @@ struct SettingsView: View {
                         set: { viewModel.setLatePromptEnabled($0) }
                     ))
                     .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.label)
+                    .tint(AppStyle.Palette.accent)
                     .labelsHidden()
                 }
 
@@ -192,7 +192,7 @@ struct SettingsView: View {
                         set: { _ in viewModel.toggleWake() }
                     ))
                     .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.label)
+                    .tint(AppStyle.Palette.accent)
                     .labelsHidden()
                     .disabled(viewModel.wakeSyncState.isApplying)
                     .opacity(viewModel.wakeSyncState.isApplying ? AppStyle.Opacity.disabled : 1)

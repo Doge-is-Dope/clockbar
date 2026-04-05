@@ -14,7 +14,6 @@ enum AppStyle {
         static let subheadlineMedium: SwiftUI.Font = .system(size: 12, weight: .medium)
         static let caption: SwiftUI.Font = .system(size: 10, weight: .regular)
         static let metricTitle: SwiftUI.Font = .system(size: 11.5, weight: .medium)
-        static let chevron: SwiftUI.Font = .system(size: 12, weight: .semibold)
     }
 
     // MARK: - Spacing
@@ -27,7 +26,6 @@ enum AppStyle {
         static let lg: CGFloat = 10
         static let xl: CGFloat = 12
         static let xxl: CGFloat = 16
-        static let sectionGap: CGFloat = 24
         static let cardPadding: CGFloat = 12
     }
 
@@ -44,19 +42,17 @@ enum AppStyle {
     enum Opacity {
         static let cardFill: Double = 0.06
         static let hover: Double = 0.08
-        static let destructiveHover: Double = 0.12
         static let separator: Double = 0.7
         static let disabled: Double = 0.55
         static let pressed: Double = 0.78
         static let normal: Double = 0.84
         static let foreground: Double = 0.96
-        static let editorFillDark: Double = 0.35
-        static let editorFillLight: Double = 0.96
     }
 
     // MARK: - Palette
 
     enum Palette {
+        static let accent = Color("AccentColor")
         static let label = Color(nsColor: .labelColor)
         static let separator = Color(nsColor: .separatorColor)
     }
@@ -72,7 +68,6 @@ enum AppStyle {
 
     enum Layout {
         static let panelWidth: CGFloat = 280
-        static let menuItemMinHeight: CGFloat = 30
         static let scheduleRowMinHeight: CGFloat = 34
         static let settingsRowHeight: CGFloat = 44
         static let iconBackgroundSize: CGFloat = 28
@@ -81,7 +76,6 @@ enum AppStyle {
         static let settingsIdealWidth: CGFloat = 520
         static let dividerHeight: CGFloat = 1
         static let punchButtonScale: CGFloat = 0.985
-        static let borderWidth: CGFloat = 1
         static let loginWindowSize = NSRect(x: 0, y: 0, width: 480, height: 680)
     }
 }
