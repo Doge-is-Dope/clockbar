@@ -54,6 +54,13 @@ enum AppStyle {
         static let editorFillLight: Double = 0.96
     }
 
+    // MARK: - Palette
+
+    enum Palette {
+        static let label = Color(nsColor: .labelColor)
+        static let separator = Color(nsColor: .separatorColor)
+    }
+
     // MARK: - Animation
 
     enum Animation {

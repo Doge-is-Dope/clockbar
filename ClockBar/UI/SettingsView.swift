@@ -11,7 +11,9 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
+                scheduleSection
                 autoPunchSection
+                remindersSection
                 wakeSection
                 appSection
                 accountActionButton
@@ -39,28 +41,14 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Auto-punch
+    // MARK: - Schedule
 
-    private var autoPunchSection: some View {
+    private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Auto-punch")
+            sectionHeader("Schedule")
 
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
                 cardContainer {
-                    SettingsCardRow(
-                        icon: "clock.arrow.2.circlepath",
-                        label: "Auto-punch",
-                    ) {
-                        Toggle("", isOn: Binding(
-                            get: { viewModel.config.autopunchEnabled },
-                            set: { viewModel.setAutopunchEnabled($0) }
-                        ))
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                    }
-
-                    insetDivider
-
                     SettingsCardRow(
                         icon: "sunrise",
                         label: "Clock In",
@@ -90,70 +78,99 @@ struct SettingsView: View {
                         }
                         .fixedSize()
                     }
-
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "dice",
-                        label: "Random delay",
-                        subtitle: randomDelaySubtitle,
-                        isEnabled: isAutoPunchEditingEnabled
-                    ) {
-                        durationControl(
-                            value: Binding(
-                                get: { max(0, viewModel.config.randomDelayMax) },
-                                set: { viewModel.setRandomDelayMax($0) }
-                            ),
-                            range: 0...3600,
-                            step: 60,
-                            zeroLabel: "Off",
-                            isEnabled: isAutoPunchEditingEnabled
-                        )
-                    }
-
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "bell.badge",
-                        label: "Missed punch prompt",
-                        subtitle: "Ask before punching if the scheduled time has already passed.",
-                        isEnabled: isAutoPunchEditingEnabled
-                    ) {
-                        Toggle("", isOn: Binding(
-                            get: { viewModel.config.latePromptEnabled },
-                            set: { viewModel.setLatePromptEnabled($0) }
-                        ))
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                    }
-
-                    if viewModel.config.latePromptEnabled {
-                        insetDivider
-
-                        SettingsCardRow(
-                            icon: "clock.badge.questionmark",
-                            label: "Prompt after",
-                            subtitle: "How long past the scheduled time before asking.",
-                            isEnabled: isAutoPunchEditingEnabled
-                        ) {
-                            durationControl(
-                                value: Binding(
-                                    get: { max(0, viewModel.config.lateThreshold) },
-                                    set: { viewModel.setLateThreshold($0) }
-                                ),
-                                range: 0...3600,
-                                step: 60,
-                                zeroLabel: "Immediate",
-                                isEnabled: isAutoPunchEditingEnabled && viewModel.config.latePromptEnabled
-                            )
-                        }
-                    }
                 }
 
                 Text("Runs Monday to Friday and skips public holidays.")
                     .font(AppStyle.Font.caption)
                     .foregroundStyle(.tertiary)
                     .padding(.leading, AppStyle.Spacing.xs)
+            }
+        }
+    }
+
+    // MARK: - Auto-punch
+
+    private var autoPunchSection: some View {
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
+            sectionHeader("Auto-punch")
+
+            cardContainer {
+                SettingsCardRow(
+                    icon: "clock.arrow.2.circlepath",
+                    label: "Auto-punch",
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.config.autopunchEnabled },
+                        set: { viewModel.setAutopunchEnabled($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .tint(AppStyle.Palette.label)
+                    .labelsHidden()
+                }
+
+                insetDivider
+
+                SettingsCardRow(
+                    icon: "dice",
+                    label: "Random delay",
+                    subtitle: randomDelaySubtitle,
+                    isEnabled: isAutoPunchEditingEnabled
+                ) {
+                    durationControl(
+                        value: Binding(
+                            get: { max(0, viewModel.config.randomDelayMax) },
+                            set: { viewModel.setRandomDelayMax($0) }
+                        ),
+                        range: 0...3600,
+                        step: 60,
+                        zeroLabel: "Off",
+                        isEnabled: isAutoPunchEditingEnabled
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Reminders
+
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
+            sectionHeader("Reminders")
+
+            cardContainer {
+                SettingsCardRow(
+                    icon: "bell.badge",
+                    label: "Missed punch prompt",
+                    subtitle: "Notify when a scheduled punch time passes without a punch."
+                ) {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.config.latePromptEnabled },
+                        set: { viewModel.setLatePromptEnabled($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .tint(AppStyle.Palette.label)
+                    .labelsHidden()
+                }
+
+                if viewModel.config.latePromptEnabled {
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "clock.badge.questionmark",
+                        label: "Prompt after",
+                        subtitle: "How long past the scheduled time before asking."
+                    ) {
+                        durationControl(
+                            value: Binding(
+                                get: { max(0, viewModel.config.lateThreshold) },
+                                set: { viewModel.setLateThreshold($0) }
+                            ),
+                            range: 0...3600,
+                            step: 60,
+                            zeroLabel: "Immediate"
+                        )
+                    }
+                }
             }
         }
     }
@@ -175,6 +192,7 @@ struct SettingsView: View {
                         set: { _ in viewModel.toggleWake() }
                     ))
                     .toggleStyle(.switch)
+                    .tint(AppStyle.Palette.label)
                     .labelsHidden()
                     .disabled(viewModel.wakeSyncState.isApplying)
                     .opacity(viewModel.wakeSyncState.isApplying ? AppStyle.Opacity.disabled : 1)
@@ -224,7 +242,7 @@ struct SettingsView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous)
-                .fill(Color(nsColor: .labelColor).opacity(AppStyle.Opacity.cardFill))
+                .fill(AppStyle.Palette.label.opacity(AppStyle.Opacity.cardFill))
         )
         .clipShape(RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous))
     }
@@ -277,7 +295,7 @@ struct SettingsView: View {
 
                 Text(accountActionTitle)
                     .font(AppStyle.Font.body)
-                    .foregroundStyle(viewModel.isAuthenticated ? .red : .primary)
+                    .foregroundStyle(.primary)
 
                 Spacer(minLength: AppStyle.Spacing.md)
             }
@@ -291,7 +309,7 @@ struct SettingsView: View {
         .opacity(viewModel.isAuthenticating ? AppStyle.Opacity.disabled : 1)
         .background(
             RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous)
-                .fill(Color(nsColor: .labelColor).opacity(AppStyle.Opacity.cardFill))
+                .fill(AppStyle.Palette.label.opacity(AppStyle.Opacity.cardFill))
         )
     }
 
@@ -319,7 +337,8 @@ struct SettingsView: View {
     }
 
     private var isScheduleEditingEnabled: Bool {
-        viewModel.config.autopunchEnabled && !viewModel.wakeSyncState.isApplying
+        (viewModel.config.autopunchEnabled || viewModel.config.latePromptEnabled)
+            && !viewModel.wakeSyncState.isApplying
     }
 
     private var accountActionTitle: String {

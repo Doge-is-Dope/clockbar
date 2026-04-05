@@ -3,7 +3,7 @@ import SwiftUI
 struct MenuPanelButton<Label: View>: View {
     let action: () -> Void
     var isEnabled = true
-    var hoverColor: Color = Color(nsColor: .labelColor).opacity(AppStyle.Opacity.hover)
+    var hoverColor: Color = AppStyle.Palette.label.opacity(AppStyle.Opacity.hover)
     @ViewBuilder let label: (Bool) -> Label
 
     @State private var isHovered = false

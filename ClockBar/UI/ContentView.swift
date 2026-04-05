@@ -16,8 +16,10 @@ struct ContentView: View {
                 automationSection
                 rowDivider
             }
-            sessionActionRow
-            rowDivider
+            if !viewModel.isAuthenticated {
+                sessionActionRow
+                rowDivider
+            }
             settingsRow
             rowDivider
             quitRow
@@ -82,35 +84,19 @@ struct ContentView: View {
     }
 
     private var sessionActionRow: some View {
-        Group {
-            if viewModel.isAuthenticated {
-                MenuPanelButton(
-                    action: { viewModel.signOut() },
-                    hoverColor: .red.opacity(AppStyle.Opacity.destructiveHover)
-                ) { _ in
-                    HStack(spacing: AppStyle.Spacing.lg) {
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .font(AppStyle.Font.body)
-                        Spacer(minLength: AppStyle.Spacing.md)
-                    }
-                    .foregroundStyle(.red)
-                }
-            } else {
-                MenuPanelButton(
-                    action: { viewModel.beginAuthentication() },
-                    isEnabled: !viewModel.isAuthenticating
-                ) { _ in
-                    HStack(spacing: AppStyle.Spacing.lg) {
-                        Label(
-                            viewModel.isAuthenticating ? "Signing In..." : "Sign In",
-                            systemImage: "person.crop.circle"
-                        )
-                        .font(AppStyle.Font.body)
-                        Spacer(minLength: AppStyle.Spacing.md)
-                    }
-                    .foregroundStyle(.secondary)
-                }
+        MenuPanelButton(
+            action: { viewModel.beginAuthentication() },
+            isEnabled: !viewModel.isAuthenticating
+        ) { _ in
+            HStack(spacing: AppStyle.Spacing.lg) {
+                Label(
+                    viewModel.isAuthenticating ? "Signing In..." : "Sign In",
+                    systemImage: "person.crop.circle"
+                )
+                .font(AppStyle.Font.body)
+                Spacer(minLength: AppStyle.Spacing.md)
             }
+            .foregroundStyle(.secondary)
         }
         .padding(AppStyle.Spacing.md)
     }
@@ -125,100 +111,17 @@ struct ContentView: View {
                     set: { newValue in
                         withAnimation(AppStyle.Animation.standard) {
                             viewModel.setAutopunchEnabled(newValue)
-                            if !newValue {
-                                viewModel.scheduleExpanded = false
-                            }
                         }
                     }
                 )
             )
 
             if viewModel.config.autopunchEnabled {
-                VStack(spacing: 0) {
-                    MenuPanelButton(action: toggleScheduleExpanded) { _ in
-                        HStack(spacing: AppStyle.Spacing.lg) {
-                            Label("Schedule", systemImage: "calendar")
-                                .font(AppStyle.Font.body)
-                                .foregroundStyle(Color(nsColor: .labelColor))
-
-                            Spacer(minLength: AppStyle.Spacing.md)
-
-                            Text(
-                                "\(viewModel.config.schedule.clockin) - \(viewModel.config.schedule.clockout)"
-                            )
-                            .font(AppStyle.Font.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
-                            Image(systemName: "chevron.right")
-                                .font(AppStyle.Font.chevron)
-                                .foregroundStyle(Color(nsColor: .labelColor))
-                                .rotationEffect(.degrees(viewModel.scheduleExpanded ? 90 : 0))
-                                .animation(
-                                    AppStyle.Animation.standard,
-                                    value: viewModel.scheduleExpanded
-                                )
-                        }
-                    }
-
-                    Text("Skips weekends and public holidays.")
-                        .font(AppStyle.Font.caption)
-                        .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, AppStyle.Spacing.md)
-
-                    VStack(spacing: 0) {
-                        ScheduleRow(
-                            title: "Clock In",
-                            isEnabled: !viewModel.wakeSyncState.isApplying,
-                            time: Binding(
-                                get: { viewModel.config.schedule.clockin },
-                                set: { viewModel.updateSchedule(clockIn: $0) }
-                            )
-                        )
-
-                        Rectangle()
-                            .fill(
-                                Color(nsColor: .separatorColor)
-                                    .opacity(AppStyle.Opacity.separator)
-                            )
-                            .frame(height: AppStyle.Layout.dividerHeight)
-
-                        ScheduleRow(
-                            title: "Clock Out",
-                            time: Binding(
-                                get: { viewModel.config.schedule.clockout },
-                                set: { viewModel.updateSchedule(clockOut: $0) }
-                            )
-                        )
-                    }
-                    .padding(.horizontal, AppStyle.Spacing.xl)
-                    .background(
-                        RoundedRectangle(
-                            cornerRadius: AppStyle.Radius.small,
-                            style: .continuous
-                        )
-                        .fill(editorFill)
-                    )
-                    .overlay(
-                        RoundedRectangle(
-                            cornerRadius: AppStyle.Radius.small,
-                            style: .continuous
-                        )
-                        .strokeBorder(
-                            Color(nsColor: .separatorColor)
-                                .opacity(AppStyle.Opacity.separator),
-                            lineWidth: AppStyle.Layout.borderWidth
-                        )
-                    )
-                    .padding(.horizontal, AppStyle.Spacing.md)
-                    .padding(.top, AppStyle.Spacing.xs)
-                    .frame(maxHeight: viewModel.scheduleExpanded ? .none : 0, alignment: .top)
-                    .clipped()
-                    .opacity(viewModel.scheduleExpanded ? 1 : 0)
-                    .allowsHitTesting(viewModel.scheduleExpanded)
-                }
-
+                Text(punchWindowSummary)
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, AppStyle.Spacing.md)
             }
         }
         .padding(AppStyle.Spacing.md)
@@ -250,7 +153,7 @@ struct ContentView: View {
 
     private var rowDivider: some View {
         Rectangle()
-            .fill(Color(nsColor: .separatorColor).opacity(AppStyle.Opacity.separator))
+            .fill(AppStyle.Palette.separator.opacity(AppStyle.Opacity.separator))
             .frame(height: AppStyle.Layout.dividerHeight)
             .padding(.horizontal, AppStyle.Spacing.md)
     }
@@ -275,21 +178,35 @@ struct ContentView: View {
         return "Punch Now"
     }
 
-    private var editorFill: Color {
-        Color(
-            nsColor: colorScheme == .dark ? .quaternaryLabelColor : .windowBackgroundColor
-        )
-        .opacity(
-            colorScheme == .dark
-                ? AppStyle.Opacity.editorFillDark
-                : AppStyle.Opacity.editorFillLight
-        )
+    private var punchWindowSummary: String {
+        let cin = viewModel.config.schedule.clockin
+        let cout = viewModel.config.schedule.clockout
+        let delay = max(0, viewModel.config.randomDelayMax)
+
+        if delay > 0 {
+            let cinEnd = addMinutes(delay / 60, to: cin)
+            let coutEnd = addMinutes(delay / 60, to: cout)
+            return "In \(displayTime(cin)) – \(displayTime(cinEnd)), Out \(displayTime(cout)) – \(displayTime(coutEnd))"
+        }
+
+        return "\(displayTime(cin)) – \(displayTime(cout))"
     }
 
-    private func toggleScheduleExpanded() {
-        withAnimation(AppStyle.Animation.standard) {
-            viewModel.scheduleExpanded.toggle()
-        }
+    private func displayTime(_ time: String) -> String {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        let h = parts.indices.contains(0) ? parts[0] : 0
+        let m = parts.indices.contains(1) ? parts[1] : 0
+        let period = h >= 12 ? "PM" : "AM"
+        let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        return String(format: "%d:%02d %@", h12, m, period)
+    }
+
+    private func addMinutes(_ minutes: Int, to time: String) -> String {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        let h = parts.indices.contains(0) ? parts[0] : 0
+        let m = parts.indices.contains(1) ? parts[1] : 0
+        let total = h * 60 + m + minutes
+        return String(format: "%02d:%02d", (total / 60) % 24, total % 60)
     }
 
     private func showSettings() {

@@ -18,13 +18,13 @@ struct MenuPanelToggleRow: View {
                 }
             }
             .font(AppStyle.Font.body)
-            .foregroundStyle(Color(nsColor: .labelColor))
+            .foregroundStyle(AppStyle.Palette.label)
 
             Spacer(minLength: AppStyle.Spacing.md)
 
             Toggle("", isOn: $isOn)
                 .toggleStyle(.switch)
-                .tint(Color(nsColor: .labelColor))
+                .tint(AppStyle.Palette.label)
                 .labelsHidden()
                 .disabled(!isEnabled)
         }
@@ -33,7 +33,7 @@ struct MenuPanelToggleRow: View {
             RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                 .fill(
                     isHovered && isEnabled
-                        ? Color(nsColor: .labelColor).opacity(AppStyle.Opacity.hover)
+                        ? AppStyle.Palette.label.opacity(AppStyle.Opacity.hover)
                         : .clear
                 )
         )

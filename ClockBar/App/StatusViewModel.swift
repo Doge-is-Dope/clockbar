@@ -34,7 +34,6 @@ final class StatusViewModel: ObservableObject {
     @Published var config: ClockConfig
     @Published var isPunching = false
     @Published var isRefreshing = false
-    @Published var scheduleExpanded = false
     @Published var isAuthenticated = false
     @Published var isAuthenticating = false
     @Published var scheduleState: ScheduleState
@@ -554,10 +553,10 @@ final class StatusViewModel: ObservableObject {
 
     private static let wakeApplyDebounceNanoseconds: UInt64 = 800_000_000
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
-    private static let wakeLeadTimeInterval: TimeInterval = 5 * 60
-    private static let wakeScheduleDayCount = 366
-    private static let clockInWakeOwner = "ClockBarClockInWake"
-    private static let clockOutWakeOwner = "ClockBarClockOutWake"
+    private nonisolated static let wakeLeadTimeInterval: TimeInterval = 5 * 60
+    private nonisolated static let wakeScheduleDayCount = 366
+    private nonisolated static let clockInWakeOwner = "ClockBarClockInWake"
+    private nonisolated static let clockOutWakeOwner = "ClockBarClockOutWake"
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()

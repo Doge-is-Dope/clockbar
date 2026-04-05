@@ -4,10 +4,13 @@ enum AutoPunchEngine {
     static func run(action: ClockAction, dryRun: Bool = false) async -> Int32 {
         let config = ConfigManager.load()
 
-        if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path) || !config.autopunchEnabled {
+        if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
+            || (!config.autopunchEnabled && !config.latePromptEnabled) {
             AutoPunchLog.append("auto \(action.rawValue): skipped (disabled)")
             return 0
         }
+
+        let reminderOnly = !config.autopunchEnabled
 
         if await HolidayStore.isHoliday() {
             AutoPunchLog.append("auto \(action.rawValue): skipped (holiday)")
@@ -36,7 +39,19 @@ enum AutoPunchEngine {
         let minutesLate = now.timeIntervalSince(scheduledDate) / 60
         let wokeRecently = dryRun ? false : PowerStateMonitor.didWakeRecently()
 
-        if wokeRecently {
+        if reminderOnly {
+            let delay = max(0, config.lateThreshold)
+            if dryRun {
+                print("[dry-run] Would wait \(delay)s for reminder check")
+            } else if delay > 0 {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000_000)
+                } catch {
+                    AutoPunchLog.append("reminder \(action.rawValue): cancelled during delay")
+                    return 0
+                }
+            }
+        } else if wokeRecently {
             if dryRun {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
@@ -105,6 +120,24 @@ enum AutoPunchEngine {
                     "auto \(action.rawValue): already punched (\(action.fieldName)=\(existingPunchTime))"
                 )
                 return 0
+            }
+
+            if reminderOnly {
+                if dryRun {
+                    print("[dry-run] Would show reminder prompt for \(action.logLabel)")
+                } else {
+                    let verb = action == .clockin ? "clocked in" : "clocked out"
+                    let choice = SystemUI.prompt(
+                        title: "104 Clock",
+                        message: "You haven't \(verb) yet (\(schedule.displayString)). Punch now?",
+                        buttons: ["Dismiss", "Punch"]
+                    )
+                    guard choice == "Punch" else {
+                        AutoPunchLog.append("reminder \(action.rawValue): dismissed by user")
+                        return 0
+                    }
+                    AutoPunchLog.append("reminder \(action.rawValue): user chose to punch")
+                }
             }
 
             if dryRun {
