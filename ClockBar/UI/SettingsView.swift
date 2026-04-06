@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var viewModel: StatusViewModel
+    @ObservedObject var appUpdater: AppUpdater
 
     @State private var clockInDate = Date()
     @State private var clockOutDate = Date()
@@ -22,7 +23,12 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(minWidth: AppStyle.Layout.settingsMinWidth, idealWidth: AppStyle.Layout.settingsIdealWidth)
+        .frame(
+            minWidth: AppStyle.Layout.settingsMinWidth,
+            idealWidth: AppStyle.Layout.settingsIdealWidth,
+            maxWidth: AppStyle.Layout.settingsMaxWidth,
+            maxHeight: AppStyle.Layout.settingsMaxHeight
+        )
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
             clockOutDate = date(from: viewModel.config.schedule.clockout)
@@ -220,6 +226,33 @@ struct SettingsView: View {
                         range: 60...3600,
                         step: 60
                     )
+                }
+
+                insetDivider
+
+                SettingsCardRow(
+                    icon: "info.circle",
+                    label: "ClockBar \(appUpdater.currentVersion)"
+                ) {
+                    VStack(alignment: .trailing, spacing: AppStyle.Spacing.xs) {
+                        Button {
+                            appUpdater.checkForUpdates()
+                        } label: {
+                            Text("Check for Updates")
+                                .font(AppStyle.Font.subheadline)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, AppStyle.Spacing.sm)
+                                .padding(.vertical, AppStyle.Spacing.xs)
+                                .background(AppStyle.Palette.accent, in: RoundedRectangle(cornerRadius: AppStyle.Radius.small))
+                        }
+                        .buttonStyle(.plain)
+
+                        if let lastChecked = appUpdater.lastChecked {
+                            Text("Last checked: \(lastChecked, format: .relative(presentation: .named))")
+                                .font(AppStyle.Font.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
         }
@@ -494,11 +527,13 @@ private struct TimeFieldPicker: NSViewRepresentable {
 }
 
 #Preview("Light") {
-    SettingsView(viewModel: StatusViewModel())
+    SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
+        .frame(width: AppStyle.Layout.settingsIdealWidth, height: AppStyle.Layout.settingsMaxHeight)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    SettingsView(viewModel: StatusViewModel())
+    SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
+        .frame(width: AppStyle.Layout.settingsIdealWidth, height: AppStyle.Layout.settingsMaxHeight)
         .preferredColorScheme(.dark)
 }

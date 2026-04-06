@@ -7,16 +7,20 @@
 	<key>CFBundleName</key>
 	<string>104 ClockBar</string>
 	<key>CFBundleExecutable</key>
-	<string>clockbar</string>
+	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.0.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>0.0.0</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAccentColorName</key>
 	<string>AccentColor</string>
+	<key>SUFeedURL</key>
+	<string>https://doge-is-dope.github.io/104-clock/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
 </dict>
 </plist>

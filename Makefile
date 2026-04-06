@@ -1,7 +1,10 @@
 .PHONY: build install uninstall status clean menubar dmg
 
-VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' | grep . || echo "0.0.0-dev")
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
+DERIVED_DATA := build/DerivedData
+XCODE_APP := $(DERIVED_DATA)/Build/Products/Release/ClockBar.app
+SPARKLE_PUBLIC_ED_KEY ?=
 
 APP_SOURCES := \
 	ClockBar/Support/AppPaths.swift \
@@ -29,6 +32,7 @@ APP_SOURCES := \
 	ClockBar/Scheduling/LaunchAgentManager.swift \
 	ClockBar/Scheduling/PowerStateMonitor.swift \
 	ClockBar/App/StatusViewModel.swift \
+	ClockBar/App/AppUpdater.swift \
 	ClockBar/App/ClockBarApp.swift \
 	ClockBar/UI/ContentView.swift \
 	ClockBar/UI/DesignSystem.swift \
@@ -66,22 +70,13 @@ HELPER_SOURCES := \
 
 build: ClockBar.app
 
-ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
-	mkdir -p ClockBar.app/Contents/MacOS ClockBar.app/Contents/Resources
-	actool ClockBar/Resources/Assets.xcassets \
-		--compile ClockBar.app/Contents/Resources \
-		--platform macosx --minimum-deployment-target 15.0 \
-		--output-partial-info-plist /dev/null
-	swiftc -o ClockBar.app/Contents/MacOS/clockbar $(APP_SOURCES) \
-		-target $(MACOS_TARGET) \
-		-framework SwiftUI -framework Cocoa -framework WebKit -framework UserNotifications -framework ServiceManagement \
-		-parse-as-library -O
+ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist ClockBar.xcodeproj/project.pbxproj
+	xcodebuild -project ClockBar.xcodeproj -scheme ClockBar -configuration Release -destination "platform=macOS" -derivedDataPath $(DERIVED_DATA) SPARKLE_PUBLIC_ED_KEY="$(SPARKLE_PUBLIC_ED_KEY)" MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
+	rm -rf ClockBar.app
+	cp -R "$(XCODE_APP)" ClockBar.app
 	swiftc -o ClockBar.app/Contents/MacOS/clockbar-helper $(HELPER_SOURCES) \
 		-target $(MACOS_TARGET) \
 		-framework UserNotifications -O
-	cp ClockBar/Info.plist ClockBar.app/Contents/Info.plist
-	plutil -replace CFBundleShortVersionString -string "$(VERSION)" ClockBar.app/Contents/Info.plist
-	plutil -replace CFBundleVersion -string "$(VERSION)" ClockBar.app/Contents/Info.plist
 	codesign --force --sign - ClockBar.app
 
 menubar: ClockBar.app

@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 struct ClockBarApp: App {
     @StateObject private var viewModel: StatusViewModel
+    @StateObject private var appUpdater = AppUpdater()
 
     init() {
         NotificationManager.shared.setup()
@@ -24,7 +25,7 @@ struct ClockBarApp: App {
         .menuBarExtraStyle(.window)
 
         Window("Settings", id: "settings") {
-            SettingsView(viewModel: viewModel)
+            SettingsView(viewModel: viewModel, appUpdater: appUpdater)
         }
         .windowResizability(.contentSize)
     }
