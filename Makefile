@@ -1,5 +1,6 @@
-.PHONY: build install uninstall status clean menubar
+.PHONY: build install uninstall status clean menubar dmg
 
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev")
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 
 APP_SOURCES := \
@@ -79,6 +80,8 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist
 		-target $(MACOS_TARGET) \
 		-framework UserNotifications -O
 	cp ClockBar/Info.plist ClockBar.app/Contents/Info.plist
+	plutil -replace CFBundleShortVersionString -string "$(VERSION)" ClockBar.app/Contents/Info.plist
+	plutil -replace CFBundleVersion -string "$(VERSION)" ClockBar.app/Contents/Info.plist
 	codesign --force --sign - ClockBar.app
 
 menubar: ClockBar.app
@@ -96,5 +99,13 @@ uninstall:
 status: ClockBar.app
 	./ClockBar.app/Contents/MacOS/clockbar-helper schedule status
 
+dmg: ClockBar.app
+	rm -rf dmg_staging ClockBar-$(VERSION).dmg
+	mkdir -p dmg_staging
+	cp -R ClockBar.app dmg_staging/
+	ln -s /Applications dmg_staging/Applications
+	hdiutil create -volname "ClockBar" -srcfolder dmg_staging -ov -format UDZO "ClockBar-$(VERSION).dmg"
+	rm -rf dmg_staging
+
 clean:
-	rm -rf ClockBar.app
+	rm -rf ClockBar.app dmg_staging ClockBar-*.dmg

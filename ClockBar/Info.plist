@@ -3,13 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<string>com.clockbar.app</string>
 	<key>CFBundleName</key>
 	<string>104 ClockBar</string>
 	<key>CFBundleExecutable</key>
 	<string>clockbar</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>0.0.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAccentColorName</key>

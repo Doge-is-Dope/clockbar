@@ -38,5 +38,9 @@ Pods/
 # App bundle
 ClockBar.app/
 
+# Distribution
+ClockBar-*.dmg
+dmg_staging/
+
 # Python
 __pycache__/

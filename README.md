@@ -24,12 +24,16 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 - **Wake schedule** — Uses `pmset schedule wake` to wake the Mac before scheduled auto-punch times (requires admin approval)
 - **Auto-refresh** — Polls punch status in the background (default every 30 minutes, configurable)
 
+## Install
+
+Download the latest `.dmg` from [GitHub Releases](../../releases/latest), open it, and drag **ClockBar** to your Applications folder.
+
 ## Requirements
 
 - macOS 15+
 - A valid 104 account that can sign in through the app
 
-## Setup
+## Build from Source
 
 ```sh
 # Build the app bundle locally
@@ -75,6 +79,7 @@ Helper CLI commands:
 | `install`   | Copy to `/Applications` and install launchd schedules |
 | `uninstall` | Remove launchd schedules and delete `/Applications/ClockBar.app` |
 | `status`    | Show launchd job state and recent auto-punch logs |
+| `dmg`       | Create a `.dmg` disk image for distribution |
 | `clean`     | Delete the local build output |
 
 ## Configuration
