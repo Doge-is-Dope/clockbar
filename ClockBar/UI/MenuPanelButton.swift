@@ -13,7 +13,9 @@ struct MenuPanelButton<Label: View>: View {
         Button(action: action) {
             label(isHighlighted)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(AppStyle.Spacing.sm)
+                .frame(minHeight: AppStyle.Layout.menuRowMinHeight, alignment: .center)
+                .padding(.horizontal, AppStyle.Spacing.md)
+                .padding(.vertical, AppStyle.Spacing.xs)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

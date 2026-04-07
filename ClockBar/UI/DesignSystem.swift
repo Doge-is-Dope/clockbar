@@ -68,6 +68,7 @@ enum AppStyle {
 
     enum Layout {
         static let panelWidth: CGFloat = 280
+        static let menuRowMinHeight: CGFloat = 22
         static let scheduleRowMinHeight: CGFloat = 34
         static let settingsRowHeight: CGFloat = 44
         static let iconBackgroundSize: CGFloat = 28

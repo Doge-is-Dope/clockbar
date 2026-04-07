@@ -28,7 +28,9 @@ struct MenuPanelToggleRow: View {
                 .labelsHidden()
                 .disabled(!isEnabled)
         }
-        .padding(AppStyle.Spacing.sm)
+        .frame(minHeight: AppStyle.Layout.menuRowMinHeight, alignment: .center)
+        .padding(.horizontal, AppStyle.Spacing.md)
+        .padding(.vertical, AppStyle.Spacing.xs)
         .background(
             RoundedRectangle(cornerRadius: AppStyle.Radius.small, style: .continuous)
                 .fill(

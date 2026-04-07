@@ -24,6 +24,7 @@ struct ContentView: View {
             rowDivider
             quitRow
         }
+        .padding(.top, AppStyle.Spacing.md)
         .frame(width: AppStyle.Layout.panelWidth)
         .fixedSize(horizontal: false, vertical: true)
     }
