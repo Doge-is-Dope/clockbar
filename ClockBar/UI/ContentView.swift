@@ -3,8 +3,8 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var viewModel: StatusViewModel
+    var settingsController: SettingsWindowController?
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -205,8 +205,7 @@ struct ContentView: View {
     }
 
     private func showSettings() {
-        openWindow(id: "settings")
-        NSApp.activate(ignoringOtherApps: true)
+        settingsController?.showSettings()
     }
 }
 

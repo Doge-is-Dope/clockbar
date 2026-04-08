@@ -43,6 +43,7 @@
 			A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
 		A2000021 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000023 /* StatusMetric.swift */; };
 		A2000022 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SettingsView.swift */; };
+			A2000040 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000040 /* SettingsWindowController.swift */; };
 		A2000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000025 /* Assets.xcassets */; };
 		A2000025 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A9000002 /* Sparkle */; };
 /* End PBXBuildFile section */
@@ -86,6 +87,7 @@
 			A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
 			A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
 			A1000024 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+				A1000040 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		A1000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -224,6 +226,7 @@
 				A1000020 /* MenuPanelToggleRow.swift */,
 				A1000021 /* PunchButtonStyle.swift */,
 				A1000024 /* SettingsView.swift */,
+				A1000040 /* SettingsWindowController.swift */,
 				A1000023 /* StatusMetric.swift */,
 			);
 			path = UI;
@@ -331,6 +334,7 @@
 				A200001E /* MenuPanelToggleRow.swift in Sources */,
 				A200001F /* PunchButtonStyle.swift in Sources */,
 				A2000022 /* SettingsView.swift in Sources */,
+				A2000040 /* SettingsWindowController.swift in Sources */,
 				A2000021 /* StatusMetric.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
