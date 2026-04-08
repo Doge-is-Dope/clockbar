@@ -104,10 +104,15 @@ Config lives at `~/.104/config.json`:
 
 ```json
 {
-  "schedule": { "clockin": "09:00", "clockout": "18:00" },
+  "schedule": {
+    "clockin": "09:00",
+    "clockin_end": "09:15",
+    "clockout": "18:00",
+    "clockout_end": "18:15"
+  },
+  "min_work_hours": 9,
   "late_prompt_enabled": true,
   "late_threshold": 1200,
-  "random_delay_max": 900,
   "autopunch_enabled": true,
   "wake_enabled": false,
   "wake_before": 300,
@@ -115,7 +120,9 @@ Config lives at `~/.104/config.json`:
 }
 ```
 
-All time-based values (`late_threshold`, `wake_before`, `random_delay_max`, `refresh_interval`) are in **seconds**.
+Randomized punch timing is derived from each configured schedule window (`clockin` to `clockin_end`, `clockout` to `clockout_end`) rather than a standalone `random_delay_max` setting.
+
+All time-based values (`late_threshold`, `wake_before`, `refresh_interval`) are in **seconds**.
 
 Disable auto-punch temporarily with:
 

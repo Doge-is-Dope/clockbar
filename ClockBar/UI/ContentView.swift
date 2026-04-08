@@ -201,12 +201,7 @@ struct ContentView: View {
     }
 
     private func displayTime(_ time: String) -> String {
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        let h = parts.indices.contains(0) ? parts[0] : 0
-        let m = parts.indices.contains(1) ? parts[1] : 0
-        let period = h >= 12 ? "PM" : "AM"
-        let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
-        return String(format: "%d:%02d %@", h12, m, period)
+        ScheduledTime(string: time)?.shortDisplayString ?? time
     }
 
     private func showSettings() {

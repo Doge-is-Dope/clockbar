@@ -2,6 +2,11 @@ import Foundation
 
 enum LaunchAgentManager {
     static func install(config: ClockConfig, helperExecutablePath: String? = nil) throws -> ScheduleState {
+        guard config.requiresScheduledJobs else {
+            try remove()
+            return currentState(config: config)
+        }
+
         let helperPath = helperExecutablePath ?? bundledHelperExecutablePath()
         guard FileManager.default.isExecutableFile(atPath: helperPath) else {
             throw Clock104Error.scheduler("Bundled helper is missing at \(helperPath).")
@@ -45,14 +50,35 @@ enum LaunchAgentManager {
     }
 
     static func remove() throws {
+        var errors: [String] = []
         for action in ClockAction.allCases {
             let plist = plistPath(for: action)
             _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, plist.path])
-            try? FileManager.default.removeItem(at: plist)
+            do {
+                try FileManager.default.removeItem(at: plist)
+            } catch let error as NSError where error.domain == NSCocoaErrorDomain
+                && error.code == NSFileNoSuchFileError {
+                // Already gone — fine
+            } catch {
+                errors.append("\(action): \(error.localizedDescription)")
+            }
+        }
+        if !errors.isEmpty {
+            throw Clock104Error.scheduler("Failed to remove agents: \(errors.joined(separator: "; "))")
+        }
+    }
+
+    static var hasInstalledPlists: Bool {
+        ClockAction.allCases.contains { action in
+            FileManager.default.fileExists(atPath: plistPath(for: action).path)
         }
     }
 
     static func currentState(config: ClockConfig) -> ScheduleState {
+        guard config.requiresScheduledJobs else {
+            return ScheduleState(jobs: [], lastError: nil)
+        }
+
         let jobs = ClockAction.allCases.map { action -> ScheduleJobState in
             let configured = ScheduledTime(string: config.schedule.time(for: action))
             let installed = installedTime(for: action)
@@ -94,11 +120,15 @@ enum LaunchAgentManager {
         }
 
         var output = ["=== launchd jobs ==="]
-        output.append(contentsOf: lines)
+        if config.requiresScheduledJobs {
+            output.append(contentsOf: lines)
+        } else {
+            output.append("  disabled")
+        }
         output.append("")
         output.append("=== auto-punch ===")
         output.append(
-            "  \(config.autopunchEnabled && !FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path) ? "enabled" : "DISABLED")"
+            "  \(config.requiresScheduledJobs && !FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path) ? "enabled" : "DISABLED")"
         )
         output.append("")
         output.append("=== recent logs ===")

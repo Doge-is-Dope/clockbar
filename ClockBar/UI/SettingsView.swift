@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var clockOutEndDate = Date()
 
     private let calendar = Calendar(identifier: .gregorian)
+    private let contentPadding = AppStyle.Spacing.xxl + AppStyle.Spacing.xs
 
     var body: some View {
         ScrollView {
@@ -21,19 +22,14 @@ struct SettingsView: View {
                 appSection
                 accountActionButton
             }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(contentPadding)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .frame(
             minWidth: AppStyle.Layout.settingsMinWidth,
-            idealWidth: AppStyle.Layout.settingsIdealWidth,
-            maxWidth: AppStyle.Layout.settingsMaxWidth,
-            maxHeight: AppStyle.Layout.settingsMaxHeight
+            idealWidth: AppStyle.Layout.settingsIdealWidth
         )
-        .onDisappear {
-            viewModel.applyPendingWakeSchedule()
-        }
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
             clockInEndDate = date(from: viewModel.config.schedule.clockinEnd)
@@ -220,14 +216,57 @@ struct SettingsView: View {
                     subtitle: wakeScheduleSubtitle
                 ) {
                     Toggle("", isOn: Binding(
-                        get: { viewModel.config.wakeEnabled },
-                        set: { _ in viewModel.toggleWake() }
+                        get: { viewModel.wakeEnabledDraft },
+                        set: { viewModel.setWakeEnabledDraft($0) }
                     ))
                     .toggleStyle(.switch)
                     .tint(AppStyle.Palette.accent)
                     .labelsHidden()
                     .disabled(viewModel.wakeSyncState.isApplying)
                     .opacity(viewModel.wakeSyncState.isApplying ? AppStyle.Opacity.disabled : 1)
+                }
+
+                insetDivider
+
+                SettingsCardRow(
+                    icon: "alarm",
+                    label: "Wake before",
+                    subtitle: "How long before the scheduled punch to wake."
+                ) {
+                    durationControl(
+                        value: Binding(
+                            get: { max(0, viewModel.wakeBeforeDraft) },
+                            set: { viewModel.setWakeBeforeDraft($0) }
+                        ),
+                        range: 0...3600,
+                        step: 60,
+                        zeroLabel: "At punch time",
+                        isEnabled: !viewModel.wakeSyncState.isApplying
+                    )
+                }
+            }
+
+            HStack(spacing: AppStyle.Spacing.md) {
+                Button {
+                    viewModel.applyWakeScheduleChanges()
+                } label: {
+                    Text(wakeActionTitle)
+                        .font(AppStyle.Font.subheadline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, AppStyle.Spacing.md)
+                        .padding(.vertical, AppStyle.Spacing.sm)
+                        .background(
+                            viewModel.canApplyWakeChanges ? AppStyle.Palette.accent : AppStyle.Palette.separator,
+                            in: RoundedRectangle(cornerRadius: AppStyle.Radius.small)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(!viewModel.canApplyWakeChanges)
+
+                if viewModel.hasPendingWakeChanges {
+                    Text("macOS asks for admin approval only when you save wake changes.")
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -290,7 +329,6 @@ struct SettingsView: View {
         Text(title)
             .font(AppStyle.Font.sectionTitle)
             .foregroundStyle(.primary)
-            .padding(.leading, AppStyle.Spacing.xs)
     }
 
     private func cardContainer<Content: View>(
@@ -376,8 +414,11 @@ struct SettingsView: View {
     // MARK: - Helpers
 
     private var wakeScheduleSubtitle: String {
-        viewModel.wakeSyncState.message
-            ?? "Wakes before scheduled auto-punch when plugged in."
+        viewModel.wakeStatusMessage
+    }
+
+    private var wakeActionTitle: String {
+        viewModel.wakeSyncState.isApplying ? "Saving..." : "Save Wake Changes"
     }
 
     private var scheduleWarning: String? {
@@ -547,16 +588,12 @@ struct SettingsView: View {
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
-        String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
+        ScheduledTime(totalMinutes: minutes).displayString
     }
 
     private func date(from value: String) -> Date {
-        let parts = value.split(separator: ":").compactMap { Int($0) }
-        let hour = parts.indices.contains(0) ? parts[0] : 0
-        let minute = parts.indices.contains(1) ? parts[1] : 0
-        let startOfDay = calendar.startOfDay(for: Date())
-        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: startOfDay)
-            ?? startOfDay
+        ScheduledTime(string: value)?.date(on: Date(), calendar: calendar)
+            ?? calendar.startOfDay(for: Date())
     }
 }
 
@@ -654,12 +691,12 @@ private struct TimeFieldPicker: NSViewRepresentable {
 
 #Preview("Light") {
     SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
-        .frame(width: AppStyle.Layout.settingsIdealWidth, height: AppStyle.Layout.settingsMaxHeight)
+        .frame(width: AppStyle.Layout.settingsIdealWidth, height: 700)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
     SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
-        .frame(width: AppStyle.Layout.settingsIdealWidth, height: AppStyle.Layout.settingsMaxHeight)
+        .frame(width: AppStyle.Layout.settingsIdealWidth, height: 700)
         .preferredColorScheme(.dark)
 }

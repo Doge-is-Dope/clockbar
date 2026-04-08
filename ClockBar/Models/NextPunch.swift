@@ -54,6 +54,6 @@ enum NextPunchStore {
         let endMin = minutesSinceMidnight(end)
         guard endMin > startMin else { return start }
         let randomMin = Int.random(in: startMin...endMin)
-        return String(format: "%02d:%02d", randomMin / 60, randomMin % 60)
+        return ScheduledTime(totalMinutes: randomMin).displayString
     }
 }

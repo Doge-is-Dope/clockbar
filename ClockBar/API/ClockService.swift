@@ -60,9 +60,13 @@ enum ClockService {
         AuthStore.clear()
     }
 
-    static func scheduleInstall(for config: ClockConfig) throws -> ScheduleState {
-        try ConfigManager.save(config)
-        return try LaunchAgentManager.install(config: config)
+    static func syncSchedule(config: ClockConfig) throws -> ScheduleState {
+        if config.requiresScheduledJobs {
+            return try LaunchAgentManager.install(config: config)
+        }
+
+        try LaunchAgentManager.remove()
+        return LaunchAgentManager.currentState(config: config)
     }
 
     static func currentScheduleState(config: ClockConfig) -> ScheduleState {

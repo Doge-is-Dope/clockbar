@@ -27,6 +27,5 @@ struct ClockBarApp: App {
         Window("Settings", id: "settings") {
             SettingsView(viewModel: viewModel, appUpdater: appUpdater)
         }
-        .windowResizability(.contentSize)
     }
 }
