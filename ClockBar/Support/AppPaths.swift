@@ -1,6 +1,10 @@
 import Foundation
 
+let appName = "104 Clock"
 let baseURL = URL(string: "https://pro.104.com.tw")!
+let holidayBaseURL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/"
+let launchdLabelPrefix = "com.clockbar.104-"
+let notificationErrorSound = "Basso"
 let cacheDirectory = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent(".104", isDirectory: true)
 let holidayDirectory = cacheDirectory.appendingPathComponent("holidays", isDirectory: true)

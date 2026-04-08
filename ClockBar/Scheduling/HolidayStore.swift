@@ -9,7 +9,7 @@ enum HolidayStore {
         if !FileManager.default.fileExists(atPath: cacheURL.path) {
             try? FileManager.default.createDirectory(at: holidayDirectory, withIntermediateDirectories: true)
             if let sourceURL = URL(
-                string: "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/\(year).json"
+                string: holidayBaseURL + "\(year).json"
             ),
                let (data, response) = try? await URLSession.shared.data(
                    for: URLRequest(url: sourceURL, timeoutInterval: 3)

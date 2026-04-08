@@ -20,9 +20,9 @@ enum AutoPunchEngine {
         guard let schedule = ScheduledTime(string: config.schedule.time(for: action)) else {
             AutoPunchLog.append("auto \(action.rawValue): FAILED - invalid schedule")
             notify(
-                title: "104 Clock - Failed",
+                title: "\(appName) - Failed",
                 body: "Invalid \(action.displayName) schedule.",
-                sound: "Basso",
+                sound: notificationErrorSound,
                 dryRun: dryRun
             )
             return 1
@@ -56,13 +56,13 @@ enum AutoPunchEngine {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
                 let choice = SystemUI.prompt(
-                    title: "104 Clock",
+                    title: appName,
                     message: "Your Mac just woke after the scheduled \(action.logLabel). Punch now?",
                     buttons: ["Skip", "Punch"]
                 )
                 guard choice == "Punch" else {
                     AutoPunchLog.append("auto \(action.rawValue): skipped by user (wake prompt)")
-                    notify(title: "104 Clock", body: "\(action.displayName) skipped.", dryRun: dryRun)
+                    notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
                     return 0
                 }
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (wake prompt)")
@@ -72,13 +72,13 @@ enum AutoPunchEngine {
                 print("[dry-run] Would ask late prompt for \(action.logLabel) at \(schedule.displayString)")
             } else {
                 let choice = SystemUI.prompt(
-                    title: "104 Clock",
+                    title: appName,
                     message: "Missed \(action.logLabel) at \(schedule.displayString). Punch now?",
                     buttons: ["Skip", "Punch"]
                 )
                 guard choice == "Punch" else {
                     AutoPunchLog.append("auto \(action.rawValue): skipped by user (late prompt)")
-                    notify(title: "104 Clock", body: "\(action.displayName) skipped.", dryRun: dryRun)
+                    notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
                     return 0
                 }
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (late)")
@@ -95,9 +95,9 @@ enum AutoPunchEngine {
         guard var session = AuthStore.loadSession(), session.hasUsableCookies else {
             AutoPunchLog.append("auto \(action.rawValue): FAILED - missing session")
             notify(
-                title: "104 Clock - Login Required",
+                title: "\(appName) - Login Required",
                 body: "Open ClockBar and sign in to 104 again.",
-                sound: "Basso",
+                sound: notificationErrorSound,
                 dryRun: dryRun
             )
             return 1
@@ -111,7 +111,7 @@ enum AutoPunchEngine {
             if action == .clockout, status.clockIn == nil {
                 let message = "Cannot clock out because there is no clock-in record yet."
                 AutoPunchLog.append("auto \(action.rawValue): skipped - \(message)")
-                notify(title: "104 Clock", body: message, dryRun: dryRun)
+                notify(title: appName, body: message, dryRun: dryRun)
                 return 0
             }
 
@@ -128,7 +128,7 @@ enum AutoPunchEngine {
                 } else {
                     let verb = action == .clockin ? "clocked in" : "clocked out"
                     let choice = SystemUI.prompt(
-                        title: "104 Clock",
+                        title: appName,
                         message: "You haven't \(verb) yet (\(schedule.displayString)). Punch now?",
                         buttons: ["Dismiss", "Punch"]
                     )
@@ -158,15 +158,15 @@ enum AutoPunchEngine {
                     message += " (in: \(clockIn))"
                 }
                 AutoPunchLog.append("auto \(action.rawValue): OK - \(message)")
-                notify(title: "104 Clock", body: message, dryRun: dryRun)
+                notify(title: appName, body: message, dryRun: dryRun)
                 return 0
             }
 
             AutoPunchLog.append("auto \(action.rawValue): punch sent but not verified")
             notify(
-                title: "104 Clock - Warning",
+                title: "\(appName) - Warning",
                 body: "Punch sent but not verified.",
-                sound: "Basso",
+                sound: notificationErrorSound,
                 dryRun: dryRun
             )
             return 1
@@ -174,18 +174,18 @@ enum AutoPunchEngine {
             AuthStore.clear()
             AutoPunchLog.append("auto \(action.rawValue): FAILED - unauthorized")
             notify(
-                title: "104 Clock - Login Required",
+                title: "\(appName) - Login Required",
                 body: "Your 104 session expired. Sign in again.",
-                sound: "Basso",
+                sound: notificationErrorSound,
                 dryRun: dryRun
             )
             return 1
         } catch {
             AutoPunchLog.append("auto \(action.rawValue): FAILED - \(error.localizedDescription)")
             notify(
-                title: "104 Clock - Failed",
+                title: "\(appName) - Failed",
                 body: error.localizedDescription,
-                sound: "Basso",
+                sound: notificationErrorSound,
                 dryRun: dryRun
             )
             return 1

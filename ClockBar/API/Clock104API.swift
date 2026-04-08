@@ -1,6 +1,8 @@
 import Foundation
 
 enum Clock104API {
+    private static let calendarPath = "/psc2/api/home/newCalendar/"
+    private static let clockinPath = "/psc2/api/f0400/newClockin"
     static func validate(session: StoredSession) async throws -> StoredSession {
         _ = try await getStatus(session: session)
         var updated = session
@@ -23,7 +25,7 @@ enum Clock104API {
         let endOfMonth = calendar.date(from: endComponents) ?? now
 
         let json = try await requestJSON(
-            path: "/psc2/api/home/newCalendar/\(Int(startOfMonth.timeIntervalSince1970 * 1000))/\(Int(endOfMonth.timeIntervalSince1970 * 1000))",
+            path: calendarPath + "\(Int(startOfMonth.timeIntervalSince1970 * 1000))/\(Int(endOfMonth.timeIntervalSince1970 * 1000))",
             method: "GET",
             session: session
         )
@@ -70,7 +72,7 @@ enum Clock104API {
         guard session.hasUsableCookies else { throw Clock104Error.missingSession }
 
         let json = try await requestJSON(
-            path: "/psc2/api/f0400/newClockin",
+            path: clockinPath,
             method: "POST",
             session: session
         )
@@ -92,10 +94,7 @@ enum Clock104API {
     ) async throws -> [String: Any] {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("JSON", forHTTPHeaderField: "X-Request")
+        applyStandardHeaders(&request)
         request.setValue(session.cookieHeader, forHTTPHeaderField: "Cookie")
 
         if method == "POST" {
@@ -116,6 +115,13 @@ enum Clock104API {
         }
 
         return json
+    }
+
+    private static func applyStandardHeaders(_ request: inout URLRequest) {
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("JSON", forHTTPHeaderField: "X-Request")
     }
 
     private static func formatTimestamp(_ value: Any?) -> String? {

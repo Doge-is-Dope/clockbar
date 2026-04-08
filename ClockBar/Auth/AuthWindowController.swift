@@ -51,9 +51,7 @@ final class AuthWindowController: NSWindowController, NSWindowDelegate, WKNaviga
             let records = await dataStore.dataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
             await dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records)
             await MainActor.run {
-                if let url = URL(string: "https://pro.104.com.tw") {
-                    self.webView.load(URLRequest(url: url))
-                }
+                _ = self.webView.load(URLRequest(url: baseURL))
             }
         }
     }

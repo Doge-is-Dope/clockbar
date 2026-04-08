@@ -32,6 +32,6 @@ enum ClockAction: String, Codable, CaseIterable {
     }
 
     var launchdLabel: String {
-        "com.clockbar.104-\(rawValue)"
+        launchdLabelPrefix + rawValue
     }
 }

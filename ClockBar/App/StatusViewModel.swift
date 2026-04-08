@@ -345,15 +345,15 @@ final class StatusViewModel: ObservableObject {
 
         if updatedStatus.error == nil {
             if updatedStatus.clockIn != beforeIn, let time = updatedStatus.clockIn {
-                NotificationManager.shared.send("104 Clock", body: "Clocked in at \(time)")
+                NotificationManager.shared.send(appName, body: "Clocked in at \(time)")
             } else if updatedStatus.clockOut != beforeOut, let time = updatedStatus.clockOut {
-                NotificationManager.shared.send("104 Clock", body: "Clocked out at \(time)")
+                NotificationManager.shared.send(appName, body: "Clocked out at \(time)")
             }
         } else {
             NotificationManager.shared.send(
-                "104 Clock",
+                appName,
                 body: "Punch failed",
-                sound: UNNotificationSound(named: UNNotificationSoundName("Basso"))
+                sound: UNNotificationSound(named: UNNotificationSoundName(notificationErrorSound))
             )
         }
     }
