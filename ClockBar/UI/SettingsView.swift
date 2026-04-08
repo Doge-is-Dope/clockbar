@@ -8,6 +8,8 @@ struct SettingsView: View {
     @State private var clockInEndDate = Date()
     @State private var clockOutDate = Date()
     @State private var clockOutEndDate = Date()
+    @State private var maxContentHeight: CGFloat = 0
+    @State private var shouldSnapInitialWindowHeight = true
 
     private let calendar = Calendar(identifier: .gregorian)
     private let contentPadding = AppStyle.Spacing.xxl + AppStyle.Spacing.xs
@@ -15,26 +17,47 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-                scheduleSection
-                autoPunchSection
-                remindersSection
+                automationSection
+                notificationsSection
                 wakeSection
                 appSection
                 accountActionButton
             }
             .padding(contentPadding)
             .frame(maxWidth: .infinity, alignment: .topLeading)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: SettingsContentHeightPreferenceKey.self,
+                        value: proxy.size.height
+                    )
+                }
+            )
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .frame(
             minWidth: AppStyle.Layout.settingsMinWidth,
             idealWidth: AppStyle.Layout.settingsIdealWidth
+        )
+        .background(
+            SettingsWindowHeightController(
+                maxContentHeight: maxContentHeight,
+                shouldSnapInitialHeight: shouldSnapInitialWindowHeight
+            ) {
+                shouldSnapInitialWindowHeight = false
+            }
         )
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
             clockInEndDate = date(from: viewModel.config.schedule.clockinEnd)
             clockOutDate = date(from: viewModel.config.schedule.clockout)
             clockOutEndDate = date(from: viewModel.config.schedule.clockoutEnd)
+            shouldSnapInitialWindowHeight = true
+        }
+        .onPreferenceChange(SettingsContentHeightPreferenceKey.self) { height in
+            maxContentHeight = height
+        }
+        .onDisappear {
+            viewModel.commitWakeScheduleChangesOnClose()
         }
         .onChange(of: viewModel.config.schedule.clockin) { _, value in
             let parsed = date(from: value)
@@ -62,23 +85,37 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Schedule
+    // MARK: - Automation
 
-    private var scheduleSection: some View {
+    private var automationSection: some View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Schedule")
+            sectionHeader("Automation")
 
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
                 cardContainer {
                     SettingsCardRow(
+                        icon: "clock.arrow.2.circlepath",
+                        label: "Auto-punch"
+                    ) {
+                        Toggle("", isOn: Binding(
+                            get: { viewModel.config.autopunchEnabled },
+                            set: { viewModel.setAutopunchEnabled($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppStyle.Palette.accent)
+                        .labelsHidden()
+                    }
+
+                    insetDivider
+
+                    SettingsCardRow(
                         icon: "sunrise",
-                        label: "Clock In",
-                        isEnabled: isScheduleEditingEnabled
+                        label: "Clock In"
                     ) {
                         timeRangePicker(
                             start: $clockInDate,
                             end: $clockInEndDate,
-                            isEnabled: isScheduleEditingEnabled
+                            isEnabled: true
                         ) { startDate, endDate in
                             persistTimeRange(start: startDate, end: endDate, for: .clockin)
                         }
@@ -88,13 +125,12 @@ struct SettingsView: View {
 
                     SettingsCardRow(
                         icon: "sunset",
-                        label: "Clock Out",
-                        isEnabled: isScheduleEditingEnabled
+                        label: "Clock Out"
                     ) {
                         timeRangePicker(
                             start: $clockOutDate,
                             end: $clockOutEndDate,
-                            isEnabled: isScheduleEditingEnabled
+                            isEnabled: true
                         ) { startDate, endDate in
                             persistTimeRange(start: startDate, end: endDate, for: .clockout)
                         }
@@ -105,8 +141,7 @@ struct SettingsView: View {
                     SettingsCardRow(
                         icon: "clock.badge.checkmark",
                         label: "Minimum hours",
-                        subtitle: "Auto-adjusts clock out when gap is too short.",
-                        isEnabled: isScheduleEditingEnabled
+                        subtitle: "Adjusts clock out if the gap is too short."
                     ) {
                         durationControl(
                             value: Binding(
@@ -115,8 +150,7 @@ struct SettingsView: View {
                             ),
                             range: 0...12,
                             step: 1,
-                            formatter: { $0 == 0 ? "Off" : "\($0)h" },
-                            isEnabled: isScheduleEditingEnabled
+                            formatter: { $0 == 0 ? "Off" : "\($0)h" }
                         )
                     }
                 }
@@ -126,76 +160,48 @@ struct SettingsView: View {
                         .font(AppStyle.Font.caption)
                         .foregroundStyle(.orange)
                         .padding(.leading, AppStyle.Spacing.xs)
-                } else {
-                    Text("Runs Monday to Friday and skips public holidays.")
-                        .font(AppStyle.Font.caption)
-                        .foregroundStyle(.tertiary)
-                        .padding(.leading, AppStyle.Spacing.xs)
                 }
             }
         }
     }
 
-    // MARK: - Auto-punch
+    // MARK: - Notifications
 
-    private var autoPunchSection: some View {
+    private var notificationsSection: some View {
         VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Auto-punch")
-
-            cardContainer {
-                SettingsCardRow(
-                    icon: "clock.arrow.2.circlepath",
-                    label: "Auto-punch",
-                ) {
-                    Toggle("", isOn: Binding(
-                        get: { viewModel.config.autopunchEnabled },
-                        set: { viewModel.setAutopunchEnabled($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.accent)
-                    .labelsHidden()
-                }
-            }
-        }
-    }
-
-    // MARK: - Reminders
-
-    private var remindersSection: some View {
-        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Reminders")
+            sectionHeader("Notifications")
 
             cardContainer {
                 SettingsCardRow(
                     icon: "bell.badge",
-                    label: "Missed punch prompt",
-                    subtitle: "Notify when a scheduled punch time passes without a punch."
+                    label: "Missed punch notification",
+                    subtitle: "Notifies when no punch is recorded on time."
                 ) {
                     Toggle("", isOn: Binding(
-                        get: { viewModel.config.latePromptEnabled },
-                        set: { viewModel.setLatePromptEnabled($0) }
+                        get: { viewModel.config.missedPunchNotificationEnabled },
+                        set: { viewModel.setMissedPunchNotificationEnabled($0) }
                     ))
                     .toggleStyle(.switch)
                     .tint(AppStyle.Palette.accent)
                     .labelsHidden()
                 }
 
-                if viewModel.config.latePromptEnabled {
+                if viewModel.config.missedPunchNotificationEnabled {
                     insetDivider
 
                     SettingsCardRow(
                         icon: "clock.badge.questionmark",
-                        label: "Prompt after",
-                        subtitle: "How long past the scheduled time before asking."
+                        label: "Notify after",
+                        subtitle: "Delay after the scheduled time before notifying."
                     ) {
                         durationControl(
                             value: Binding(
-                                get: { max(0, viewModel.config.lateThreshold) },
-                                set: { viewModel.setLateThreshold($0) }
+                                get: { max(0, viewModel.config.missedPunchNotificationDelay) },
+                                set: { viewModel.setMissedPunchNotificationDelay($0) }
                             ),
                             range: 0...3600,
                             step: 60,
-                            zeroLabel: "Immediate"
+                            zeroLabel: "Immediately"
                         )
                     }
                 }
@@ -231,7 +237,7 @@ struct SettingsView: View {
                 SettingsCardRow(
                     icon: "alarm",
                     label: "Wake before",
-                    subtitle: "How long before the scheduled punch to wake."
+                    subtitle: "Lead time before the scheduled punch."
                 ) {
                     durationControl(
                         value: Binding(
@@ -243,30 +249,6 @@ struct SettingsView: View {
                         zeroLabel: "At punch time",
                         isEnabled: !viewModel.wakeSyncState.isApplying
                     )
-                }
-            }
-
-            HStack(spacing: AppStyle.Spacing.md) {
-                Button {
-                    viewModel.applyWakeScheduleChanges()
-                } label: {
-                    Text(wakeActionTitle)
-                        .font(AppStyle.Font.subheadline)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, AppStyle.Spacing.md)
-                        .padding(.vertical, AppStyle.Spacing.sm)
-                        .background(
-                            viewModel.canApplyWakeChanges ? AppStyle.Palette.accent : AppStyle.Palette.separator,
-                            in: RoundedRectangle(cornerRadius: AppStyle.Radius.small)
-                        )
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.canApplyWakeChanges)
-
-                if viewModel.hasPendingWakeChanges {
-                    Text("macOS asks for admin approval only when you save wake changes.")
-                        .font(AppStyle.Font.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -417,10 +399,6 @@ struct SettingsView: View {
         viewModel.wakeStatusMessage
     }
 
-    private var wakeActionTitle: String {
-        viewModel.wakeSyncState.isApplying ? "Saving..." : "Save Wake Changes"
-    }
-
     private var scheduleWarning: String? {
         let s = viewModel.config.schedule
         let inEnd = minutesSinceMidnight(s.clockinEnd)
@@ -439,11 +417,6 @@ struct SettingsView: View {
         }
 
         return nil
-    }
-
-    private var isScheduleEditingEnabled: Bool {
-        (viewModel.config.autopunchEnabled || viewModel.config.latePromptEnabled)
-            && !viewModel.wakeSyncState.isApplying
     }
 
     private var accountActionTitle: String {
@@ -475,10 +448,10 @@ struct SettingsView: View {
         isEnabled: Bool,
         onChange: @escaping (Date, Date) -> Void
     ) -> some View {
-        HStack(alignment: .center, spacing: AppStyle.Spacing.md) {
+        HStack(alignment: .center, spacing: AppStyle.Spacing.sm) {
             TimeFieldPicker(
                 date: start,
-                alignment: .right,
+                alignment: .center,
                 isEnabled: isEnabled
             ) { newStart in
                 var clampedEnd = end.wrappedValue
@@ -488,7 +461,6 @@ struct SettingsView: View {
                 }
                 onChange(newStart, clampedEnd)
             }
-            .frame(width: AppStyle.Layout.timePickerWidth, alignment: .trailing)
 
             Capsule()
                 .fill(.tertiary)
@@ -501,7 +473,7 @@ struct SettingsView: View {
 
             TimeFieldPicker(
                 date: end,
-                alignment: .left,
+                alignment: .center,
                 isEnabled: isEnabled
             ) { newEnd in
                 var clampedEnd = newEnd
@@ -511,7 +483,6 @@ struct SettingsView: View {
                 }
                 onChange(start.wrappedValue, clampedEnd)
             }
-            .frame(width: AppStyle.Layout.timePickerWidth, alignment: .leading)
         }
     }
 
@@ -691,12 +662,49 @@ private struct TimeFieldPicker: NSViewRepresentable {
 
 #Preview("Light") {
     SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
-        .frame(width: AppStyle.Layout.settingsIdealWidth, height: 700)
+        .frame(width: AppStyle.Layout.settingsIdealWidth)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
     SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
-        .frame(width: AppStyle.Layout.settingsIdealWidth, height: 700)
+        .frame(width: AppStyle.Layout.settingsIdealWidth)
         .preferredColorScheme(.dark)
+}
+
+private struct SettingsContentHeightPreferenceKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct SettingsWindowHeightController: NSViewRepresentable {
+    let maxContentHeight: CGFloat
+    let shouldSnapInitialHeight: Bool
+    let onInitialHeightApplied: () -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard maxContentHeight > 0 else { return }
+
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+
+            var maxSize = window.contentMaxSize
+            maxSize.height = maxContentHeight
+            window.contentMaxSize = maxSize
+
+            guard shouldSnapInitialHeight else { return }
+
+            var contentSize = window.contentRect(forFrameRect: window.frame).size
+            contentSize.height = maxContentHeight
+            window.setContentSize(contentSize)
+            onInitialHeightApplied()
+        }
+    }
 }

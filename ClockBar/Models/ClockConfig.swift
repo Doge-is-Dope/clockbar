@@ -3,8 +3,8 @@ import Foundation
 struct ClockConfig: Codable, Equatable {
     var schedule: Schedule
     var minWorkHours: Int
-    var latePromptEnabled: Bool
-    var lateThreshold: Int
+    var missedPunchNotificationEnabled: Bool
+    var missedPunchNotificationDelay: Int
     var autopunchEnabled: Bool
     var wakeEnabled: Bool
     var wakeBefore: Int
@@ -68,8 +68,8 @@ struct ClockConfig: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case schedule
         case minWorkHours = "min_work_hours"
-        case latePromptEnabled = "late_prompt_enabled"
-        case lateThreshold = "late_threshold"
+        case missedPunchNotificationEnabled = "missed_punch_notification_enabled"
+        case missedPunchNotificationDelay = "missed_punch_notification_delay"
         case autopunchEnabled = "autopunch_enabled"
         case wakeEnabled = "wake_enabled"
         case wakeBefore = "wake_before"
@@ -79,8 +79,8 @@ struct ClockConfig: Codable, Equatable {
     init(
         schedule: Schedule,
         minWorkHours: Int,
-        latePromptEnabled: Bool,
-        lateThreshold: Int,
+        missedPunchNotificationEnabled: Bool,
+        missedPunchNotificationDelay: Int,
         autopunchEnabled: Bool,
         wakeEnabled: Bool,
         wakeBefore: Int,
@@ -88,8 +88,8 @@ struct ClockConfig: Codable, Equatable {
     ) {
         self.schedule = schedule
         self.minWorkHours = minWorkHours
-        self.latePromptEnabled = latePromptEnabled
-        self.lateThreshold = lateThreshold
+        self.missedPunchNotificationEnabled = missedPunchNotificationEnabled
+        self.missedPunchNotificationDelay = missedPunchNotificationDelay
         self.autopunchEnabled = autopunchEnabled
         self.wakeEnabled = wakeEnabled
         self.wakeBefore = wakeBefore
@@ -101,8 +101,8 @@ struct ClockConfig: Codable, Equatable {
         let defaults = ClockConfig.default
         self.schedule = try container.decodeIfPresent(Schedule.self, forKey: .schedule) ?? defaults.schedule
         self.minWorkHours = try container.decodeIfPresent(Int.self, forKey: .minWorkHours) ?? defaults.minWorkHours
-        self.latePromptEnabled = try container.decodeIfPresent(Bool.self, forKey: .latePromptEnabled) ?? defaults.latePromptEnabled
-        self.lateThreshold = try container.decodeIfPresent(Int.self, forKey: .lateThreshold) ?? defaults.lateThreshold
+        self.missedPunchNotificationEnabled = try container.decodeIfPresent(Bool.self, forKey: .missedPunchNotificationEnabled) ?? defaults.missedPunchNotificationEnabled
+        self.missedPunchNotificationDelay = try container.decodeIfPresent(Int.self, forKey: .missedPunchNotificationDelay) ?? defaults.missedPunchNotificationDelay
         self.autopunchEnabled = try container.decodeIfPresent(Bool.self, forKey: .autopunchEnabled) ?? defaults.autopunchEnabled
         self.wakeEnabled = try container.decodeIfPresent(Bool.self, forKey: .wakeEnabled) ?? defaults.wakeEnabled
         self.wakeBefore = try container.decodeIfPresent(Int.self, forKey: .wakeBefore) ?? defaults.wakeBefore
@@ -110,14 +110,14 @@ struct ClockConfig: Codable, Equatable {
     }
 
     var requiresScheduledJobs: Bool {
-        autopunchEnabled || latePromptEnabled
+        autopunchEnabled || missedPunchNotificationEnabled
     }
 
     static let `default` = ClockConfig(
         schedule: .init(clockin: "09:00", clockinEnd: "09:15", clockout: "18:00", clockoutEnd: "18:15"),
         minWorkHours: 9,
-        latePromptEnabled: true,
-        lateThreshold: 1200,
+        missedPunchNotificationEnabled: true,
+        missedPunchNotificationDelay: 0,
         autopunchEnabled: true,
         wakeEnabled: false,
         wakeBefore: 300,

@@ -5,12 +5,12 @@ enum AutoPunchEngine {
         let config = ConfigManager.load()
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
-            || (!config.autopunchEnabled && !config.latePromptEnabled) {
+            || (!config.autopunchEnabled && !config.missedPunchNotificationEnabled) {
             AutoPunchLog.append("auto \(action.rawValue): skipped (disabled)")
             return 0
         }
 
-        let reminderOnly = !config.autopunchEnabled
+        let notificationOnly = !config.autopunchEnabled
 
         if await HolidayStore.isHoliday() {
             AutoPunchLog.append("auto \(action.rawValue): skipped (holiday)")
@@ -36,22 +36,20 @@ enum AutoPunchEngine {
             second: 0,
             of: now
         ) ?? now
-        let minutesLate = now.timeIntervalSince(scheduledDate) / 60
         let wokeRecently = dryRun ? false : PowerStateMonitor.didWakeRecently()
 
-        if reminderOnly {
-            let delay = max(0, config.lateThreshold)
-            if dryRun {
-                print("[dry-run] Would wait \(delay)s for reminder check")
-            } else if delay > 0 {
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000_000)
-                } catch {
-                    AutoPunchLog.append("reminder \(action.rawValue): cancelled during delay")
-                    return 0
-                }
-            }
-        } else if wokeRecently {
+        if notificationOnly {
+            await notifyMissedPunchAfterThresholdIfNeeded(
+                action: action,
+                schedule: schedule,
+                scheduledDate: scheduledDate,
+                threshold: max(0, config.missedPunchNotificationDelay),
+                dryRun: dryRun
+            )
+            return 0
+        }
+
+        if wokeRecently {
             if dryRun {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
@@ -63,25 +61,18 @@ enum AutoPunchEngine {
                 guard choice == "Punch" else {
                     AutoPunchLog.append("auto \(action.rawValue): skipped by user (wake prompt)")
                     notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
+                    if config.missedPunchNotificationEnabled {
+                        await notifyMissedPunchAfterThresholdIfNeeded(
+                            action: action,
+                            schedule: schedule,
+                            scheduledDate: scheduledDate,
+                            threshold: max(0, config.missedPunchNotificationDelay),
+                            dryRun: dryRun
+                        )
+                    }
                     return 0
                 }
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (wake prompt)")
-            }
-        } else if config.latePromptEnabled, minutesLate > Double(config.lateThreshold) / 60 {
-            if dryRun {
-                print("[dry-run] Would ask late prompt for \(action.logLabel) at \(schedule.displayString)")
-            } else {
-                let choice = SystemUI.prompt(
-                    title: appName,
-                    message: "Missed \(action.logLabel) at \(schedule.displayString). Punch now?",
-                    buttons: ["Skip", "Punch"]
-                )
-                guard choice == "Punch" else {
-                    AutoPunchLog.append("auto \(action.rawValue): skipped by user (late prompt)")
-                    notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
-                    return 0
-                }
-                AutoPunchLog.append("auto \(action.rawValue): user chose to punch (late)")
             }
         } else {
             let delay = Self.computeDelay(for: action, config: config)
@@ -100,6 +91,15 @@ enum AutoPunchEngine {
                 sound: notificationErrorSound,
                 dryRun: dryRun
             )
+            if config.missedPunchNotificationEnabled {
+                await notifyMissedPunchAfterThresholdIfNeeded(
+                    action: action,
+                    schedule: schedule,
+                    scheduledDate: scheduledDate,
+                    threshold: max(0, config.missedPunchNotificationDelay),
+                    dryRun: dryRun
+                )
+            }
             return 1
         }
 
@@ -112,6 +112,15 @@ enum AutoPunchEngine {
                 let message = "Cannot clock out because there is no clock-in record yet."
                 AutoPunchLog.append("auto \(action.rawValue): skipped - \(message)")
                 notify(title: appName, body: message, dryRun: dryRun)
+                if config.missedPunchNotificationEnabled {
+                    await notifyMissedPunchAfterThresholdIfNeeded(
+                        action: action,
+                        schedule: schedule,
+                        scheduledDate: scheduledDate,
+                        threshold: max(0, config.missedPunchNotificationDelay),
+                        dryRun: dryRun
+                    )
+                }
                 return 0
             }
 
@@ -120,24 +129,6 @@ enum AutoPunchEngine {
                     "auto \(action.rawValue): already punched (\(action.fieldName)=\(existingPunchTime))"
                 )
                 return 0
-            }
-
-            if reminderOnly {
-                if dryRun {
-                    print("[dry-run] Would show reminder prompt for \(action.logLabel)")
-                } else {
-                    let verb = action == .clockin ? "clocked in" : "clocked out"
-                    let choice = SystemUI.prompt(
-                        title: appName,
-                        message: "You haven't \(verb) yet (\(schedule.displayString)). Punch now?",
-                        buttons: ["Dismiss", "Punch"]
-                    )
-                    guard choice == "Punch" else {
-                        AutoPunchLog.append("reminder \(action.rawValue): dismissed by user")
-                        return 0
-                    }
-                    AutoPunchLog.append("reminder \(action.rawValue): user chose to punch")
-                }
             }
 
             if dryRun {
@@ -169,6 +160,15 @@ enum AutoPunchEngine {
                 sound: notificationErrorSound,
                 dryRun: dryRun
             )
+            if config.missedPunchNotificationEnabled {
+                await notifyMissedPunchAfterThresholdIfNeeded(
+                    action: action,
+                    schedule: schedule,
+                    scheduledDate: scheduledDate,
+                    threshold: max(0, config.missedPunchNotificationDelay),
+                    dryRun: dryRun
+                )
+            }
             return 1
         } catch Clock104Error.unauthorized {
             AuthStore.clear()
@@ -179,6 +179,15 @@ enum AutoPunchEngine {
                 sound: notificationErrorSound,
                 dryRun: dryRun
             )
+            if config.missedPunchNotificationEnabled {
+                await notifyMissedPunchAfterThresholdIfNeeded(
+                    action: action,
+                    schedule: schedule,
+                    scheduledDate: scheduledDate,
+                    threshold: max(0, config.missedPunchNotificationDelay),
+                    dryRun: dryRun
+                )
+            }
             return 1
         } catch {
             AutoPunchLog.append("auto \(action.rawValue): FAILED - \(error.localizedDescription)")
@@ -188,8 +197,54 @@ enum AutoPunchEngine {
                 sound: notificationErrorSound,
                 dryRun: dryRun
             )
+            if config.missedPunchNotificationEnabled {
+                await notifyMissedPunchAfterThresholdIfNeeded(
+                    action: action,
+                    schedule: schedule,
+                    scheduledDate: scheduledDate,
+                    threshold: max(0, config.missedPunchNotificationDelay),
+                    dryRun: dryRun
+                )
+            }
             return 1
         }
+    }
+
+    private static func notifyMissedPunchAfterThresholdIfNeeded(
+        action: ClockAction,
+        schedule: ScheduledTime,
+        scheduledDate: Date,
+        threshold: Int,
+        dryRun: Bool
+    ) async {
+        let remainingDelay = max(0, threshold - Int(Date().timeIntervalSince(scheduledDate)))
+
+        if dryRun {
+            print("[dry-run] Would wait \(remainingDelay)s before checking missed \(action.logLabel)")
+        } else if remainingDelay > 0 {
+            do {
+                try await Task.sleep(nanoseconds: UInt64(remainingDelay) * 1_000_000_000)
+            } catch {
+                AutoPunchLog.append("notification \(action.rawValue): cancelled during missed-punch delay")
+                return
+            }
+        }
+
+        let status = await currentStatusForMissedPunchCheck()
+        if let status, existingPunch(for: action, in: status) != nil {
+            AutoPunchLog.append("notification \(action.rawValue): skipped - already punched")
+            return
+        }
+
+        let body: String
+        if status == nil {
+            body = "Scheduled \(action.logLabel) at \(schedule.displayString) is still unconfirmed. Open ClockBar to check 104."
+        } else {
+            body = "No \(action.logLabel) was recorded after the scheduled time (\(schedule.displayString))."
+        }
+
+        AutoPunchLog.append("notification \(action.rawValue): missed punch")
+        notify(title: appName, body: body, dryRun: dryRun)
     }
 
     private static func computeDelay(for action: ClockAction, config: ClockConfig) -> Int {
@@ -220,6 +275,24 @@ enum AutoPunchEngine {
             return status.clockIn
         case .clockout:
             return status.clockOut
+        }
+    }
+
+    private static func currentStatusForMissedPunchCheck() async -> PunchStatus? {
+        guard var session = AuthStore.loadSession(), session.hasUsableCookies else {
+            return nil
+        }
+
+        do {
+            let status = try await Clock104API.getStatus(session: session)
+            session.lastValidatedAt = Date()
+            try? AuthStore.save(session)
+            return status
+        } catch Clock104Error.unauthorized {
+            AuthStore.clear()
+            return nil
+        } catch {
+            return nil
         }
     }
 

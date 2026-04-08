@@ -72,8 +72,7 @@ enum AppStyle {
         static let scheduleRowMinHeight: CGFloat = 34
         static let settingsRowHeight: CGFloat = 44
         static let iconBackgroundSize: CGFloat = 28
-        static let timePickerWidth: CGFloat = 76
-        static let timeRangeSeparatorWidth: CGFloat = 10
+        static let timeRangeSeparatorWidth: CGFloat = 12
         static let timeRangeSeparatorRuleWidth: CGFloat = 8
         static let timeRangeSeparatorHeight: CGFloat = 12
         static let durationLabelWidth: CGFloat = 36

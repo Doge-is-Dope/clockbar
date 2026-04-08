@@ -92,10 +92,6 @@ final class StatusViewModel: ObservableObject {
         currentWakeSnapshot != appliedWakeSnapshot
     }
 
-    var canApplyWakeChanges: Bool {
-        hasPendingWakeChanges && !wakeSyncState.isApplying
-    }
-
     var wakeStatusMessage: String {
         switch wakeSyncState {
         case .applying:
@@ -106,7 +102,7 @@ final class StatusViewModel: ObservableObject {
             return "Saved"
         default:
             if hasPendingWakeChanges {
-                return "Wake changes not saved yet."
+                return "Saved when Settings closes."
             }
             if !wakeEnabledDraft {
                 return "Disabled"
@@ -164,7 +160,7 @@ final class StatusViewModel: ObservableObject {
 
     func setAutopunchEnabled(_ isEnabled: Bool) {
         guard config.autopunchEnabled != isEnabled else { return }
-        let shouldSyncJobs = config.requiresScheduledJobs != (isEnabled || config.latePromptEnabled)
+        let shouldSyncJobs = config.requiresScheduledJobs != (isEnabled || config.missedPunchNotificationEnabled)
         let previousConfig = config
         config.autopunchEnabled = isEnabled
         let didSave = persistCurrentConfig(reloadScheduleState: !shouldSyncJobs)
@@ -216,6 +212,12 @@ final class StatusViewModel: ObservableObject {
             if startTimesChanged, config.requiresScheduledJobs {
                 syncScheduledJobs()
             }
+            if startTimesChanged,
+               !appliedWakeSnapshot.wakeEnabled,
+               !wakeEnabledDraft,
+               wakeBeforeDraft == appliedWakeSnapshot.wakeBefore {
+                appliedWakeSnapshot = currentWakeSnapshot
+            }
         } else {
             config = previousConfig
             regenerateNextPunch()
@@ -228,11 +230,11 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
-    func setLatePromptEnabled(_ isEnabled: Bool) {
-        guard config.latePromptEnabled != isEnabled else { return }
+    func setMissedPunchNotificationEnabled(_ isEnabled: Bool) {
+        guard config.missedPunchNotificationEnabled != isEnabled else { return }
         let shouldSyncJobs = config.requiresScheduledJobs != (config.autopunchEnabled || isEnabled)
         let previousConfig = config
-        config.latePromptEnabled = isEnabled
+        config.missedPunchNotificationEnabled = isEnabled
         let didSave = persistCurrentConfig(reloadScheduleState: !shouldSyncJobs)
         if didSave {
             if shouldSyncJobs { syncScheduledJobs() }
@@ -241,9 +243,9 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
-    func setLateThreshold(_ value: Int) {
+    func setMissedPunchNotificationDelay(_ value: Int) {
         updateConfig(reloadScheduleState: true) {
-            $0.lateThreshold = max(0, value)
+            $0.missedPunchNotificationDelay = max(0, value)
         }
     }
 
@@ -260,14 +262,19 @@ final class StatusViewModel: ObservableObject {
         wakeBeforeDraft = wakeBefore
     }
 
-    func applyWakeScheduleChanges() {
-        guard canApplyWakeChanges else { return }
+    func commitWakeScheduleChangesOnClose() {
+        guard hasPendingWakeChanges, !wakeSyncState.isApplying else { return }
 
         wakeSyncStateResetTask?.cancel()
-        wakeSyncState = .applying
-
         let previousSnapshot = appliedWakeSnapshot
         let snapshot = currentWakeSnapshot
+
+        if !previousSnapshot.wakeEnabled && !snapshot.wakeEnabled {
+            commitWakeDraftWithoutPrivileges(snapshot: snapshot, previousSnapshot: previousSnapshot)
+            return
+        }
+
+        wakeSyncState = .applying
         guard let command = Self.pmsetCommand(replacing: previousSnapshot, with: snapshot) else {
             wakeSyncState = .failed("Invalid wake schedule time.")
             return
@@ -464,6 +471,26 @@ final class StatusViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 await self?.finishScheduleSyncFailure(config: pendingConfig, error: error)
             }
+        }
+    }
+
+    private func commitWakeDraftWithoutPrivileges(
+        snapshot: WakeScheduleSnapshot,
+        previousSnapshot: WakeScheduleSnapshot
+    ) {
+        config.wakeEnabled = wakeEnabledDraft
+        config.wakeBefore = wakeBeforeDraft
+
+        if persistCurrentConfig(reloadScheduleState: false) {
+            appliedWakeSnapshot = snapshot
+            wakeSyncState = .updated
+            scheduleWakeSyncStateReset()
+        } else {
+            config.wakeEnabled = previousSnapshot.wakeEnabled
+            config.wakeBefore = previousSnapshot.wakeBefore
+            wakeEnabledDraft = previousSnapshot.wakeEnabled
+            wakeBeforeDraft = previousSnapshot.wakeBefore
+            wakeSyncState = .failed("Failed to save wake settings.")
         }
     }
 
