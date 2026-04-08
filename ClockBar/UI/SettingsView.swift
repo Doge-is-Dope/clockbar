@@ -329,8 +329,8 @@ struct SettingsView: View {
     private var insetDivider: some View {
         Divider()
             .padding(.leading, AppStyle.Spacing.cardPadding
-                     + AppStyle.Layout.iconBackgroundSize
-                     + AppStyle.Spacing.xl)
+                     + AppStyle.Layout.iconBackgroundSize)
+            .padding(.horizontal, AppStyle.Spacing.cardPadding)
     }
 
     private func durationControl(

@@ -7,7 +7,7 @@ enum AppStyle {
     enum Font {
         static let largeTitle: SwiftUI.Font = .system(size: 28, weight: .semibold, design: .rounded)
         static let sectionTitle: SwiftUI.Font = .system(size: 14, weight: .semibold)
-        static let icon: SwiftUI.Font = .system(size: 13, weight: .medium)
+        static let icon: SwiftUI.Font = .system(size: 14, weight: .medium)
         static let body: SwiftUI.Font = .system(size: 14, weight: .regular)
         static let bodyMedium: SwiftUI.Font = .system(size: 14, weight: .medium)
         static let subheadline: SwiftUI.Font = .system(size: 12, weight: .regular)
@@ -71,7 +71,7 @@ enum AppStyle {
         static let menuRowMinHeight: CGFloat = 22
         static let scheduleRowMinHeight: CGFloat = 34
         static let settingsRowHeight: CGFloat = 44
-        static let iconBackgroundSize: CGFloat = 28
+        static let iconBackgroundSize: CGFloat = 16
         static let timeRangeSeparatorWidth: CGFloat = 12
         static let timeRangeSeparatorRuleWidth: CGFloat = 8
         static let timeRangeSeparatorHeight: CGFloat = 12
