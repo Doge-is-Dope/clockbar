@@ -15,9 +15,11 @@ APP_SOURCES := \
 	ClockBar/Support/NotificationManager.swift \
 	ClockBar/Support/Shell.swift \
 	ClockBar/Support/StringExtensions.swift \
+	ClockBar/Support/TimeHelpers.swift \
 	ClockBar/Support/SystemUI.swift \
 	ClockBar/Models/ClockAction.swift \
 	ClockBar/Models/ClockConfig.swift \
+	ClockBar/Models/NextPunch.swift \
 	ClockBar/Models/PunchStatus.swift \
 	ClockBar/Models/ScheduledTime.swift \
 	ClockBar/Models/ScheduleState.swift \
@@ -51,9 +53,11 @@ HELPER_SOURCES := \
 	ClockBar/Support/DateFormatters.swift \
 	ClockBar/Support/Shell.swift \
 	ClockBar/Support/StringExtensions.swift \
+	ClockBar/Support/TimeHelpers.swift \
 	ClockBar/Support/SystemUI.swift \
 	ClockBar/Models/ClockAction.swift \
 	ClockBar/Models/ClockConfig.swift \
+	ClockBar/Models/NextPunch.swift \
 	ClockBar/Models/PunchStatus.swift \
 	ClockBar/Models/ScheduledTime.swift \
 	ClockBar/Models/ScheduleState.swift \
@@ -80,7 +84,7 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist ClockBar.xcod
 	codesign --force --sign - ClockBar.app
 
 menubar: ClockBar.app
-	-pkill -x clockbar 2>/dev/null
+	-pkill -f ClockBar 2>/dev/null
 	open ClockBar.app
 
 install: ClockBar.app

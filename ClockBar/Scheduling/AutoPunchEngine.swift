@@ -84,7 +84,7 @@ enum AutoPunchEngine {
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (late)")
             }
         } else {
-            let delay = Int.random(in: 0...max(config.randomDelayMax, 0))
+            let delay = Self.computeDelay(for: action, config: config)
             if dryRun {
                 print("[dry-run] Would sleep \(delay)s (\(delay / 60)m\(delay % 60)s)")
             } else if delay > 0 {
@@ -190,6 +190,28 @@ enum AutoPunchEngine {
             )
             return 1
         }
+    }
+
+    private static func computeDelay(for action: ClockAction, config: ClockConfig) -> Int {
+        let today = DateFormatter.statusDateFormatter.string(from: Date())
+
+        if let punch = NextPunchStore.load(), punch.date == today {
+            let targetTime = action == .clockin ? punch.clockin : punch.clockout
+            if let target = ScheduledTime(string: targetTime) {
+                let now = Date()
+                let calendar = Calendar(identifier: .gregorian)
+                let targetDate = calendar.date(
+                    bySettingHour: target.hour,
+                    minute: target.minute,
+                    second: 0,
+                    of: now
+                ) ?? now
+                return max(0, Int(targetDate.timeIntervalSince(now)))
+            }
+        }
+
+        // Fallback: random delay if no pre-computed time
+        return Int.random(in: 0...max(config.schedule.delayMax(for: action), 0))
     }
 
     private static func existingPunch(for action: ClockAction, in status: PunchStatus) -> String? {

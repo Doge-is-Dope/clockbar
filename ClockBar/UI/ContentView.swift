@@ -180,17 +180,24 @@ struct ContentView: View {
     }
 
     private var punchWindowSummary: String {
-        let cin = viewModel.config.schedule.clockin
-        let cout = viewModel.config.schedule.clockout
-        let delay = max(0, viewModel.config.randomDelayMax)
+        let hasClockIn = viewModel.status?.clockIn != nil
+        let hasClockOut = viewModel.status?.clockOut != nil
 
-        if delay > 0 {
-            let cinEnd = addMinutes(delay / 60, to: cin)
-            let coutEnd = addMinutes(delay / 60, to: cout)
-            return "In \(displayTime(cin)) – \(displayTime(cinEnd)), Out \(displayTime(cout)) – \(displayTime(coutEnd))"
+        if let next = viewModel.nextPunch {
+            if !hasClockIn {
+                return "Clock in at \(displayTime(next.clockin)) · Out at \(displayTime(next.clockout))"
+            }
+            if !hasClockOut {
+                return "Clock out at \(displayTime(next.clockout))"
+            }
         }
 
-        return "\(displayTime(cin)) – \(displayTime(cout))"
+        // Both done or no pre-computed times — show range
+        let s = viewModel.config.schedule
+        if s.clockin == s.clockinEnd && s.clockout == s.clockoutEnd {
+            return "\(displayTime(s.clockin)) – \(displayTime(s.clockout))"
+        }
+        return "In \(displayTime(s.clockin)) – \(displayTime(s.clockinEnd)), Out \(displayTime(s.clockout)) – \(displayTime(s.clockoutEnd))"
     }
 
     private func displayTime(_ time: String) -> String {
@@ -200,14 +207,6 @@ struct ContentView: View {
         let period = h >= 12 ? "PM" : "AM"
         let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
         return String(format: "%d:%02d %@", h12, m, period)
-    }
-
-    private func addMinutes(_ minutes: Int, to time: String) -> String {
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        let h = parts.indices.contains(0) ? parts[0] : 0
-        let m = parts.indices.contains(1) ? parts[1] : 0
-        let total = h * 60 + m + minutes
-        return String(format: "%02d:%02d", (total / 60) % 24, total % 60)
     }
 
     private func showSettings() {

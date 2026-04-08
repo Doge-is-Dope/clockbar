@@ -5,7 +5,9 @@ struct SettingsView: View {
     @ObservedObject var appUpdater: AppUpdater
 
     @State private var clockInDate = Date()
+    @State private var clockInEndDate = Date()
     @State private var clockOutDate = Date()
+    @State private var clockOutEndDate = Date()
 
     private let calendar = Calendar(identifier: .gregorian)
 
@@ -29,9 +31,14 @@ struct SettingsView: View {
             maxWidth: AppStyle.Layout.settingsMaxWidth,
             maxHeight: AppStyle.Layout.settingsMaxHeight
         )
+        .onDisappear {
+            viewModel.applyPendingWakeSchedule()
+        }
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
+            clockInEndDate = date(from: viewModel.config.schedule.clockinEnd)
             clockOutDate = date(from: viewModel.config.schedule.clockout)
+            clockOutEndDate = date(from: viewModel.config.schedule.clockoutEnd)
         }
         .onChange(of: viewModel.config.schedule.clockin) { _, value in
             let parsed = date(from: value)
@@ -39,10 +46,22 @@ struct SettingsView: View {
                 clockInDate = parsed
             }
         }
+        .onChange(of: viewModel.config.schedule.clockinEnd) { _, value in
+            let parsed = date(from: value)
+            if !calendar.isDate(clockInEndDate, equalTo: parsed, toGranularity: .minute) {
+                clockInEndDate = parsed
+            }
+        }
         .onChange(of: viewModel.config.schedule.clockout) { _, value in
             let parsed = date(from: value)
             if !calendar.isDate(clockOutDate, equalTo: parsed, toGranularity: .minute) {
                 clockOutDate = parsed
+            }
+        }
+        .onChange(of: viewModel.config.schedule.clockoutEnd) { _, value in
+            let parsed = date(from: value)
+            if !calendar.isDate(clockOutEndDate, equalTo: parsed, toGranularity: .minute) {
+                clockOutEndDate = parsed
             }
         }
     }
@@ -60,13 +79,13 @@ struct SettingsView: View {
                         label: "Clock In",
                         isEnabled: isScheduleEditingEnabled
                     ) {
-                        TimeFieldPicker(
-                            date: $clockInDate,
+                        timeRangePicker(
+                            start: $clockInDate,
+                            end: $clockInEndDate,
                             isEnabled: isScheduleEditingEnabled
-                        ) {
-                            persistTime($0, for: .clockin)
+                        ) { startDate, endDate in
+                            persistTimeRange(start: startDate, end: endDate, for: .clockin)
                         }
-                        .fixedSize()
                     }
 
                     insetDivider
@@ -76,20 +95,47 @@ struct SettingsView: View {
                         label: "Clock Out",
                         isEnabled: isScheduleEditingEnabled
                     ) {
-                        TimeFieldPicker(
-                            date: $clockOutDate,
+                        timeRangePicker(
+                            start: $clockOutDate,
+                            end: $clockOutEndDate,
                             isEnabled: isScheduleEditingEnabled
-                        ) {
-                            persistTime($0, for: .clockout)
+                        ) { startDate, endDate in
+                            persistTimeRange(start: startDate, end: endDate, for: .clockout)
                         }
-                        .fixedSize()
+                    }
+
+                    insetDivider
+
+                    SettingsCardRow(
+                        icon: "clock.badge.checkmark",
+                        label: "Minimum hours",
+                        subtitle: "Auto-adjusts clock out when gap is too short.",
+                        isEnabled: isScheduleEditingEnabled
+                    ) {
+                        durationControl(
+                            value: Binding(
+                                get: { viewModel.config.minWorkHours },
+                                set: { viewModel.setMinWorkHours($0) }
+                            ),
+                            range: 0...12,
+                            step: 1,
+                            formatter: { $0 == 0 ? "Off" : "\($0)h" },
+                            isEnabled: isScheduleEditingEnabled
+                        )
                     }
                 }
 
-                Text("Runs Monday to Friday and skips public holidays.")
-                    .font(AppStyle.Font.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.leading, AppStyle.Spacing.xs)
+                if let warning = scheduleWarning {
+                    Label(warning, systemImage: "exclamationmark.triangle.fill")
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.orange)
+                        .padding(.leading, AppStyle.Spacing.xs)
+                } else {
+                    Text("Runs Monday to Friday and skips public holidays.")
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.leading, AppStyle.Spacing.xs)
+                }
             }
         }
     }
@@ -112,26 +158,6 @@ struct SettingsView: View {
                     .toggleStyle(.switch)
                     .tint(AppStyle.Palette.accent)
                     .labelsHidden()
-                }
-
-                insetDivider
-
-                SettingsCardRow(
-                    icon: "dice",
-                    label: "Random delay",
-                    subtitle: randomDelaySubtitle,
-                    isEnabled: isAutoPunchEditingEnabled
-                ) {
-                    durationControl(
-                        value: Binding(
-                            get: { max(0, viewModel.config.randomDelayMax) },
-                            set: { viewModel.setRandomDelayMax($0) }
-                        ),
-                        range: 0...3600,
-                        step: 60,
-                        zeroLabel: "Off",
-                        isEnabled: isAutoPunchEditingEnabled
-                    )
                 }
             }
         }
@@ -292,10 +318,11 @@ struct SettingsView: View {
         range: ClosedRange<Int>,
         step: Int,
         zeroLabel: String? = nil,
+        formatter: ((Int) -> String)? = nil,
         isEnabled: Bool = true
     ) -> some View {
         HStack(spacing: AppStyle.Spacing.sm) {
-            Text(durationText(value.wrappedValue, zeroLabel: zeroLabel))
+            Text(formatter?(value.wrappedValue) ?? durationText(value.wrappedValue, zeroLabel: zeroLabel))
                 .font(AppStyle.Font.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(minWidth: AppStyle.Layout.durationLabelWidth, alignment: .trailing)
@@ -348,25 +375,29 @@ struct SettingsView: View {
 
     // MARK: - Helpers
 
-    private var randomDelaySubtitle: String {
-        let delay = max(0, viewModel.config.randomDelayMax)
-        guard delay > 0 else {
-            return "Punch exactly at the scheduled times."
-        }
-        let cin = viewModel.config.schedule.clockin
-        let cout = viewModel.config.schedule.clockout
-        let cinEnd = addMinutes(delay / 60, to: cin)
-        let coutEnd = addMinutes(delay / 60, to: cout)
-        return "In \(displayTime(cin)) – \(displayTime(cinEnd)), Out \(displayTime(cout)) – \(displayTime(coutEnd))."
-    }
-
     private var wakeScheduleSubtitle: String {
         viewModel.wakeSyncState.message
             ?? "Wakes before scheduled auto-punch when plugged in."
     }
 
-    private var isAutoPunchEditingEnabled: Bool {
-        viewModel.config.autopunchEnabled
+    private var scheduleWarning: String? {
+        let s = viewModel.config.schedule
+        let inEnd = minutesSinceMidnight(s.clockinEnd)
+        let outStart = minutesSinceMidnight(s.clockout)
+
+        if outStart <= inEnd {
+            return "Clock out must be later than clock in."
+        }
+
+        let minHours = viewModel.config.minWorkHours
+        guard minHours > 0 else { return nil }
+
+        let workHours = Double(outStart - inEnd) / 60
+        if workHours < Double(minHours) {
+            return String(format: "Only %.1f hours between clock in and out (minimum %d recommended).", workHours, minHours)
+        }
+
+        return nil
     }
 
     private var isScheduleEditingEnabled: Bool {
@@ -386,23 +417,6 @@ struct SettingsView: View {
         viewModel.isAuthenticated ? "rectangle.portrait.and.arrow.right" : "person.crop.circle"
     }
 
-    private func displayTime(_ time: String) -> String {
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        let h = parts.indices.contains(0) ? parts[0] : 0
-        let m = parts.indices.contains(1) ? parts[1] : 0
-        let period = h >= 12 ? "PM" : "AM"
-        let h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
-        return String(format: "%d:%02d %@", h12, m, period)
-    }
-
-    private func addMinutes(_ minutes: Int, to time: String) -> String {
-        let parts = time.split(separator: ":").compactMap { Int($0) }
-        let h = parts.indices.contains(0) ? parts[0] : 0
-        let m = parts.indices.contains(1) ? parts[1] : 0
-        let total = h * 60 + m + minutes
-        return String(format: "%02d:%02d", (total / 60) % 24, total % 60)
-    }
-
     private func durationText(_ seconds: Int, zeroLabel: String? = nil) -> String {
         let normalized = max(0, seconds)
         if normalized == 0, let zeroLabel {
@@ -414,17 +428,126 @@ struct SettingsView: View {
         return "\(normalized / 60)m"
     }
 
-    private func persistTime(_ value: Date, for action: ClockAction) {
-        let newTime = DateFormatter.shortTimeFormatter.string(from: value)
+    private func timeRangePicker(
+        start: Binding<Date>,
+        end: Binding<Date>,
+        isEnabled: Bool,
+        onChange: @escaping (Date, Date) -> Void
+    ) -> some View {
+        HStack(alignment: .center, spacing: AppStyle.Spacing.md) {
+            TimeFieldPicker(
+                date: start,
+                alignment: .right,
+                isEnabled: isEnabled
+            ) { newStart in
+                var clampedEnd = end.wrappedValue
+                if clampedEnd < newStart {
+                    clampedEnd = newStart
+                    end.wrappedValue = clampedEnd
+                }
+                onChange(newStart, clampedEnd)
+            }
+            .frame(width: AppStyle.Layout.timePickerWidth, alignment: .trailing)
+
+            Capsule()
+                .fill(.tertiary)
+                .frame(width: AppStyle.Layout.timeRangeSeparatorRuleWidth, height: 1)
+                .frame(
+                    width: AppStyle.Layout.timeRangeSeparatorWidth,
+                    height: AppStyle.Layout.timeRangeSeparatorHeight,
+                    alignment: .center
+                )
+
+            TimeFieldPicker(
+                date: end,
+                alignment: .left,
+                isEnabled: isEnabled
+            ) { newEnd in
+                var clampedEnd = newEnd
+                if clampedEnd < start.wrappedValue {
+                    clampedEnd = start.wrappedValue
+                    end.wrappedValue = clampedEnd
+                }
+                onChange(start.wrappedValue, clampedEnd)
+            }
+            .frame(width: AppStyle.Layout.timePickerWidth, alignment: .leading)
+        }
+    }
+
+    private func persistTimeRange(start: Date, end: Date, for action: ClockAction) {
+        let startTime = DateFormatter.shortTimeFormatter.string(from: start)
+        let endTime = DateFormatter.shortTimeFormatter.string(from: end)
+        let s = viewModel.config.schedule
+        let startChanged: Bool
+        let minGap = viewModel.config.minWorkHours * 60
+
         switch action {
         case .clockin:
-            guard newTime != viewModel.config.schedule.clockin else { return }
-            viewModel.updateSchedule(clockIn: newTime)
+            startChanged = startTime != s.clockin
+            guard minGap > 0 else {
+                viewModel.updateSchedule(
+                    clockIn: startChanged ? startTime : nil,
+                    clockInEnd: endTime
+                )
+                break
+            }
+            let inEndMinutes = minutesSinceMidnight(endTime)
+            let outStartMinutes = minutesSinceMidnight(s.clockout)
+            if outStartMinutes - inEndMinutes < minGap {
+                let outWidth = minutesSinceMidnight(s.clockoutEnd) - minutesSinceMidnight(s.clockout)
+                let newOutStart = inEndMinutes + minGap
+                let newOut = formatMinutes(newOutStart)
+                let newOutEnd = formatMinutes(newOutStart + max(outWidth, 0))
+                clockOutDate = date(from: newOut)
+                clockOutEndDate = date(from: newOutEnd)
+                viewModel.updateSchedule(
+                    clockIn: startChanged ? startTime : nil,
+                    clockInEnd: endTime,
+                    clockOut: newOut,
+                    clockOutEnd: newOutEnd
+                )
+            } else {
+                viewModel.updateSchedule(
+                    clockIn: startChanged ? startTime : nil,
+                    clockInEnd: endTime
+                )
+            }
         case .clockout:
-            guard newTime != viewModel.config.schedule.clockout else { return }
-            viewModel.updateSchedule(clockOut: newTime)
+            startChanged = startTime != s.clockout
+            guard minGap > 0 else {
+                viewModel.updateSchedule(
+                    clockOut: startChanged ? startTime : nil,
+                    clockOutEnd: endTime
+                )
+                break
+            }
+            let outStartMinutes = minutesSinceMidnight(startTime)
+            let inEndMinutes = minutesSinceMidnight(s.clockinEnd)
+            if outStartMinutes - inEndMinutes < minGap {
+                let inWidth = minutesSinceMidnight(s.clockinEnd) - minutesSinceMidnight(s.clockin)
+                let newInEnd = max(0, outStartMinutes - minGap)
+                let newIn = formatMinutes(max(0, newInEnd - max(inWidth, 0)))
+                let newInEndStr = formatMinutes(newInEnd)
+                clockInDate = date(from: newIn)
+                clockInEndDate = date(from: newInEndStr)
+                viewModel.updateSchedule(
+                    clockIn: newIn,
+                    clockInEnd: newInEndStr,
+                    clockOut: startChanged ? startTime : nil,
+                    clockOutEnd: endTime
+                )
+            } else {
+                viewModel.updateSchedule(
+                    clockOut: startChanged ? startTime : nil,
+                    clockOutEnd: endTime
+                )
+            }
         }
         NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
+    private func formatMinutes(_ minutes: Int) -> String {
+        String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
     }
 
     private func date(from value: String) -> Date {
@@ -487,6 +610,7 @@ private struct SettingsCardRow<Control: View>: View {
 
 private struct TimeFieldPicker: NSViewRepresentable {
     @Binding var date: Date
+    var alignment: NSTextAlignment = .natural
     var isEnabled = true
     var onChange: (Date) -> Void
 
@@ -498,6 +622,7 @@ private struct TimeFieldPicker: NSViewRepresentable {
         picker.isBordered = false
         picker.isBezeled = false
         picker.drawsBackground = false
+        picker.alignment = alignment
         picker.isEnabled = isEnabled
         picker.target = context.coordinator
         picker.action = #selector(Coordinator.dateChanged(_:))
@@ -507,6 +632,7 @@ private struct TimeFieldPicker: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSDatePicker, context: Context) {
         nsView.isEnabled = isEnabled
+        nsView.alignment = alignment
         guard nsView.dateValue != date else { return }
         nsView.dateValue = date
     }

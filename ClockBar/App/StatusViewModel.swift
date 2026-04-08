@@ -39,6 +39,7 @@ final class StatusViewModel: ObservableObject {
     @Published var scheduleState: ScheduleState
     @Published var statusNote: String?
     @Published var wakeSyncState: WakeSyncState = .idle
+    @Published var nextPunch: NextPunch?
 
     private var timer: Timer?
     private var didEnsureLaunchAtLogin = false
@@ -46,18 +47,23 @@ final class StatusViewModel: ObservableObject {
     private var wakeApplyTask: Task<Void, Never>?
     private var wakeSyncStateResetTask: Task<Void, Never>?
     private var wakeRollbackSnapshot: WakeScheduleSnapshot?
+    private var wakeScheduleDirtySnapshot: WakeScheduleSnapshot?
 
     private struct WakeScheduleSnapshot: Equatable {
         var wakeEnabled: Bool
         var wakeBefore: Int
         var clockIn: String
+        var clockInEnd: String
         var clockOut: String
+        var clockOutEnd: String
 
         init(config: ClockConfig) {
             self.wakeEnabled = config.wakeEnabled
             self.wakeBefore = config.wakeBefore
             self.clockIn = config.schedule.clockin
+            self.clockInEnd = config.schedule.clockinEnd
             self.clockOut = config.schedule.clockout
+            self.clockOutEnd = config.schedule.clockoutEnd
         }
     }
 
@@ -103,6 +109,7 @@ final class StatusViewModel: ObservableObject {
         if scheduleState.mismatchSummary != nil {
             saveAndReload()
         }
+        nextPunch = NextPunchStore.loadOrGenerate(config: config)
         refresh()
         installRefreshTimer()
     }
@@ -154,7 +161,12 @@ final class StatusViewModel: ObservableObject {
         requestWakeScheduleApply(revertingTo: previousConfig, debounce: false)
     }
 
-    func updateSchedule(clockIn: String? = nil, clockOut: String? = nil) {
+    func updateSchedule(
+        clockIn: String? = nil,
+        clockInEnd: String? = nil,
+        clockOut: String? = nil,
+        clockOutEnd: String? = nil
+    ) {
         var nextConfig = config
         let previousConfig = config
 
@@ -162,20 +174,34 @@ final class StatusViewModel: ObservableObject {
             nextConfig.schedule.clockin = clockIn
         }
 
+        if let clockInEnd {
+            nextConfig.schedule.clockinEnd = clockInEnd
+        }
+
         if let clockOut {
             nextConfig.schedule.clockout = clockOut
         }
 
-        guard nextConfig != config else { return }
-        config = nextConfig
-
-        guard config.wakeEnabled, clockIn != nil || clockOut != nil else {
-            saveAndReload()
-            return
+        if let clockOutEnd {
+            nextConfig.schedule.clockoutEnd = clockOutEnd
         }
 
-        try? ConfigManager.save(config)
-        requestWakeScheduleApply(revertingTo: previousConfig, debounce: true)
+        guard nextConfig != config else { return }
+
+        let startTimeChanged = clockIn != nil || clockOut != nil
+        if config.wakeEnabled, startTimeChanged, wakeScheduleDirtySnapshot == nil {
+            wakeScheduleDirtySnapshot = WakeScheduleSnapshot(config: previousConfig)
+        }
+
+        config = nextConfig
+        regenerateNextPunch()
+        saveAndReload()
+    }
+
+    func setMinWorkHours(_ value: Int) {
+        updateConfig {
+            $0.minWorkHours = max(0, value)
+        }
     }
 
     func setLatePromptEnabled(_ isEnabled: Bool) {
@@ -187,12 +213,6 @@ final class StatusViewModel: ObservableObject {
     func setLateThreshold(_ value: Int) {
         updateConfig {
             $0.lateThreshold = max(0, value)
-        }
-    }
-
-    func setRandomDelayMax(_ value: Int) {
-        updateConfig {
-            $0.randomDelayMax = max(0, value)
         }
     }
 
@@ -212,6 +232,24 @@ final class StatusViewModel: ObservableObject {
 
         try? ConfigManager.save(config)
         requestWakeScheduleApply(revertingTo: previousConfig, debounce: true)
+    }
+
+    func applyPendingWakeSchedule() {
+        guard let snapshot = wakeScheduleDirtySnapshot else { return }
+        wakeScheduleDirtySnapshot = nil
+
+        if wakeRollbackSnapshot == nil {
+            wakeRollbackSnapshot = snapshot
+        }
+
+        wakeSyncStateResetTask?.cancel()
+        wakeApplyTask?.cancel()
+        wakeSyncState = .applying
+
+        let targetSnapshot = WakeScheduleSnapshot(config: config)
+        wakeApplyTask = Task { [weak self] in
+            await self?.performWakeScheduleApply(using: targetSnapshot)
+        }
     }
 
     func setRefreshInterval(_ value: Int) {
@@ -286,6 +324,18 @@ final class StatusViewModel: ObservableObject {
             status = updatedStatus
         }
         isRefreshing = false
+        refreshNextPunchIfNeeded()
+    }
+
+    private func refreshNextPunchIfNeeded() {
+        let today = DateFormatter.statusDateFormatter.string(from: Date())
+        if nextPunch?.date != today {
+            nextPunch = NextPunchStore.loadOrGenerate(config: config)
+        }
+    }
+
+    private func regenerateNextPunch() {
+        nextPunch = NextPunchStore.generate(config: config)
     }
 
     private func finishPunch(with updatedStatus: PunchStatus, beforeIn: String?, beforeOut: String?) {
@@ -405,9 +455,12 @@ final class StatusViewModel: ObservableObject {
             config.wakeEnabled = wakeRollbackSnapshot.wakeEnabled
             config.wakeBefore = wakeRollbackSnapshot.wakeBefore
             config.schedule.clockin = wakeRollbackSnapshot.clockIn
+            config.schedule.clockinEnd = wakeRollbackSnapshot.clockInEnd
             config.schedule.clockout = wakeRollbackSnapshot.clockOut
+            config.schedule.clockoutEnd = wakeRollbackSnapshot.clockOutEnd
             self.wakeRollbackSnapshot = nil
             try? ConfigManager.save(config)
+            regenerateNextPunch()
             saveAndReload()
         }
 

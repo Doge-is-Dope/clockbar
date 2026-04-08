@@ -21,6 +21,7 @@
 		A200000B /* ScheduledTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000D /* ScheduledTime.swift */; };
 		A200000C /* ScheduleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000E /* ScheduleState.swift */; };
 		A200000D /* StoredSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000F /* StoredSession.swift */; };
+		A2000030 /* NextPunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* NextPunch.swift */; };
 		A200000E /* AutoPunchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* AutoPunchEngine.swift */; };
 		A200000F /* HolidayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* HolidayStore.swift */; };
 		A2000010 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* LaunchAgentManager.swift */; };
@@ -33,6 +34,7 @@
 		A2000017 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000019 /* NotificationManager.swift */; };
 		A2000018 /* Shell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A /* Shell.swift */; };
 		A2000019 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001B /* StringExtensions.swift */; };
+		A2000031 /* TimeHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031 /* TimeHelpers.swift */; };
 		A200001A /* SystemUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C /* SystemUI.swift */; };
 		A200001B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001D /* ContentView.swift */; };
 		A200001C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* DesignSystem.swift */; };
@@ -63,6 +65,7 @@
 		A100000D /* ScheduledTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduledTime.swift; sourceTree = "<group>"; };
 		A100000E /* ScheduleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleState.swift; sourceTree = "<group>"; };
 		A100000F /* StoredSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredSession.swift; sourceTree = "<group>"; };
+		A1000030 /* NextPunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextPunch.swift; sourceTree = "<group>"; };
 		A1000010 /* AutoPunchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchEngine.swift; sourceTree = "<group>"; };
 		A1000011 /* HolidayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayStore.swift; sourceTree = "<group>"; };
 		A1000012 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
@@ -75,6 +78,7 @@
 		A1000019 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		A100001A /* Shell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shell.swift; sourceTree = "<group>"; };
 		A100001B /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
+		A1000031 /* TimeHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeHelpers.swift; sourceTree = "<group>"; };
 		A100001C /* SystemUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemUI.swift; sourceTree = "<group>"; };
 		A100001D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A100001E /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -178,6 +182,7 @@
 				A100000B /* ClockConfig.swift */,
 				A100000C /* PunchStatus.swift */,
 				A100000D /* ScheduledTime.swift */,
+				A1000030 /* NextPunch.swift */,
 				A100000E /* ScheduleState.swift */,
 				A100000F /* StoredSession.swift */,
 			);
@@ -206,6 +211,7 @@
 				A1000019 /* NotificationManager.swift */,
 				A100001A /* Shell.swift */,
 				A100001B /* StringExtensions.swift */,
+				A1000031 /* TimeHelpers.swift */,
 				A100001C /* SystemUI.swift */,
 			);
 			path = Support;
@@ -307,6 +313,7 @@
 				A200000B /* ScheduledTime.swift in Sources */,
 				A200000C /* ScheduleState.swift in Sources */,
 				A200000D /* StoredSession.swift in Sources */,
+				A2000030 /* NextPunch.swift in Sources */,
 				A200000E /* AutoPunchEngine.swift in Sources */,
 				A200000F /* HolidayStore.swift in Sources */,
 				A2000010 /* LaunchAgentManager.swift in Sources */,
@@ -319,6 +326,7 @@
 				A2000017 /* NotificationManager.swift in Sources */,
 				A2000018 /* Shell.swift in Sources */,
 				A2000019 /* StringExtensions.swift in Sources */,
+				A2000031 /* TimeHelpers.swift in Sources */,
 				A200001A /* SystemUI.swift in Sources */,
 				A200001B /* ContentView.swift in Sources */,
 				A200001C /* DesignSystem.swift in Sources */,
