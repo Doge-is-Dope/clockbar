@@ -29,6 +29,7 @@ APP_SOURCES := \
 	ClockBar/API/ClockService.swift \
 	ClockBar/Auth/AuthStore.swift \
 	ClockBar/Auth/AuthWindowController.swift \
+	ClockBar/Auth/SilentAuthRefresher.swift \
 	ClockBar/Scheduling/AutoPunchEngine.swift \
 	ClockBar/Scheduling/HolidayStore.swift \
 	ClockBar/Scheduling/LaunchAgentManager.swift \

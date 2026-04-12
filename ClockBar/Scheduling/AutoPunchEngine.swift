@@ -171,7 +171,6 @@ enum AutoPunchEngine {
             }
             return 1
         } catch Clock104Error.unauthorized {
-            AuthStore.clear()
             AutoPunchLog.append("auto \(action.rawValue): FAILED - unauthorized")
             notify(
                 title: "\(appName) - Login Required",
@@ -289,7 +288,6 @@ enum AutoPunchEngine {
             try? AuthStore.save(session)
             return status
         } catch Clock104Error.unauthorized {
-            AuthStore.clear()
             return nil
         } catch {
             return nil

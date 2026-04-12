@@ -35,6 +35,7 @@ final class StatusViewModel: ObservableObject {
     private var wakeSyncStateResetTask: Task<Void, Never>?
     private var syncScheduleTask: Task<Void, Never>?
     private var appliedWakeSnapshot: WakeScheduleSnapshot
+    private var isRecoveringSession = false
 
     private struct WakeScheduleSnapshot: Equatable {
         var wakeEnabled: Bool
@@ -133,6 +134,7 @@ final class StatusViewModel: ObservableObject {
 
         guard isAuthenticated else {
             status = .error("Sign in to 104 to enable status and punching.")
+            recoverSessionIfNeeded()
             return
         }
 
@@ -376,6 +378,24 @@ final class StatusViewModel: ObservableObject {
         }
         isRefreshing = false
         refreshNextPunchIfNeeded()
+        if updatedStatus.error == "Your 104 session expired. Sign in again." {
+            recoverSessionIfNeeded()
+        }
+    }
+
+    private func recoverSessionIfNeeded() {
+        guard !isRecoveringSession else { return }
+        isRecoveringSession = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let recovered = await SilentAuthRefresher.refresh()
+            self.isRecoveringSession = false
+            guard recovered else { return }
+            self.syncSessionState()
+            if self.isAuthenticated {
+                self.refresh()
+            }
+        }
     }
 
     private func refreshNextPunchIfNeeded() {

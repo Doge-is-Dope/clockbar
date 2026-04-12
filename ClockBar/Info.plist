@@ -16,6 +16,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>LSMultipleInstancesProhibited</key>
+	<true/>
 	<key>NSAccentColorName</key>
 	<string>AccentColor</string>
 	<key>SUFeedURL</key>

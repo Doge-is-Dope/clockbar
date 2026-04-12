@@ -45,15 +45,7 @@ final class AuthWindowController: NSWindowController, NSWindowDelegate, WKNaviga
         lastCapturedCookies = []
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
-
-        let dataStore = webView.configuration.websiteDataStore
-        Task {
-            let records = await dataStore.dataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
-            await dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records)
-            await MainActor.run {
-                _ = self.webView.load(URLRequest(url: baseURL))
-            }
-        }
+        _ = webView.load(URLRequest(url: baseURL))
     }
 
     func windowWillClose(_ notification: Notification) {
