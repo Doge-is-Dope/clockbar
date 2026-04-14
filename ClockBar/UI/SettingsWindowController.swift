@@ -13,6 +13,14 @@ final class SettingsWindowController {
     }
 
     func showSettings() {
+        // Defer to the next runloop turn so we don't re-enter AppKit while the
+        // menu bar extra is still tearing down — caused the ghost icon bug (7d17fbb).
+        DispatchQueue.main.async { [weak self] in
+            self?.presentWindow()
+        }
+    }
+
+    private func presentWindow() {
         if let existing = window, existing.isVisible {
             existing.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)

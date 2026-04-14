@@ -692,19 +692,27 @@ private struct SettingsWindowHeightController: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         guard maxContentHeight > 0 else { return }
 
+        let pendingMax = maxContentHeight
+        let pendingSnap = shouldSnapInitialHeight
+        let snapCallback = onInitialHeightApplied
+
         DispatchQueue.main.async {
             guard let window = nsView.window else { return }
 
-            var maxSize = window.contentMaxSize
-            maxSize.height = maxContentHeight
-            window.contentMaxSize = maxSize
+            if window.contentMaxSize.height != pendingMax {
+                var maxSize = window.contentMaxSize
+                maxSize.height = pendingMax
+                window.contentMaxSize = maxSize
+            }
 
-            guard shouldSnapInitialHeight else { return }
+            guard pendingSnap else { return }
 
             var contentSize = window.contentRect(forFrameRect: window.frame).size
-            contentSize.height = maxContentHeight
-            window.setContentSize(contentSize)
-            onInitialHeightApplied()
+            if contentSize.height != pendingMax {
+                contentSize.height = pendingMax
+                window.setContentSize(contentSize)
+            }
+            snapCallback()
         }
     }
 }

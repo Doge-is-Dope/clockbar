@@ -5,15 +5,17 @@ import SwiftUI
 @MainActor
 struct ClockBarApp: App {
     @StateObject private var viewModel: StatusViewModel
-    @StateObject private var appUpdater = AppUpdater()
+    private let appUpdater: AppUpdater
     private let settingsController: SettingsWindowController
 
     init() {
         NotificationManager.shared.setup()
         let model = StatusViewModel()
         model.start()
+        let updater = AppUpdater()
         _viewModel = StateObject(wrappedValue: model)
-        settingsController = SettingsWindowController(viewModel: model, appUpdater: AppUpdater())
+        appUpdater = updater
+        settingsController = SettingsWindowController(viewModel: model, appUpdater: updater)
     }
 
     var body: some Scene {

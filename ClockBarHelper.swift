@@ -7,6 +7,8 @@ struct ClockBarHelper {
         do {
             try await run(arguments: Array(CommandLine.arguments.dropFirst()))
         } catch {
+            let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
+            AutoPunchLog.append("helper: uncaught error argv=[\(argv)] - \(error.localizedDescription)")
             fputs("\(error.localizedDescription)\n", stderr)
             Darwin.exit(1)
         }
@@ -42,11 +44,14 @@ struct ClockBarHelper {
                 throw Clock104Error.api("Usage: clockbar-helper auto clockin|clockout [--dry-run]")
             }
             let code = await AutoPunchEngine.run(action: action, dryRun: dryRun)
+            if code != 0 {
+                AutoPunchLog.append("auto \(action.rawValue): exiting with code=\(code)")
+            }
             Darwin.exit(code)
 
         case "schedule":
             guard arguments.count >= 2 else {
-                throw Clock104Error.api("Usage: clockbar-helper schedule install|remove|status")
+                throw Clock104Error.api(scheduleUsage)
             }
 
             switch arguments[1] {
@@ -62,14 +67,73 @@ struct ClockBarHelper {
                 print("Removed auto-punch launchd jobs.")
             case "status":
                 print(LaunchAgentManager.statusText(config: ConfigManager.load()))
+            case "test":
+                try handleScheduleTest(arguments: Array(arguments.dropFirst(2)))
             default:
-                throw Clock104Error.api("Usage: clockbar-helper schedule install|remove|status")
+                throw Clock104Error.api(scheduleUsage)
             }
 
         default:
             throw Clock104Error.api(helperUsage)
         }
     }
+
+    private static func handleScheduleTest(arguments: [String]) throws {
+        guard let sub = arguments.first else {
+            throw Clock104Error.api(scheduleTestUsage)
+        }
+
+        switch sub {
+        case "install":
+            let rest = Array(arguments.dropFirst())
+            let realPunch = rest.contains("--real")
+            let positional = rest.filter { $0 != "--real" }
+            guard positional.count == 2,
+                  let action = ClockAction(rawValue: positional[0]),
+                  let time = ScheduledTime(string: positional[1]) else {
+                throw Clock104Error.api(scheduleTestUsage)
+            }
+
+            if realPunch {
+                fputs(
+                    "WARNING: --real will hit the 104 API and create a real \(action.logLabel) record at \(time.displayString).\n",
+                    stderr
+                )
+            }
+
+            try LaunchAgentManager.installTest(action: action, time: time, realPunch: realPunch)
+            print("Installed test job for \(action.rawValue) at \(time.displayString) (dryRun=\(!realPunch)).")
+            print(LaunchAgentManager.testStatus())
+
+        case "status":
+            print(LaunchAgentManager.testStatus())
+
+        case "remove":
+            let rest = Array(arguments.dropFirst())
+            let action = rest.first.flatMap { ClockAction(rawValue: $0) }
+            if !rest.isEmpty && action == nil {
+                throw Clock104Error.api(scheduleTestUsage)
+            }
+            try LaunchAgentManager.removeTest(action: action)
+            print("Removed test job(s).")
+
+        default:
+            throw Clock104Error.api(scheduleTestUsage)
+        }
+    }
+
+    private static let scheduleUsage = """
+    Usage: clockbar-helper schedule install|remove|status
+           clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real]
+           clockbar-helper schedule test status
+           clockbar-helper schedule test remove [<clockin|clockout>]
+    """
+
+    private static let scheduleTestUsage = """
+    Usage: clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real]
+           clockbar-helper schedule test status
+           clockbar-helper schedule test remove [<clockin|clockout>]
+    """
 
     private static let helperUsage = """
     Usage:
@@ -78,5 +142,6 @@ struct ClockBarHelper {
       clockbar-helper punch
       clockbar-helper auto clockin|clockout [--dry-run]
       clockbar-helper schedule install|remove|status
+      clockbar-helper schedule test install|status|remove ...
     """
 }

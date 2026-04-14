@@ -1,46 +1,26 @@
 import Foundation
 
 enum LaunchAgentManager {
+    private struct LaunchJobSpec {
+        let label: String
+        let plistPath: URL
+        let time: ScheduledTime
+        let programArguments: [String]
+        let stdoutPath: URL
+        let stderrPath: URL
+    }
+
+    // MARK: - Production
+
     static func install(config: ClockConfig, helperExecutablePath: String? = nil) throws -> ScheduleState {
         guard config.requiresScheduledJobs else {
             try remove()
             return currentState(config: config)
         }
 
-        let helperPath = helperExecutablePath ?? bundledHelperExecutablePath()
-        guard FileManager.default.isExecutableFile(atPath: helperPath) else {
-            throw Clock104Error.scheduler("Bundled helper is missing at \(helperPath).")
-        }
-
-        try FileManager.default.createDirectory(at: launchAgentDirectory, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-
-        for action in ClockAction.allCases {
-            let plistPath = plistPath(for: action)
-            _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, plistPath.path])
-
-            let plist = try generatePlist(
-                action: action,
-                config: config,
-                helperExecutablePath: helperPath
-            )
-            let data = try PropertyListSerialization.data(
-                fromPropertyList: plist,
-                format: .xml,
-                options: 0
-            )
-            try data.write(to: plistPath, options: .atomic)
-
-            let bootstrap = Shell.run(
-                "/bin/launchctl",
-                arguments: ["bootstrap", guiDomain, plistPath.path]
-            )
-            guard bootstrap.status == 0 else {
-                throw Clock104Error.scheduler(
-                    bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-                )
-            }
-        }
+        let helperPath = try resolveHelperPath(helperExecutablePath)
+        let specs = try productionSpecs(config: config, helperPath: helperPath)
+        try installSpecs(specs)
 
         let state = currentState(config: config)
         if let mismatch = state.mismatchSummary {
@@ -52,7 +32,7 @@ enum LaunchAgentManager {
     static func remove() throws {
         var errors: [String] = []
         for action in ClockAction.allCases {
-            let plist = plistPath(for: action)
+            let plist = productionPlistPath(for: action)
             _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, plist.path])
             do {
                 try FileManager.default.removeItem(at: plist)
@@ -70,7 +50,7 @@ enum LaunchAgentManager {
 
     static var hasInstalledPlists: Bool {
         ClockAction.allCases.contains { action in
-            FileManager.default.fileExists(atPath: plistPath(for: action).path)
+            FileManager.default.fileExists(atPath: productionPlistPath(for: action).path)
         }
     }
 
@@ -81,8 +61,8 @@ enum LaunchAgentManager {
 
         let jobs = ClockAction.allCases.map { action -> ScheduleJobState in
             let configured = ScheduledTime(string: config.schedule.time(for: action))
-            let installed = installedTime(for: action)
-            let loaded = loadedTime(for: action)
+            let installed = installedTime(at: productionPlistPath(for: action))
+            let loaded = loadedTime(forLabel: action.launchdLabel)
             let isLoaded = loaded != nil
 
             let issue: String?
@@ -141,6 +121,211 @@ enum LaunchAgentManager {
         return output.joined(separator: "\n")
     }
 
+    // MARK: - Test surface
+
+    static func installTest(
+        action: ClockAction,
+        time: ScheduledTime,
+        realPunch: Bool = false,
+        helperExecutablePath: String? = nil
+    ) throws {
+        guard (0...23).contains(time.hour), (0...59).contains(time.minute) else {
+            throw Clock104Error.scheduler(
+                "Invalid time \(time.displayString): hour must be 0-23, minute must be 0-59."
+            )
+        }
+
+        let now = Date()
+        let calendar = Calendar(identifier: .gregorian)
+        if let target = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: now),
+           target.timeIntervalSince(now) < 60 {
+            throw Clock104Error.scheduler(
+                "Time \(time.displayString) is within the next 60s or already passed — launchd may skip today's fire or not fire until tomorrow. Pick a time at least 1 minute in the future."
+            )
+        }
+
+        let helperPath = try resolveHelperPath(helperExecutablePath)
+        let spec = testSpec(action: action, time: time, helperPath: helperPath, realPunch: realPunch)
+        try installSpecs([spec])
+
+        AutoPunchLog.append(
+            "schedule test: installed \(spec.label) for \(time.displayString) dryRun=\(!realPunch)"
+        )
+    }
+
+    static func removeTest(action: ClockAction? = nil) throws {
+        let actions: [ClockAction] = action.map { [$0] } ?? ClockAction.allCases
+        var errors: [String] = []
+
+        for target in actions {
+            let path = testPlistPath(for: target)
+            _ = Shell.run(
+                "/bin/launchctl",
+                arguments: ["bootout", guiDomain, path.path]
+            )
+            do {
+                try FileManager.default.removeItem(at: path)
+                AutoPunchLog.append("schedule test: removed \(testLabel(for: target))")
+            } catch let error as NSError where error.domain == NSCocoaErrorDomain
+                && error.code == NSFileNoSuchFileError {
+                // Already gone — fine
+            } catch {
+                errors.append("\(target): \(error.localizedDescription)")
+            }
+        }
+
+        if !errors.isEmpty {
+            throw Clock104Error.scheduler("Failed to remove test agents: \(errors.joined(separator: "; "))")
+        }
+    }
+
+    static func testStatus() -> String {
+        var output = ["=== test launchd jobs ==="]
+        var anyInstalled = false
+
+        for action in ClockAction.allCases {
+            let label = testLabel(for: action)
+            let path = testPlistPath(for: action)
+            guard FileManager.default.fileExists(atPath: path.path) else { continue }
+            anyInstalled = true
+
+            let installed = installedTime(at: path)?.displayString ?? "(unreadable)"
+            let loaded = loadedTime(forLabel: label)?.displayString ?? "not loaded"
+            let args = installedProgramArguments(at: path)?.joined(separator: " ") ?? "(unreadable)"
+
+            output.append("  \(label):")
+            output.append("    plist=\(path.path)")
+            output.append("    time=\(installed) loaded=\(loaded)")
+            output.append("    args=\(args)")
+            output.append("    stdout=\(testStdoutPath(for: action).path)")
+            output.append("    stderr=\(testStderrPath(for: action).path)")
+        }
+
+        if !anyInstalled {
+            output.append("  (none installed)")
+        } else {
+            output.append("")
+            output.append("Remove with: clockbar-helper schedule test remove [clockin|clockout]")
+            output.append("Live log:    tail -f \(autoPunchLogPath.path)")
+        }
+        return output.joined(separator: "\n")
+    }
+
+    // MARK: - Spec construction
+
+    private static func productionSpecs(
+        config: ClockConfig,
+        helperPath: String
+    ) throws -> [LaunchJobSpec] {
+        try ClockAction.allCases.map { action in
+            guard let time = ScheduledTime(string: config.schedule.time(for: action)) else {
+                throw Clock104Error.scheduler("Invalid \(action.displayName) schedule.")
+            }
+            return LaunchJobSpec(
+                label: action.launchdLabel,
+                plistPath: productionPlistPath(for: action),
+                time: time,
+                programArguments: [helperPath, "auto", action.rawValue],
+                stdoutPath: cacheDirectory
+                    .appendingPathComponent("launchd-\(action.rawValue).stdout.log"),
+                stderrPath: cacheDirectory
+                    .appendingPathComponent("launchd-\(action.rawValue).stderr.log")
+            )
+        }
+    }
+
+    private static func testSpec(
+        action: ClockAction,
+        time: ScheduledTime,
+        helperPath: String,
+        realPunch: Bool
+    ) -> LaunchJobSpec {
+        var args = [helperPath, "auto", action.rawValue]
+        if !realPunch {
+            args.append("--dry-run")
+        }
+        return LaunchJobSpec(
+            label: testLabel(for: action),
+            plistPath: testPlistPath(for: action),
+            time: time,
+            programArguments: args,
+            stdoutPath: testStdoutPath(for: action),
+            stderrPath: testStderrPath(for: action)
+        )
+    }
+
+    // MARK: - Bootstrap primitive
+
+    private static func installSpecs(_ specs: [LaunchJobSpec]) throws {
+        try FileManager.default.createDirectory(at: launchAgentDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+
+        for spec in specs {
+            _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, spec.plistPath.path])
+
+            let plist = generatePlist(spec: spec)
+            let data = try PropertyListSerialization.data(
+                fromPropertyList: plist,
+                format: .xml,
+                options: 0
+            )
+            try data.write(to: spec.plistPath, options: .atomic)
+
+            let bootstrap = Shell.run(
+                "/bin/launchctl",
+                arguments: ["bootstrap", guiDomain, spec.plistPath.path]
+            )
+            guard bootstrap.status == 0 else {
+                throw Clock104Error.scheduler(
+                    bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+            }
+        }
+    }
+
+    private static func generatePlist(spec: LaunchJobSpec) -> [String: Any] {
+        [
+            "Label": spec.label,
+            "ProgramArguments": spec.programArguments,
+            "StartCalendarInterval": ["Hour": spec.time.hour, "Minute": spec.time.minute],
+            "EnvironmentVariables": [
+                "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+            ],
+            "StandardOutPath": spec.stdoutPath.path,
+            "StandardErrorPath": spec.stderrPath.path,
+        ]
+    }
+
+    // MARK: - Path helpers
+
+    private static func productionPlistPath(for action: ClockAction) -> URL {
+        launchAgentDirectory.appendingPathComponent("\(action.launchdLabel).plist")
+    }
+
+    private static func testLabel(for action: ClockAction) -> String {
+        "\(launchdLabelPrefix)test-\(action.rawValue)"
+    }
+
+    private static func testPlistPath(for action: ClockAction) -> URL {
+        launchAgentDirectory.appendingPathComponent("\(testLabel(for: action)).plist")
+    }
+
+    private static func testStdoutPath(for action: ClockAction) -> URL {
+        cacheDirectory.appendingPathComponent("launchd-test-\(action.rawValue).stdout.log")
+    }
+
+    private static func testStderrPath(for action: ClockAction) -> URL {
+        cacheDirectory.appendingPathComponent("launchd-test-\(action.rawValue).stderr.log")
+    }
+
+    private static func resolveHelperPath(_ override: String?) throws -> String {
+        let helperPath = override ?? bundledHelperExecutablePath()
+        guard FileManager.default.isExecutableFile(atPath: helperPath) else {
+            throw Clock104Error.scheduler("Bundled helper is missing at \(helperPath).")
+        }
+        return helperPath
+    }
+
     private static func bundledHelperExecutablePath() -> String {
         let bundlePath = Bundle.main.bundlePath
         let candidate = (bundlePath as NSString).appendingPathComponent("Contents/MacOS/clockbar-helper")
@@ -150,35 +335,7 @@ enum LaunchAgentManager {
         return CommandLine.arguments[0]
     }
 
-    private static func plistPath(for action: ClockAction) -> URL {
-        launchAgentDirectory.appendingPathComponent("\(action.launchdLabel).plist")
-    }
-
-    private static func generatePlist(
-        action: ClockAction,
-        config: ClockConfig,
-        helperExecutablePath: String
-    ) throws -> [String: Any] {
-        guard let time = ScheduledTime(string: config.schedule.time(for: action)) else {
-            throw Clock104Error.scheduler("Invalid \(action.displayName) schedule.")
-        }
-
-        return [
-            "Label": action.launchdLabel,
-            "ProgramArguments": [helperExecutablePath, "auto", action.rawValue],
-            "StartCalendarInterval": ["Hour": time.hour, "Minute": time.minute],
-            "EnvironmentVariables": [
-                "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-            ],
-            "StandardOutPath": cacheDirectory
-                .appendingPathComponent("launchd-\(action.rawValue).stdout.log").path,
-            "StandardErrorPath": cacheDirectory
-                .appendingPathComponent("launchd-\(action.rawValue).stderr.log").path,
-        ]
-    }
-
-    private static func installedTime(for action: ClockAction) -> ScheduledTime? {
-        let path = plistPath(for: action)
+    private static func installedTime(at path: URL) -> ScheduledTime? {
         guard let data = try? Data(contentsOf: path),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
               let calendar = plist["StartCalendarInterval"] as? [String: Any],
@@ -189,10 +346,18 @@ enum LaunchAgentManager {
         return ScheduledTime(hour: hour, minute: minute)
     }
 
-    private static func loadedTime(for action: ClockAction) -> ScheduledTime? {
+    private static func installedProgramArguments(at path: URL) -> [String]? {
+        guard let data = try? Data(contentsOf: path),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+              let args = plist["ProgramArguments"] as? [String]
+        else { return nil }
+        return args
+    }
+
+    private static func loadedTime(forLabel label: String) -> ScheduledTime? {
         let result = Shell.run(
             "/bin/launchctl",
-            arguments: ["print", "\(guiDomain)/\(action.launchdLabel)"]
+            arguments: ["print", "\(guiDomain)/\(label)"]
         )
         guard result.status == 0 else { return nil }
 

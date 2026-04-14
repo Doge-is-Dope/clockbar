@@ -2,6 +2,11 @@ import Foundation
 
 enum AutoPunchEngine {
     static func run(action: ClockAction, dryRun: Bool = false) async -> Int32 {
+        let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
+        AutoPunchLog.append(
+            "auto \(action.rawValue): invoked (pid=\(ProcessInfo.processInfo.processIdentifier)\(dryRun ? " dry-run" : "") argv=[\(argv)])"
+        )
+
         let config = ConfigManager.load()
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
@@ -36,7 +41,15 @@ enum AutoPunchEngine {
             second: 0,
             of: now
         ) ?? now
-        let wokeRecently = dryRun ? false : PowerStateMonitor.didWakeRecently()
+        let recentWake = dryRun ? nil : PowerStateMonitor.recentWake()
+        let wokeRecently = recentWake != nil
+        if let recentWake {
+            AutoPunchLog.append(
+                "auto \(action.rawValue): wokeRecently=true (\(recentWake.kind.rawValue) at \(DateFormatter.logTimestampFormatter.string(from: recentWake.date)))"
+            )
+        } else if !dryRun {
+            AutoPunchLog.append("auto \(action.rawValue): wokeRecently=false")
+        }
 
         if notificationOnly {
             await notifyMissedPunchAfterThresholdIfNeeded(
@@ -53,11 +66,13 @@ enum AutoPunchEngine {
             if dryRun {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
+                AutoPunchLog.append("auto \(action.rawValue): showing wake prompt")
                 let choice = SystemUI.prompt(
                     title: appName,
                     message: "Your Mac just woke after the scheduled \(action.logLabel). Punch now?",
                     buttons: ["Skip", "Punch"]
                 )
+                AutoPunchLog.append("auto \(action.rawValue): wake prompt result=\(choice ?? "nil")")
                 guard choice == "Punch" else {
                     AutoPunchLog.append("auto \(action.rawValue): skipped by user (wake prompt)")
                     notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
@@ -75,11 +90,15 @@ enum AutoPunchEngine {
                 AutoPunchLog.append("auto \(action.rawValue): user chose to punch (wake prompt)")
             }
         } else {
-            let delay = Self.computeDelay(for: action, config: config)
+            let plan = Self.computeDelayPlan(for: action, config: config)
+            let targetText = plan.target?.displayString ?? "(\(plan.delay)s from now)"
+            AutoPunchLog.append(
+                "auto \(action.rawValue): sleeping \(plan.delay)s until \(targetText) source=\(plan.source.rawValue)"
+            )
             if dryRun {
-                print("[dry-run] Would sleep \(delay)s (\(delay / 60)m\(delay % 60)s)")
-            } else if delay > 0 {
-                try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000_000)
+                print("[dry-run] Would sleep \(plan.delay)s (\(plan.delay / 60)m\(plan.delay % 60)s)")
+            } else if plan.delay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(plan.delay) * 1_000_000_000)
             }
         }
 
@@ -103,7 +122,9 @@ enum AutoPunchEngine {
             return 1
         }
 
+        var currentStep = "getStatus"
         do {
+            AutoPunchLog.append("auto \(action.rawValue): step=getStatus")
             let status = try await Clock104API.getStatus(session: session)
             session.lastValidatedAt = Date()
             try? AuthStore.save(session)
@@ -141,7 +162,11 @@ enum AutoPunchEngine {
                 return 0
             }
 
+            currentStep = "sendPunch"
+            AutoPunchLog.append("auto \(action.rawValue): step=sendPunch")
             try await Clock104API.sendPunch(session: session)
+            currentStep = "verifyStatus"
+            AutoPunchLog.append("auto \(action.rawValue): step=verifyStatus")
             let verified = try await Clock104API.getStatus(session: session)
             if let punchTime = existingPunch(for: action, in: verified) {
                 var message = "\(action == .clockin ? "Clocked in" : "Clocked out") at \(punchTime)"
@@ -171,7 +196,7 @@ enum AutoPunchEngine {
             }
             return 1
         } catch Clock104Error.unauthorized {
-            AutoPunchLog.append("auto \(action.rawValue): FAILED - unauthorized")
+            AutoPunchLog.append("auto \(action.rawValue): FAILED - unauthorized at step=\(currentStep)")
             notify(
                 title: "\(appName) - Login Required",
                 body: "Your 104 session expired. Sign in again.",
@@ -189,7 +214,7 @@ enum AutoPunchEngine {
             }
             return 1
         } catch {
-            AutoPunchLog.append("auto \(action.rawValue): FAILED - \(error.localizedDescription)")
+            AutoPunchLog.append("auto \(action.rawValue): FAILED - \(error.localizedDescription) at step=\(currentStep)")
             notify(
                 title: "\(appName) - Failed",
                 body: error.localizedDescription,
@@ -246,7 +271,18 @@ enum AutoPunchEngine {
         notify(title: appName, body: body, dryRun: dryRun)
     }
 
-    private static func computeDelay(for action: ClockAction, config: ClockConfig) -> Int {
+    private enum DelaySource: String {
+        case nextPunchStore = "NextPunchStore"
+        case fallbackRandom = "fallback-random"
+    }
+
+    private struct DelayPlan {
+        let delay: Int
+        let target: ScheduledTime?
+        let source: DelaySource
+    }
+
+    private static func computeDelayPlan(for action: ClockAction, config: ClockConfig) -> DelayPlan {
         let today = DateFormatter.statusDateFormatter.string(from: Date())
 
         if let punch = NextPunchStore.load(), punch.date == today {
@@ -260,12 +296,16 @@ enum AutoPunchEngine {
                     second: 0,
                     of: now
                 ) ?? now
-                return max(0, Int(targetDate.timeIntervalSince(now)))
+                return DelayPlan(
+                    delay: max(0, Int(targetDate.timeIntervalSince(now))),
+                    target: target,
+                    source: .nextPunchStore
+                )
             }
         }
 
-        // Fallback: random delay if no pre-computed time
-        return Int.random(in: 0...max(config.schedule.delayMax(for: action), 0))
+        let delay = Int.random(in: 0...max(config.schedule.delayMax(for: action), 0))
+        return DelayPlan(delay: delay, target: nil, source: .fallbackRandom)
     }
 
     private static func existingPunch(for action: ClockAction, in status: PunchStatus) -> String? {
