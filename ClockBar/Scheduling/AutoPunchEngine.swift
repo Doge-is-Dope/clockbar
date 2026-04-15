@@ -7,6 +7,12 @@ enum AutoPunchEngine {
             "auto \(action.rawValue): invoked (pid=\(ProcessInfo.processInfo.processIdentifier)\(dryRun ? " dry-run" : "") argv=[\(argv)])"
         )
 
+        guard let lock = AutoPunchLock.tryAcquireExclusive() else {
+            AutoPunchLog.append("auto \(action.rawValue): another run is in progress, skipping")
+            return 0
+        }
+        defer { lock.release() }
+
         let config = ConfigManager.load()
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)

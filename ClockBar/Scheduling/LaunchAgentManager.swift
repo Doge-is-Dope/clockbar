@@ -12,15 +12,19 @@ enum LaunchAgentManager {
 
     // MARK: - Production
 
-    static func install(config: ClockConfig, helperExecutablePath: String? = nil) throws -> ScheduleState {
+    static func install(
+        config: ClockConfig,
+        helperExecutablePath: String? = nil,
+        force: Bool = false
+    ) throws -> ScheduleState {
         guard config.requiresScheduledJobs else {
-            try remove()
+            try remove(force: force)
             return currentState(config: config)
         }
 
         let helperPath = try resolveHelperPath(helperExecutablePath)
         let specs = try productionSpecs(config: config, helperPath: helperPath)
-        try installSpecs(specs)
+        try installSpecs(specs, force: force, timeout: installerTimeout(for: config))
 
         let state = currentState(config: config)
         if let mismatch = state.mismatchSummary {
@@ -29,22 +33,25 @@ enum LaunchAgentManager {
         return state
     }
 
-    static func remove() throws {
-        var errors: [String] = []
-        for action in ClockAction.allCases {
-            let plist = productionPlistPath(for: action)
-            _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, plist.path])
-            do {
-                try FileManager.default.removeItem(at: plist)
-            } catch let error as NSError where error.domain == NSCocoaErrorDomain
-                && error.code == NSFileNoSuchFileError {
-                // Already gone — fine
-            } catch {
-                errors.append("\(action): \(error.localizedDescription)")
+    static func remove(force: Bool = false) throws {
+        let timeout = installerTimeout(for: ConfigManager.load())
+        try withInstallerLock(force: force, timeout: timeout) {
+            var errors: [String] = []
+            for action in ClockAction.allCases {
+                let plist = productionPlistPath(for: action)
+                bootoutIgnoringNotLoaded(label: action.launchdLabel, plistPath: plist)
+                do {
+                    try FileManager.default.removeItem(at: plist)
+                } catch let error as NSError where error.domain == NSCocoaErrorDomain
+                    && error.code == NSFileNoSuchFileError {
+                    // Already gone — fine
+                } catch {
+                    errors.append("\(action): \(error.localizedDescription)")
+                }
             }
-        }
-        if !errors.isEmpty {
-            throw Clock104Error.scheduler("Failed to remove agents: \(errors.joined(separator: "; "))")
+            if !errors.isEmpty {
+                throw Clock104Error.scheduler("Failed to remove agents: \(errors.joined(separator: "; "))")
+            }
         }
     }
 
@@ -127,7 +134,8 @@ enum LaunchAgentManager {
         action: ClockAction,
         time: ScheduledTime,
         realPunch: Bool = false,
-        helperExecutablePath: String? = nil
+        helperExecutablePath: String? = nil,
+        force: Bool = false
     ) throws {
         guard (0...23).contains(time.hour), (0...59).contains(time.minute) else {
             throw Clock104Error.scheduler(
@@ -146,36 +154,35 @@ enum LaunchAgentManager {
 
         let helperPath = try resolveHelperPath(helperExecutablePath)
         let spec = testSpec(action: action, time: time, helperPath: helperPath, realPunch: realPunch)
-        try installSpecs([spec])
+        try installSpecs([spec], force: force, timeout: testInstallerTimeout)
 
         AutoPunchLog.append(
             "schedule test: installed \(spec.label) for \(time.displayString) dryRun=\(!realPunch)"
         )
     }
 
-    static func removeTest(action: ClockAction? = nil) throws {
-        let actions: [ClockAction] = action.map { [$0] } ?? ClockAction.allCases
-        var errors: [String] = []
+    static func removeTest(action: ClockAction? = nil, force: Bool = false) throws {
+        try withInstallerLock(force: force, timeout: testInstallerTimeout) {
+            let actions: [ClockAction] = action.map { [$0] } ?? ClockAction.allCases
+            var errors: [String] = []
 
-        for target in actions {
-            let path = testPlistPath(for: target)
-            _ = Shell.run(
-                "/bin/launchctl",
-                arguments: ["bootout", guiDomain, path.path]
-            )
-            do {
-                try FileManager.default.removeItem(at: path)
-                AutoPunchLog.append("schedule test: removed \(testLabel(for: target))")
-            } catch let error as NSError where error.domain == NSCocoaErrorDomain
-                && error.code == NSFileNoSuchFileError {
-                // Already gone — fine
-            } catch {
-                errors.append("\(target): \(error.localizedDescription)")
+            for target in actions {
+                let path = testPlistPath(for: target)
+                bootoutIgnoringNotLoaded(label: testLabel(for: target), plistPath: path)
+                do {
+                    try FileManager.default.removeItem(at: path)
+                    AutoPunchLog.append("schedule test: removed \(testLabel(for: target))")
+                } catch let error as NSError where error.domain == NSCocoaErrorDomain
+                    && error.code == NSFileNoSuchFileError {
+                    // Already gone — fine
+                } catch {
+                    errors.append("\(target): \(error.localizedDescription)")
+                }
             }
-        }
 
-        if !errors.isEmpty {
-            throw Clock104Error.scheduler("Failed to remove test agents: \(errors.joined(separator: "; "))")
+            if !errors.isEmpty {
+                throw Clock104Error.scheduler("Failed to remove test agents: \(errors.joined(separator: "; "))")
+            }
         }
     }
 
@@ -256,31 +263,96 @@ enum LaunchAgentManager {
 
     // MARK: - Bootstrap primitive
 
-    private static func installSpecs(_ specs: [LaunchJobSpec]) throws {
-        try FileManager.default.createDirectory(at: launchAgentDirectory, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+    // TODO: atomic install — a failure on spec #2's bootstrap currently leaves
+    // spec #1 installed. Out of scope for the in-flight-run race fix.
+    private static func installSpecs(
+        _ specs: [LaunchJobSpec],
+        force: Bool,
+        timeout: TimeInterval
+    ) throws {
+        try withInstallerLock(force: force, timeout: timeout) {
+            try FileManager.default.createDirectory(at: launchAgentDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
 
-        for spec in specs {
-            _ = Shell.run("/bin/launchctl", arguments: ["bootout", guiDomain, spec.plistPath.path])
+            for spec in specs {
+                bootoutIgnoringNotLoaded(label: spec.label, plistPath: spec.plistPath)
 
-            let plist = generatePlist(spec: spec)
-            let data = try PropertyListSerialization.data(
-                fromPropertyList: plist,
-                format: .xml,
-                options: 0
-            )
-            try data.write(to: spec.plistPath, options: .atomic)
-
-            let bootstrap = Shell.run(
-                "/bin/launchctl",
-                arguments: ["bootstrap", guiDomain, spec.plistPath.path]
-            )
-            guard bootstrap.status == 0 else {
-                throw Clock104Error.scheduler(
-                    bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                let plist = generatePlist(spec: spec)
+                let data = try PropertyListSerialization.data(
+                    fromPropertyList: plist,
+                    format: .xml,
+                    options: 0
                 )
+                try data.write(to: spec.plistPath, options: .atomic)
+
+                let bootstrap = Shell.run(
+                    "/bin/launchctl",
+                    arguments: ["bootstrap", guiDomain, spec.plistPath.path]
+                )
+                guard bootstrap.status == 0 else {
+                    throw Clock104Error.scheduler(
+                        bootstrap.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                }
             }
         }
+    }
+
+    // MARK: - Installer lock
+
+    /// Fixed 5-minute timeout for test schedule operations — test jobs don't
+    /// respect `delayMax` and shouldn't have an excessively long wait.
+    private static let testInstallerTimeout: TimeInterval = 300
+
+    private static func installerTimeout(for config: ClockConfig) -> TimeInterval {
+        let maxDelay = max(
+            config.schedule.delayMax(for: .clockin),
+            config.schedule.delayMax(for: .clockout)
+        )
+        return TimeInterval(max(60, maxDelay + 60))
+    }
+
+    private static func withInstallerLock<T>(
+        force: Bool,
+        timeout: TimeInterval,
+        body: () throws -> T
+    ) throws -> T {
+        if force {
+            AutoPunchLog.append(
+                "installer: --force used, skipping lock wait (may interrupt in-flight helper)"
+            )
+            return try body()
+        }
+        guard let lock = AutoPunchLock.waitAndAcquire(timeout: timeout) else {
+            throw Clock104Error.scheduler(
+                "A scheduled punch is currently running. Wait for it to finish, or pass --force to interrupt."
+            )
+        }
+        defer { lock.release() }
+        return try body()
+    }
+
+    /// Runs `launchctl bootout` and logs only truly unexpected failures.
+    /// launchd returns non-zero for the benign "job was not loaded" case —
+    /// common when `remove()` is called twice or after a reboot.
+    private static func bootoutIgnoringNotLoaded(label: String, plistPath: URL) {
+        let result = Shell.run(
+            "/bin/launchctl",
+            arguments: ["bootout", guiDomain, plistPath.path]
+        )
+        guard result.status != 0 else { return }
+
+        // Known benign exits when the job simply isn't loaded:
+        //   113 — "Could not find specified service" (modern macOS)
+        //     5 — "Boot-out failed: Input/output error" (older/edge cases)
+        let stderr = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+        let benignStatuses: Set<Int32> = [5, 113]
+        if benignStatuses.contains(result.status) { return }
+        if stderr.contains("Could not find specified service") { return }
+
+        AutoPunchLog.append(
+            "installer: bootout \(label) exit=\(result.status)\(stderr.isEmpty ? "" : " stderr=\(stderr)")"
+        )
     }
 
     private static func generatePlist(spec: LaunchJobSpec) -> [String: Any] {

@@ -11,6 +11,7 @@ let holidayDirectory = cacheDirectory.appendingPathComponent("holidays", isDirec
 let configPath = cacheDirectory.appendingPathComponent("config.json")
 let autoPunchLogPath = cacheDirectory.appendingPathComponent("auto-punch.log")
 let autoPunchKillSwitchPath = cacheDirectory.appendingPathComponent("autopunch-disabled")
+let autoPunchLockPath = cacheDirectory.appendingPathComponent("auto-punch.lock")
 let nextPunchPath = cacheDirectory.appendingPathComponent("next-punch.json")
 let sessionPath = cacheDirectory.appendingPathComponent("session.json")
 let launchAgentDirectory = FileManager.default.homeDirectoryForCurrentUser

@@ -54,16 +54,19 @@ struct ClockBarHelper {
                 throw Clock104Error.api(scheduleUsage)
             }
 
+            let scheduleRest = Array(arguments.dropFirst(2))
+            let force = scheduleRest.contains("--force")
+
             switch arguments[1] {
             case "install":
                 let config = ConfigManager.load()
-                let state = try LaunchAgentManager.install(config: config)
+                let state = try LaunchAgentManager.install(config: config, force: force)
                 print(LaunchAgentManager.statusText(config: config))
                 if let mismatch = state.mismatchSummary {
                     throw Clock104Error.scheduler(mismatch)
                 }
             case "remove":
-                try LaunchAgentManager.remove()
+                try LaunchAgentManager.remove(force: force)
                 print("Removed auto-punch launchd jobs.")
             case "status":
                 print(LaunchAgentManager.statusText(config: ConfigManager.load()))
@@ -87,7 +90,8 @@ struct ClockBarHelper {
         case "install":
             let rest = Array(arguments.dropFirst())
             let realPunch = rest.contains("--real")
-            let positional = rest.filter { $0 != "--real" }
+            let force = rest.contains("--force")
+            let positional = rest.filter { $0 != "--real" && $0 != "--force" }
             guard positional.count == 2,
                   let action = ClockAction(rawValue: positional[0]),
                   let time = ScheduledTime(string: positional[1]) else {
@@ -101,7 +105,12 @@ struct ClockBarHelper {
                 )
             }
 
-            try LaunchAgentManager.installTest(action: action, time: time, realPunch: realPunch)
+            try LaunchAgentManager.installTest(
+                action: action,
+                time: time,
+                realPunch: realPunch,
+                force: force
+            )
             print("Installed test job for \(action.rawValue) at \(time.displayString) (dryRun=\(!realPunch)).")
             print(LaunchAgentManager.testStatus())
 
@@ -110,11 +119,13 @@ struct ClockBarHelper {
 
         case "remove":
             let rest = Array(arguments.dropFirst())
-            let action = rest.first.flatMap { ClockAction(rawValue: $0) }
-            if !rest.isEmpty && action == nil {
+            let force = rest.contains("--force")
+            let positional = rest.filter { $0 != "--force" }
+            let action = positional.first.flatMap { ClockAction(rawValue: $0) }
+            if !positional.isEmpty && action == nil {
                 throw Clock104Error.api(scheduleTestUsage)
             }
-            try LaunchAgentManager.removeTest(action: action)
+            try LaunchAgentManager.removeTest(action: action, force: force)
             print("Removed test job(s).")
 
         default:
@@ -123,16 +134,21 @@ struct ClockBarHelper {
     }
 
     private static let scheduleUsage = """
-    Usage: clockbar-helper schedule install|remove|status
-           clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real]
+    Usage: clockbar-helper schedule install|status [--force]
+           clockbar-helper schedule remove [--force]
+           clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
            clockbar-helper schedule test status
-           clockbar-helper schedule test remove [<clockin|clockout>]
+           clockbar-helper schedule test remove [<clockin|clockout>] [--force]
+
+    --force interrupts any in-flight auto-punch instead of waiting for it.
     """
 
     private static let scheduleTestUsage = """
-    Usage: clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real]
+    Usage: clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
            clockbar-helper schedule test status
-           clockbar-helper schedule test remove [<clockin|clockout>]
+           clockbar-helper schedule test remove [<clockin|clockout>] [--force]
+
+    --force interrupts any in-flight auto-punch instead of waiting for it.
     """
 
     private static let helperUsage = """

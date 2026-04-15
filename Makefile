@@ -8,6 +8,7 @@ SPARKLE_PUBLIC_ED_KEY ?=
 
 APP_SOURCES := \
 	ClockBar/Support/AppPaths.swift \
+	ClockBar/Support/AutoPunchLock.swift \
 	ClockBar/Support/AutoPunchLog.swift \
 	ClockBar/Support/ClockStoreCoding.swift \
 	ClockBar/Support/ConfigManager.swift \
@@ -47,6 +48,7 @@ APP_SOURCES := \
 
 HELPER_SOURCES := \
 	ClockBar/Support/AppPaths.swift \
+	ClockBar/Support/AutoPunchLock.swift \
 	ClockBar/Support/AutoPunchLog.swift \
 	ClockBar/Support/ClockStoreCoding.swift \
 	ClockBar/Support/ConfigManager.swift \
