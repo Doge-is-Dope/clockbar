@@ -157,7 +157,7 @@ struct ClockBarHelper {
       clockbar-helper status
       clockbar-helper punch
       clockbar-helper auto clockin|clockout [--dry-run]
-      clockbar-helper schedule install|remove|status
-      clockbar-helper schedule test install|status|remove ...
+      clockbar-helper schedule install|remove|status [--force]
+      clockbar-helper schedule test install|status|remove ... [--force]
     """
 }

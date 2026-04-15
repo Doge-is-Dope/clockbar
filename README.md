@@ -68,8 +68,14 @@ Useful helper commands:
 ./ClockBar.app/Contents/MacOS/clockbar-helper status
 ./ClockBar.app/Contents/MacOS/clockbar-helper punch
 ./ClockBar.app/Contents/MacOS/clockbar-helper auto clockin|clockout [--dry-run]
-./ClockBar.app/Contents/MacOS/clockbar-helper schedule install|remove|status
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule install|status [--force]
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule remove [--force]
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule test status
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule test remove [<clockin|clockout>] [--force]
 ```
+
+`schedule install`/`remove` wait for any in-flight auto-punch to finish before tearing down launchd jobs. Pass `--force` to interrupt a stuck run instead of waiting.
 
 ## Makefile Targets
 
