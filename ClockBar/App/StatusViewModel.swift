@@ -443,6 +443,10 @@ final class StatusViewModel: ObservableObject {
         guard !didEnsureLaunchAtLogin else { return }
         didEnsureLaunchAtLogin = true
 
+        // Only register the canonical /Applications copy so dev/test runs
+        // don't create duplicate "Open at Login" entries per binary path.
+        guard Bundle.main.bundlePath.hasPrefix("/Applications/") else { return }
+
         guard SMAppService.mainApp.status != .enabled else { return }
         do {
             try SMAppService.mainApp.register()
