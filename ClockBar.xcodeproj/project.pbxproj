@@ -10,6 +10,7 @@
 		A2000001 /* ClockBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001 /* ClockBarApp.swift */; };
 		A2000002 /* StatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* StatusViewModel.swift */; };
 		A2000024 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000026 /* AppUpdater.swift */; };
+		A2000070 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000070 /* AppContainer.swift */; };
 		A2000003 /* AuthWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* AuthWindowController.swift */; };
 		A2000050 /* SilentAuthRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000050 /* SilentAuthRefresher.swift */; };
 		A2000004 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* AuthStore.swift */; };
@@ -56,6 +57,7 @@
 		A1000003 /* ClockBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClockBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000004 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
 		A1000026 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
+		A1000070 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A1000005 /* AuthWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthWindowController.swift; sourceTree = "<group>"; };
 		A1000050 /* SilentAuthRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentAuthRefresher.swift; sourceTree = "<group>"; };
 		A1000006 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
@@ -154,6 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000001 /* ClockBarApp.swift */,
+				A1000070 /* AppContainer.swift */,
 				A1000004 /* StatusViewModel.swift */,
 				A1000026 /* AppUpdater.swift */,
 			);
@@ -306,6 +309,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2000001 /* ClockBarApp.swift in Sources */,
+				A2000070 /* AppContainer.swift in Sources */,
 				A2000002 /* StatusViewModel.swift in Sources */,
 				A2000024 /* AppUpdater.swift in Sources */,
 				A2000003 /* AuthWindowController.swift in Sources */,
