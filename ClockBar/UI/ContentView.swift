@@ -27,6 +27,7 @@ struct ContentView: View {
         .padding(.top, AppStyle.Spacing.md)
         .frame(width: AppStyle.Layout.panelWidth)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear { viewModel.refresh() }
     }
 
     private var summarySection: some View {
