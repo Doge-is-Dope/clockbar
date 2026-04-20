@@ -68,7 +68,7 @@ Layer responsibilities:
 
 - Config: `~/.104/config.json`
 - Logs: `~/.104/logs/`
-- Session: macOS Keychain (item managed by `AuthStore`)
+- Session: `~/.104/session.json` (file-backed, `0600`, managed by `AuthStore`)
 - Disable autopunch without editing config: `touch ~/.104/autopunch-disabled`
 - Launchd plists: `~/Library/LaunchAgents/com.clockbar.104-*.plist`
 
