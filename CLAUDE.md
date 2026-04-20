@@ -44,7 +44,7 @@ Data flow for a punch:
 launchd → clockbar-helper auto clockin
         → AutoPunchEngine.run(action:)
         → ClockService → Clock104API (web scraping) → AuthStore (Keychain session)
-        → AutoPunchLog (~/.104/logs/)
+        → AutoPunchLog (~/.104/auto-punch.log)
 ```
 
 Layer responsibilities:
@@ -67,7 +67,7 @@ Layer responsibilities:
 ## Paths and state
 
 - Config: `~/.104/config.json`
-- Logs: `~/.104/logs/`
+- Logs: `~/.104/auto-punch.log` (append-only, no rotation; format: `[ts] [LEVEL] component: event [k=v ...]`)
 - Session: `~/.104/session.json` (file-backed, `0600`, managed by `AuthStore`)
 - Disable autopunch without editing config: `touch ~/.104/autopunch-disabled`
 - Launchd plists: `~/Library/LaunchAgents/com.clockbar.104-*.plist`
