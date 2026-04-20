@@ -61,7 +61,7 @@ Layer responsibilities:
 - Auto-punch runs via a `launchd` user agent per action (clockin/clockout). Plists live under `~/Library/LaunchAgents/com.clockbar.104-*.plist`.
 - `schedule install` and `schedule remove` acquire `AutoPunchLock` (flock) so they can't tear down launchd jobs mid-run. `--force` breaks the lock instead of waiting.
 - `schedule test install <action> <HH:MM> [--real]` rehearses the full launchd → helper → AutoPunchEngine path without hitting the 104 API; only `--real` makes an actual punch.
-- Wake-before-punch scheduling uses `pmset` via `osascript` for the admin prompt (see `StatusViewModel.runWithAdmin`). The whole week is scheduled at once (`wakeScheduleDayCount = 366`, weekends skipped).
+- Wake-before-punch scheduling installs a single `pmset repeat wakeorpoweron MTWRF HH:MM:SS` rule via `osascript … with administrator privileges` (see `StatusViewModel.pmsetCommand(for:)` / `runWithAdmin`). One admin prompt per change to clock-in time, `wakeBefore`, or `wakeEnabled`. `pmset repeat` only has one wake slot, so only clock-in wakes the Mac — clock-out fires only if the Mac is already awake. Legacy per-date `ClockBarClockInWake` / `ClockBarClockOutWake` entries from pre-repeat installs are left to decay naturally (within 366 days); users who want to clear them immediately can run e.g. `pmset -g sched | grep ClockBar` and cancel them individually.
 - Config rename convention: **no migration shims** — if you rename a key in `ClockConfig`, users need to re-save the config; do not add backward-compat code paths.
 
 ## Paths and state

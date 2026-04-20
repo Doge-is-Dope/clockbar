@@ -41,13 +41,11 @@ final class StatusViewModel: ObservableObject {
         var wakeEnabled: Bool
         var wakeBefore: Int
         var clockIn: String
-        var clockOut: String
 
         init(config: ClockConfig, wakeEnabled: Bool? = nil, wakeBefore: Int? = nil) {
             self.wakeEnabled = wakeEnabled ?? config.wakeEnabled
             self.wakeBefore = wakeBefore ?? config.wakeBefore
             self.clockIn = config.schedule.clockin
-            self.clockOut = config.schedule.clockout
         }
     }
 
@@ -108,7 +106,7 @@ final class StatusViewModel: ObservableObject {
             if !wakeEnabledDraft {
                 return "Disabled"
             }
-            return "Wakes before scheduled auto-punch when plugged in."
+            return "Wakes weekdays before clock-in (AC only). Clock-out won't wake a sleeping Mac."
         }
     }
 
@@ -277,7 +275,7 @@ final class StatusViewModel: ObservableObject {
         }
 
         wakeSyncState = .applying
-        guard let command = Self.pmsetCommand(replacing: previousSnapshot, with: snapshot) else {
+        guard let command = Self.pmsetCommand(for: snapshot) else {
             wakeSyncState = .failed("Invalid wake schedule time.")
             return
         }
@@ -553,108 +551,32 @@ final class StatusViewModel: ObservableObject {
         wakeSyncState = .idle
     }
 
-    private nonisolated static func pmsetCommand(
-        replacing previousSnapshot: WakeScheduleSnapshot,
-        with snapshot: WakeScheduleSnapshot
-    ) -> String? {
+    private nonisolated static func pmsetCommand(for snapshot: WakeScheduleSnapshot) -> String? {
         var commands = ["/usr/bin/pmset repeat cancel"]
-
-        if previousSnapshot.wakeEnabled {
-            guard let previousWakeCommands = wakeScheduleCommands(
-                for: previousSnapshot,
-                actionPrefix: "/usr/bin/pmset schedule cancel wake"
-            ) else {
-                return nil
-            }
-
-            commands.append(contentsOf: previousWakeCommands.map { "\($0) >/dev/null 2>&1 || true" })
-        }
 
         guard snapshot.wakeEnabled else {
             return commands.joined(separator: "; ")
         }
 
-        guard let wakeCommands = wakeScheduleCommands(
-            for: snapshot,
-            actionPrefix: "/usr/bin/pmset schedule wake"
-        ) else {
+        guard let wakeTime = pmsetRepeatTime(for: snapshot) else {
             return nil
         }
 
-        commands.append(contentsOf: wakeCommands)
+        commands.append("/usr/bin/pmset repeat wakeorpoweron MTWRF \(wakeTime)")
         return commands.joined(separator: "; ")
     }
 
-    private nonisolated static func wakeScheduleCommands(
-        for snapshot: WakeScheduleSnapshot,
-        actionPrefix: String
-    ) -> [String]? {
-        guard let clockIn = ScheduledTime(string: snapshot.clockIn),
-              let clockOut = ScheduledTime(string: snapshot.clockOut) else {
-            return nil
-        }
-
-        let now = Date()
-        let calendar = Calendar(identifier: .gregorian)
-        let startOfToday = calendar.startOfDay(for: now)
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MM/dd/yy HH:mm:ss"
-
-        return (0..<wakeScheduleDayCount).flatMap { dayOffset -> [String] in
-            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startOfToday),
-                  !calendar.isDateInWeekend(date) else {
-                return []
-            }
-
-            return [
-                wakeScheduleCommand(
-                    actionPrefix: actionPrefix,
-                    date: date,
-                    scheduledTime: clockIn,
-                    wakeBefore: snapshot.wakeBefore,
-                    owner: clockInWakeOwner,
-                    now: now,
-                    calendar: calendar,
-                    formatter: formatter
-                ),
-                wakeScheduleCommand(
-                    actionPrefix: actionPrefix,
-                    date: date,
-                    scheduledTime: clockOut,
-                    wakeBefore: snapshot.wakeBefore,
-                    owner: clockOutWakeOwner,
-                    now: now,
-                    calendar: calendar,
-                    formatter: formatter
-                ),
-            ].compactMap { $0 }
-        }
-    }
-
-    private nonisolated static func wakeScheduleCommand(
-        actionPrefix: String,
-        date: Date,
-        scheduledTime: ScheduledTime,
-        wakeBefore: Int,
-        owner: String,
-        now: Date,
-        calendar: Calendar,
-        formatter: DateFormatter
-    ) -> String? {
-        guard let punchDate = calendar.date(
-            bySettingHour: scheduledTime.hour,
-            minute: scheduledTime.minute,
-            second: 0,
-            of: date
-        ) else {
-            return nil
-        }
-
-        let wakeDate = punchDate.addingTimeInterval(TimeInterval(-max(0, wakeBefore)))
-        guard wakeDate > now else { return nil }
-
-        return "\(actionPrefix) '\(formatter.string(from: wakeDate))' \(owner)"
+    private nonisolated static func pmsetRepeatTime(for snapshot: WakeScheduleSnapshot) -> String? {
+        guard let clockIn = ScheduledTime(string: snapshot.clockIn) else { return nil }
+        let clockInSeconds = clockIn.hour * 3600 + clockIn.minute * 60
+        let dayInSeconds = 24 * 3600
+        let wakeSeconds = ((clockInSeconds - max(0, snapshot.wakeBefore)) % dayInSeconds + dayInSeconds) % dayInSeconds
+        return String(
+            format: "%02d:%02d:%02d",
+            wakeSeconds / 3600,
+            (wakeSeconds % 3600) / 60,
+            wakeSeconds % 60
+        )
     }
 
     private nonisolated static func runWithAdmin(_ command: String) -> Bool {
@@ -680,9 +602,6 @@ final class StatusViewModel: ObservableObject {
     }
 
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
-    private nonisolated static let wakeScheduleDayCount = 366
-    private nonisolated static let clockInWakeOwner = "ClockBarClockInWake"
-    private nonisolated static let clockOutWakeOwner = "ClockBarClockOutWake"
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()
