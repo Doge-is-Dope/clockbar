@@ -156,9 +156,11 @@ enum LaunchAgentManager {
         let spec = testSpec(action: action, time: time, helperPath: helperPath, realPunch: realPunch)
         try installSpecs([spec], force: force, timeout: testInstallerTimeout)
 
-        AutoPunchLog.append(
-            "schedule test: installed \(spec.label) for \(time.displayString) dryRun=\(!realPunch)"
-        )
+        AutoPunchLog.info("schedule_test", "installed", [
+            "label": spec.label,
+            "time": time.displayString,
+            "dry_run": !realPunch,
+        ])
     }
 
     static func removeTest(action: ClockAction? = nil, force: Bool = false) throws {
@@ -171,7 +173,9 @@ enum LaunchAgentManager {
                 bootoutIgnoringNotLoaded(label: testLabel(for: target), plistPath: path)
                 do {
                     try FileManager.default.removeItem(at: path)
-                    AutoPunchLog.append("schedule test: removed \(testLabel(for: target))")
+                    AutoPunchLog.info("schedule_test", "removed", [
+                        "label": testLabel(for: target),
+                    ])
                 } catch let error as NSError where error.domain == NSCocoaErrorDomain
                     && error.code == NSFileNoSuchFileError {
                     // Already gone — fine
@@ -318,9 +322,7 @@ enum LaunchAgentManager {
         body: () throws -> T
     ) throws -> T {
         if force {
-            AutoPunchLog.append(
-                "installer: --force used, skipping lock wait (may interrupt in-flight helper)"
-            )
+            AutoPunchLog.warn("installer", "force_flag_used")
             return try body()
         }
         guard let lock = AutoPunchLock.waitAndAcquire(timeout: timeout) else {
@@ -350,9 +352,18 @@ enum LaunchAgentManager {
         if benignStatuses.contains(result.status) { return }
         if stderr.contains("Could not find specified service") { return }
 
-        AutoPunchLog.append(
-            "installer: bootout \(label) exit=\(result.status)\(stderr.isEmpty ? "" : " stderr=\(stderr)")"
-        )
+        if stderr.isEmpty {
+            AutoPunchLog.info("installer", "bootout", [
+                "label": label,
+                "exit": result.status,
+            ])
+        } else {
+            AutoPunchLog.info("installer", "bootout", [
+                "label": label,
+                "exit": result.status,
+                "stderr": stderr,
+            ])
+        }
     }
 
     private static func generatePlist(spec: LaunchJobSpec) -> [String: Any] {
