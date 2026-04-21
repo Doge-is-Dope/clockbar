@@ -9,7 +9,7 @@ let cacheDirectory = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent(".104", isDirectory: true)
 let holidayDirectory = cacheDirectory.appendingPathComponent("holidays", isDirectory: true)
 let configPath = cacheDirectory.appendingPathComponent("config.json")
-let autoPunchLogPath = cacheDirectory.appendingPathComponent("auto-punch.log")
+let logPath = cacheDirectory.appendingPathComponent("clockbar.log")
 let autoPunchKillSwitchPath = cacheDirectory.appendingPathComponent("autopunch-disabled")
 let autoPunchLockPath = cacheDirectory.appendingPathComponent("auto-punch.lock")
 let nextPunchPath = cacheDirectory.appendingPathComponent("next-punch.json")

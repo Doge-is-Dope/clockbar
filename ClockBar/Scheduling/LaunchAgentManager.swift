@@ -119,7 +119,7 @@ enum LaunchAgentManager {
         )
         output.append("")
         output.append("=== recent logs ===")
-        if let data = try? String(contentsOf: autoPunchLogPath, encoding: .utf8) {
+        if let data = try? String(contentsOf: logPath, encoding: .utf8) {
             output.append(contentsOf: data.split(separator: "\n").suffix(10).map { "  \($0)" })
         } else {
             output.append("  (no logs yet)")
@@ -156,7 +156,7 @@ enum LaunchAgentManager {
         let spec = testSpec(action: action, time: time, helperPath: helperPath, realPunch: realPunch)
         try installSpecs([spec], force: force, timeout: testInstallerTimeout)
 
-        AutoPunchLog.info("schedule_test", "installed", [
+        Log.info("schedule_test", "installed", [
             "label": spec.label,
             "time": time.displayString,
             "dry_run": !realPunch,
@@ -173,7 +173,7 @@ enum LaunchAgentManager {
                 bootoutIgnoringNotLoaded(label: testLabel(for: target), plistPath: path)
                 do {
                     try FileManager.default.removeItem(at: path)
-                    AutoPunchLog.info("schedule_test", "removed", [
+                    Log.info("schedule_test", "removed", [
                         "label": testLabel(for: target),
                     ])
                 } catch let error as NSError where error.domain == NSCocoaErrorDomain
@@ -217,7 +217,7 @@ enum LaunchAgentManager {
         } else {
             output.append("")
             output.append("Remove with: clockbar-helper schedule test remove [clockin|clockout]")
-            output.append("Live log:    tail -f \(autoPunchLogPath.path)")
+            output.append("Live log:    tail -f \(logPath.path)")
         }
         return output.joined(separator: "\n")
     }
@@ -322,7 +322,7 @@ enum LaunchAgentManager {
         body: () throws -> T
     ) throws -> T {
         if force {
-            AutoPunchLog.warn("installer", "force_flag_used")
+            Log.warn("installer", "force_flag_used")
             return try body()
         }
         guard let lock = AutoPunchLock.waitAndAcquire(timeout: timeout) else {
@@ -353,12 +353,12 @@ enum LaunchAgentManager {
         if stderr.contains("Could not find specified service") { return }
 
         if stderr.isEmpty {
-            AutoPunchLog.info("installer", "bootout", [
+            Log.info("installer", "bootout", [
                 "label": label,
                 "exit": result.status,
             ])
         } else {
-            AutoPunchLog.info("installer", "bootout", [
+            Log.info("installer", "bootout", [
                 "label": label,
                 "exit": result.status,
                 "stderr": stderr,

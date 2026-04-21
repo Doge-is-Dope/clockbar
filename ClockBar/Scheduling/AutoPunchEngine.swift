@@ -4,14 +4,14 @@ enum AutoPunchEngine {
     static func run(action: ClockAction, dryRun: Bool = false) async -> Int32 {
         let component = "auto.\(action.rawValue)"
         let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
-        AutoPunchLog.info(component, "invoked", [
+        Log.info(component, "invoked", [
             "pid": ProcessInfo.processInfo.processIdentifier,
             "dry_run": dryRun,
             "argv": argv,
         ])
 
         guard let lock = AutoPunchLock.tryAcquireExclusive() else {
-            AutoPunchLog.info(component, "lock_busy")
+            Log.info(component, "lock_busy")
             return 0
         }
         defer { lock.release() }
@@ -20,19 +20,19 @@ enum AutoPunchEngine {
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
             || (!config.autopunchEnabled && !config.missedPunchNotificationEnabled) {
-            AutoPunchLog.info(component, "skipped", ["reason": "disabled"])
+            Log.info(component, "skipped", ["reason": "disabled"])
             return 0
         }
 
         let notificationOnly = !config.autopunchEnabled
 
         if await HolidayStore.isHoliday() {
-            AutoPunchLog.info(component, "skipped", ["reason": "holiday"])
+            Log.info(component, "skipped", ["reason": "holiday"])
             return 0
         }
 
         guard let schedule = ScheduledTime(string: config.schedule.time(for: action)) else {
-            AutoPunchLog.error(component, "failed", ["reason": "invalid_schedule"])
+            Log.error(component, "failed", ["reason": "invalid_schedule"])
             notify(
                 title: "\(appName) - Failed",
                 body: "Invalid \(action.displayName) schedule.",
@@ -53,12 +53,12 @@ enum AutoPunchEngine {
         let recentWake = dryRun ? nil : PowerStateMonitor.recentWake()
         let wokeRecently = recentWake != nil
         if let recentWake {
-            AutoPunchLog.info(component, "woke_recently", [
+            Log.info(component, "woke_recently", [
                 "kind": recentWake.kind.rawValue,
                 "at": DateFormatter.logTimestampFormatter.string(from: recentWake.date),
             ])
         } else if !dryRun {
-            AutoPunchLog.info(component, "woke_recently", ["value": "false"])
+            Log.info(component, "woke_recently", ["value": "false"])
         }
 
         if notificationOnly {
@@ -76,15 +76,15 @@ enum AutoPunchEngine {
             if dryRun {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
-                AutoPunchLog.info(component, "wake_prompt_shown")
+                Log.info(component, "wake_prompt_shown")
                 let choice = SystemUI.prompt(
                     title: appName,
                     message: "Your Mac just woke after the scheduled \(action.logLabel). Punch now?",
                     buttons: ["Skip", "Punch"]
                 )
-                AutoPunchLog.info(component, "wake_prompt_result", ["choice": choice ?? "nil"])
+                Log.info(component, "wake_prompt_result", ["choice": choice ?? "nil"])
                 guard choice == "Punch" else {
-                    AutoPunchLog.info(component, "skipped", ["reason": "user_skipped_at_wake_prompt"])
+                    Log.info(component, "skipped", ["reason": "user_skipped_at_wake_prompt"])
                     notify(title: appName, body: "\(action.displayName) skipped.", dryRun: dryRun)
                     if config.missedPunchNotificationEnabled {
                         await notifyMissedPunchAfterThresholdIfNeeded(
@@ -97,12 +97,12 @@ enum AutoPunchEngine {
                     }
                     return 0
                 }
-                AutoPunchLog.info(component, "wake_prompt_confirmed")
+                Log.info(component, "wake_prompt_confirmed")
             }
         } else {
             let plan = Self.computeDelayPlan(for: action, config: config)
             let targetText = plan.target?.displayString ?? "(\(plan.delay)s from now)"
-            AutoPunchLog.info(component, "sleeping", [
+            Log.info(component, "sleeping", [
                 "delay_s": plan.delay,
                 "target": targetText,
                 "source": plan.source.rawValue,
@@ -115,7 +115,7 @@ enum AutoPunchEngine {
         }
 
         guard var session = AuthStore.loadSession(), session.hasUsableCookies else {
-            AutoPunchLog.error(component, "failed", ["reason": "missing_session"])
+            Log.error(component, "failed", ["reason": "missing_session"])
             notify(
                 title: "\(appName) - Login Required",
                 body: "Open ClockBar and sign in to 104 again.",
@@ -136,14 +136,14 @@ enum AutoPunchEngine {
 
         var currentStep = "getStatus"
         do {
-            AutoPunchLog.info(component, "step", ["name": "getStatus"])
+            Log.info(component, "step", ["name": "getStatus"])
             let status = try await Clock104API.getStatus(session: session)
             session.lastValidatedAt = Date()
             try? AuthStore.save(session)
 
             if action == .clockout, status.clockIn == nil {
                 let message = "Cannot clock out because there is no clock-in record yet."
-                AutoPunchLog.info(component, "skipped", ["reason": "no_clockin"])
+                Log.info(component, "skipped", ["reason": "no_clockin"])
                 notify(title: appName, body: message, dryRun: dryRun)
                 if config.missedPunchNotificationEnabled {
                     await notifyMissedPunchAfterThresholdIfNeeded(
@@ -158,7 +158,7 @@ enum AutoPunchEngine {
             }
 
             if let existingPunchTime = existingPunch(for: action, in: status) {
-                AutoPunchLog.info(component, "already_punched", [
+                Log.info(component, "already_punched", [
                     "field": action.fieldName,
                     "value": existingPunchTime,
                 ])
@@ -171,15 +171,15 @@ enum AutoPunchEngine {
                     print("[dry-run] Would punch (\(action.rawValue))")
                     print("[dry-run] Current status: \(String(decoding: statusData, as: UTF8.self))")
                 }
-                AutoPunchLog.info(component, "dry_run_ok")
+                Log.info(component, "dry_run_ok")
                 return 0
             }
 
             currentStep = "sendPunch"
-            AutoPunchLog.info(component, "step", ["name": "sendPunch"])
+            Log.info(component, "step", ["name": "sendPunch"])
             try await Clock104API.sendPunch(session: session)
             currentStep = "verifyStatus"
-            AutoPunchLog.info(component, "step", ["name": "verifyStatus"])
+            Log.info(component, "step", ["name": "verifyStatus"])
             let verified = try await Clock104API.getStatus(session: session)
             if let punchTime = existingPunch(for: action, in: verified) {
                 var message = "\(action == .clockin ? "Clocked in" : "Clocked out") at \(punchTime)"
@@ -187,18 +187,18 @@ enum AutoPunchEngine {
                     message += " (in: \(clockIn))"
                 }
                 if action == .clockout, let clockIn = verified.clockIn {
-                    AutoPunchLog.info(component, "ok", [
+                    Log.info(component, "ok", [
                         "punched_at": punchTime,
                         "previous_in": clockIn,
                     ])
                 } else {
-                    AutoPunchLog.info(component, "ok", ["punched_at": punchTime])
+                    Log.info(component, "ok", ["punched_at": punchTime])
                 }
                 notify(title: appName, body: message, dryRun: dryRun)
                 return 0
             }
 
-            AutoPunchLog.warn(component, "unverified")
+            Log.warn(component, "unverified")
             notify(
                 title: "\(appName) - Warning",
                 body: "Punch sent but not verified.",
@@ -216,7 +216,7 @@ enum AutoPunchEngine {
             }
             return 1
         } catch Clock104Error.unauthorized {
-            AutoPunchLog.error(component, "failed", [
+            Log.error(component, "failed", [
                 "reason": "unauthorized",
                 "step": currentStep,
             ])
@@ -237,7 +237,7 @@ enum AutoPunchEngine {
             }
             return 1
         } catch {
-            AutoPunchLog.error(component, "failed", [
+            Log.error(component, "failed", [
                 "reason": error.localizedDescription,
                 "step": currentStep,
             ])
@@ -276,14 +276,14 @@ enum AutoPunchEngine {
             do {
                 try await Task.sleep(nanoseconds: UInt64(remainingDelay) * 1_000_000_000)
             } catch {
-                AutoPunchLog.info(component, "cancelled", ["during": "missed_punch_delay"])
+                Log.info(component, "cancelled", ["during": "missed_punch_delay"])
                 return
             }
         }
 
         let status = await currentStatusForMissedPunchCheck()
         if let status, existingPunch(for: action, in: status) != nil {
-            AutoPunchLog.info(component, "skipped", ["reason": "already_punched"])
+            Log.info(component, "skipped", ["reason": "already_punched"])
             return
         }
 
@@ -294,7 +294,7 @@ enum AutoPunchEngine {
             body = "No \(action.logLabel) was recorded after the scheduled time (\(schedule.displayString))."
         }
 
-        AutoPunchLog.warn(component, "missed_punch")
+        Log.warn(component, "missed_punch")
         notify(title: appName, body: body, dryRun: dryRun)
     }
 

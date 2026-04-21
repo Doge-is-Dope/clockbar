@@ -29,7 +29,7 @@
 		A2000010 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* LaunchAgentManager.swift */; };
 		A2000011 /* PowerStateMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* PowerStateMonitor.swift */; };
 		A2000012 /* AppPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* AppPaths.swift */; };
-		A2000013 /* AutoPunchLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* AutoPunchLog.swift */; };
+		A2000013 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Log.swift */; };
 		A2000060 /* AutoPunchLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000060 /* AutoPunchLock.swift */; };
 		A2000014 /* ClockStoreCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* ClockStoreCoding.swift */; };
 		A2000015 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* ConfigManager.swift */; };
@@ -76,7 +76,7 @@
 		A1000012 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
 		A1000013 /* PowerStateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerStateMonitor.swift; sourceTree = "<group>"; };
 		A1000014 /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
-		A1000015 /* AutoPunchLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchLog.swift; sourceTree = "<group>"; };
+		A1000015 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		A1000060 /* AutoPunchLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchLock.swift; sourceTree = "<group>"; };
 		A1000016 /* ClockStoreCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockStoreCoding.swift; sourceTree = "<group>"; };
 		A1000017 /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
@@ -213,7 +213,7 @@
 			children = (
 				A1000014 /* AppPaths.swift */,
 				A1000060 /* AutoPunchLock.swift */,
-				A1000015 /* AutoPunchLog.swift */,
+				A1000015 /* Log.swift */,
 				A1000016 /* ClockStoreCoding.swift */,
 				A1000017 /* ConfigManager.swift */,
 				A1000018 /* DateFormatters.swift */,
@@ -331,7 +331,7 @@
 				A2000011 /* PowerStateMonitor.swift in Sources */,
 				A2000012 /* AppPaths.swift in Sources */,
 				A2000060 /* AutoPunchLock.swift in Sources */,
-				A2000013 /* AutoPunchLog.swift in Sources */,
+				A2000013 /* Log.swift in Sources */,
 				A2000014 /* ClockStoreCoding.swift in Sources */,
 				A2000015 /* ConfigManager.swift in Sources */,
 				A2000016 /* DateFormatters.swift in Sources */,

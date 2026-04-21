@@ -19,7 +19,10 @@ enum ClockService {
     }
 
     static func punch() async -> PunchStatus {
+        Log.info("manual", "invoked")
+
         guard var session = AuthStore.loadSession() else {
+            Log.error("manual", "failed", ["reason": "missing_session"])
             return .error("Sign in to 104 before punching.")
         }
 
@@ -28,10 +31,19 @@ enum ClockService {
             let status = try await Clock104API.getStatus(session: session)
             session.lastValidatedAt = Date()
             try? AuthStore.save(session)
+            if let clockIn = status.clockIn, status.clockOut == nil {
+                Log.info("manual", "ok", ["action": "clockin", "punched_at": clockIn])
+            } else if let clockOut = status.clockOut {
+                Log.info("manual", "ok", ["action": "clockout", "punched_at": clockOut])
+            } else {
+                Log.warn("manual", "unverified")
+            }
             return status
         } catch Clock104Error.unauthorized {
+            Log.error("manual", "failed", ["reason": "unauthorized"])
             return .error("Your 104 session expired. Sign in again.")
         } catch {
+            Log.error("manual", "failed", ["reason": error.localizedDescription])
             return .error(error.localizedDescription)
         }
     }

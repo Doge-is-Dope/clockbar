@@ -6,7 +6,7 @@ enum LogLevel: String {
     case error = "ERROR"
 }
 
-enum AutoPunchLog {
+enum Log {
     static func info(
         _ component: String,
         _ event: String,
@@ -47,15 +47,15 @@ enum AutoPunchLog {
         line += "\n"
         guard let data = line.data(using: .utf8) else { return }
 
-        if FileManager.default.fileExists(atPath: autoPunchLogPath.path),
-           let handle = try? FileHandle(forWritingTo: autoPunchLogPath) {
+        if FileManager.default.fileExists(atPath: logPath.path),
+           let handle = try? FileHandle(forWritingTo: logPath) {
             defer { try? handle.close() }
             _ = try? handle.seekToEnd()
             try? handle.write(contentsOf: data)
             return
         }
 
-        try? data.write(to: autoPunchLogPath, options: .atomic)
+        try? data.write(to: logPath, options: .atomic)
     }
 
     private static func formatValue(_ value: String) -> String {

@@ -8,7 +8,7 @@ struct ClockBarHelper {
             try await run(arguments: Array(CommandLine.arguments.dropFirst()))
         } catch {
             let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
-            AutoPunchLog.error("helper", "uncaught_error", [
+            Log.error("helper", "uncaught_error", [
                 "argv": argv,
                 "message": error.localizedDescription,
             ])
@@ -48,7 +48,7 @@ struct ClockBarHelper {
             }
             let code = await AutoPunchEngine.run(action: action, dryRun: dryRun)
             if code != 0 {
-                AutoPunchLog.info("auto.\(action.rawValue)", "exit", ["code": code])
+                Log.info("auto.\(action.rawValue)", "exit", ["code": code])
             }
             Darwin.exit(code)
 
