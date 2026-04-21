@@ -287,15 +287,10 @@ enum AutoPunchEngine {
             return
         }
 
-        let body: String
-        if status == nil {
-            body = "Scheduled \(action.logLabel) at \(schedule.displayString) is still unconfirmed. Open ClockBar to check 104."
-        } else {
-            body = "No \(action.logLabel) was recorded after the scheduled time (\(schedule.displayString))."
-        }
+        let body = "Scheduled \(action.logLabel) at \(schedule.displayString) has passed."
 
         Log.warn(component, "missed_punch")
-        notify(title: appName, body: body, dryRun: dryRun)
+        notify(title: appName, body: body, kind: .missedPunch(action), dryRun: dryRun)
     }
 
     private enum DelaySource: String {
@@ -361,10 +356,16 @@ enum AutoPunchEngine {
         }
     }
 
+    private enum NotificationKind {
+        case plain
+        case missedPunch(ClockAction)
+    }
+
     private static func notify(
         title: String,
         body: String,
         sound: String = "default",
+        kind: NotificationKind = .plain,
         dryRun: Bool
     ) {
         guard !dryRun else {
@@ -372,6 +373,11 @@ enum AutoPunchEngine {
             return
         }
 
-        SystemUI.notify(title: title, body: body, sound: sound)
+        switch kind {
+        case .plain:
+            SystemUI.notify(title: title, body: body, sound: sound)
+        case .missedPunch(let action):
+            SystemUI.notifyMissedPunch(action: action, title: title, body: body)
+        }
     }
 }

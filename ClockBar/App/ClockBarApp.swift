@@ -4,6 +4,7 @@ import SwiftUI
 @main
 @MainActor
 struct ClockBarApp: App {
+    @NSApplicationDelegateAdaptor(ClockBarAppDelegate.self) private var appDelegate
     @StateObject private var app = AppContainer()
 
     init() {
@@ -19,5 +20,13 @@ struct ClockBarApp: App {
             }
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+final class ClockBarAppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            NotificationManager.shared.handleURL(url)
+        }
     }
 }

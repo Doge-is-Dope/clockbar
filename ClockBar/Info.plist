@@ -4,6 +4,17 @@
 <dict>
 	<key>CFBundleIdentifier</key>
 	<string>com.clockbar.app</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.clockbar.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>clockbar</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleName</key>
 	<string>104 ClockBar</string>
 	<key>CFBundleExecutable</key>

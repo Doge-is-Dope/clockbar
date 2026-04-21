@@ -12,6 +12,9 @@ final class AppContainer: ObservableObject {
         self.viewModel = model
         self.appUpdater = updater
         self.settingsController = SettingsWindowController(viewModel: model, appUpdater: updater)
+        NotificationManager.shared.punchHandler = { [weak model] in
+            Task { @MainActor in model?.punchNow() }
+        }
         model.start()
     }
 }
