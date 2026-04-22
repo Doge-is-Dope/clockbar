@@ -43,14 +43,14 @@ Data flow for a punch:
 ```
 launchd → clockbar-helper auto clockin
         → AutoPunchEngine.run(action:)
-        → ClockService → Clock104API (web scraping) → AuthStore (Keychain session)
+        → ClockService → Clock104API (web scraping) → AuthStore (~/.104/session.json)
         → Log (~/.104/clockbar.log)
 ```
 
 Layer responsibilities:
 
 - `API/` — raw 104 HTTP surface (`Clock104API`), domain-level wrapper (`ClockService`), error types.
-- `Auth/` — `AuthStore` (Keychain session), `AuthWindowController` (WKWebView login), `SilentAuthRefresher`.
+- `Auth/` — `AuthStore` (reads/writes `~/.104/session.json`), `AuthWindowController` (WKWebView login), `SilentAuthRefresher` (hidden WKWebView that pulls fresh cookies from the shared WebKit jar), `SessionRefreshSignal` (cross-process DistributedNotificationCenter ping: the helper asks the app to run a silent refresh when it finds stale cookies at fire time).
 - `Scheduling/` — `LaunchAgentManager` writes/loads launchd `.plist`s; `AutoPunchEngine` executes one scheduled punch (`Support/AutoPunchLock` serializes it against installer edits via `flock`); `HolidayStore`, `PowerStateMonitor`.
 - `Support/` — `ConfigManager` (JSON at `~/.104/config.json`), `NotificationManager` (user notifications; app-only — not in helper sources), shell helpers, formatters.
 - `App/` — SwiftUI App, view model, `AppUpdater` (Sparkle wrapper), `AppContainer`.
