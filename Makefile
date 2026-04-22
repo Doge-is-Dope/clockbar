@@ -30,6 +30,7 @@ APP_SOURCES := \
 	ClockBar/API/ClockService.swift \
 	ClockBar/Auth/AuthStore.swift \
 	ClockBar/Auth/AuthWindowController.swift \
+	ClockBar/Auth/SessionRefreshSignal.swift \
 	ClockBar/Auth/SilentAuthRefresher.swift \
 	ClockBar/Scheduling/AutoPunchEngine.swift \
 	ClockBar/Scheduling/HolidayStore.swift \
@@ -68,6 +69,7 @@ HELPER_SOURCES := \
 	ClockBar/API/Clock104Error.swift \
 	ClockBar/API/ClockService.swift \
 	ClockBar/Auth/AuthStore.swift \
+	ClockBar/Auth/SessionRefreshSignal.swift \
 	ClockBar/Scheduling/AutoPunchEngine.swift \
 	ClockBar/Scheduling/HolidayStore.swift \
 	ClockBar/Scheduling/LaunchAgentManager.swift \

@@ -13,6 +13,7 @@
 		A2000070 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000070 /* AppContainer.swift */; };
 		A2000003 /* AuthWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* AuthWindowController.swift */; };
 		A2000050 /* SilentAuthRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000050 /* SilentAuthRefresher.swift */; };
+		A2000080 /* SessionRefreshSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000080 /* SessionRefreshSignal.swift */; };
 		A2000004 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* AuthStore.swift */; };
 		A2000005 /* Clock104API.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000007 /* Clock104API.swift */; };
 		A2000006 /* Clock104Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* Clock104Error.swift */; };
@@ -60,6 +61,7 @@
 		A1000070 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A1000005 /* AuthWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthWindowController.swift; sourceTree = "<group>"; };
 		A1000050 /* SilentAuthRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentAuthRefresher.swift; sourceTree = "<group>"; };
+		A1000080 /* SessionRefreshSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRefreshSignal.swift; sourceTree = "<group>"; };
 		A1000006 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		A1000007 /* Clock104API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock104API.swift; sourceTree = "<group>"; };
 		A1000008 /* Clock104Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clock104Error.swift; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 			children = (
 				A1000006 /* AuthStore.swift */,
 				A1000005 /* AuthWindowController.swift */,
+				A1000080 /* SessionRefreshSignal.swift */,
 				A1000050 /* SilentAuthRefresher.swift */,
 			);
 			path = Auth;
@@ -314,6 +317,7 @@
 				A2000024 /* AppUpdater.swift in Sources */,
 				A2000003 /* AuthWindowController.swift in Sources */,
 				A2000050 /* SilentAuthRefresher.swift in Sources */,
+				A2000080 /* SessionRefreshSignal.swift in Sources */,
 				A2000004 /* AuthStore.swift in Sources */,
 				A2000005 /* Clock104API.swift in Sources */,
 				A2000006 /* Clock104Error.swift in Sources */,

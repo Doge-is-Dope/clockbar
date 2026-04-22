@@ -381,7 +381,7 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
-    private func recoverSessionIfNeeded() {
+    func recoverSessionIfNeeded() {
         guard !isRecoveringSession else { return }
         isRecoveringSession = true
         Task { @MainActor [weak self] in

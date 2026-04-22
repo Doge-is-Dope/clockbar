@@ -114,15 +114,25 @@ enum AutoPunchEngine {
             }
         }
 
-        guard var session = AuthStore.loadSession(), session.hasUsableCookies else {
+        var session: StoredSession
+        if let existing = AuthStore.loadSession(), existing.hasUsableCookies {
+            session = existing
+        } else if let recovered = await awaitFreshSession(
+            baseline: nil,
+            timeout: sessionRefreshTimeoutSeconds,
+            component: component
+        ) {
+            session = recovered
+        } else {
             Log.error(component, "failed", ["reason": "missing_session"])
-            notify(
-                title: "\(appName) - Login Required",
-                body: "Open ClockBar and sign in to 104 again.",
-                sound: notificationErrorSound,
-                dryRun: dryRun
-            )
-            if config.missedPunchNotificationEnabled {
+            if !config.missedPunchNotificationEnabled {
+                notify(
+                    title: "\(appName) - Login Required",
+                    body: "Open ClockBar and sign in to 104 again.",
+                    sound: notificationErrorSound,
+                    dryRun: dryRun
+                )
+            } else {
                 await notifyMissedPunchAfterThresholdIfNeeded(
                     action: action,
                     schedule: schedule,
@@ -220,13 +230,18 @@ enum AutoPunchEngine {
                 "reason": "unauthorized",
                 "step": currentStep,
             ])
-            notify(
-                title: "\(appName) - Login Required",
-                body: "Your 104 session expired. Sign in again.",
-                sound: notificationErrorSound,
-                dryRun: dryRun
-            )
-            if config.missedPunchNotificationEnabled {
+            if !dryRun {
+                SessionRefreshSignal.post()
+                Log.info(component, "session_refresh_requested", ["trigger": "unauthorized"])
+            }
+            if !config.missedPunchNotificationEnabled {
+                notify(
+                    title: "\(appName) - Login Required",
+                    body: "Your 104 session expired. Sign in again.",
+                    sound: notificationErrorSound,
+                    dryRun: dryRun
+                )
+            } else {
                 await notifyMissedPunchAfterThresholdIfNeeded(
                     action: action,
                     schedule: schedule,
@@ -291,6 +306,35 @@ enum AutoPunchEngine {
 
         Log.warn(component, "missed_punch")
         notify(title: appName, body: body, kind: .missedPunch(action), dryRun: dryRun)
+    }
+
+    private static let sessionRefreshTimeoutSeconds: TimeInterval = 20
+    private static let sessionRefreshPollIntervalNanos: UInt64 = 500_000_000
+
+    private static func awaitFreshSession(
+        baseline: Date?,
+        timeout: TimeInterval,
+        component: String
+    ) async -> StoredSession? {
+        Log.info(component, "session_refresh_requested", ["timeout_s": Int(timeout)])
+        SessionRefreshSignal.post()
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if let session = AuthStore.loadSession(), session.hasUsableCookies {
+                if let baseline {
+                    if let validated = session.lastValidatedAt, validated > baseline {
+                        Log.info(component, "session_refresh_recovered")
+                        return session
+                    }
+                } else {
+                    Log.info(component, "session_refresh_recovered")
+                    return session
+                }
+            }
+            try? await Task.sleep(nanoseconds: sessionRefreshPollIntervalNanos)
+        }
+        Log.info(component, "session_refresh_timeout")
+        return nil
     }
 
     private enum DelaySource: String {
