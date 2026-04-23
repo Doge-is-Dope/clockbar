@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class SettingsWindowController {
+final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private let viewModel: StatusViewModel
     private let appUpdater: AppUpdater
@@ -10,6 +10,7 @@ final class SettingsWindowController {
     init(viewModel: StatusViewModel, appUpdater: AppUpdater) {
         self.viewModel = viewModel
         self.appUpdater = appUpdater
+        super.init()
     }
 
     func showSettings() {
@@ -45,9 +46,22 @@ final class SettingsWindowController {
         window.contentMinSize = NSSize(width: AppStyle.Layout.settingsMinWidth, height: 200)
         window.contentMaxSize = NSSize(width: AppStyle.Layout.settingsMaxWidth, height: .greatestFiniteMagnitude)
         window.center()
+        // With ARC, `self.window` owns the retain; AppKit's legacy close-time release
+        // would otherwise over-release and leave a dangling pointer — crashing the
+        // next showSettings().
+        window.isReleasedWhenClosed = false
+        window.delegate = self
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
         self.window = window
+    }
+
+    nonisolated func windowWillClose(_ notification: Notification) {
+        MainActor.assumeIsolated {
+            if (notification.object as? NSWindow) === window {
+                window = nil
+            }
+        }
     }
 }
