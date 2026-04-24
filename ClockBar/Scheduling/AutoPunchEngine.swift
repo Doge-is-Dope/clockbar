@@ -76,6 +76,18 @@ enum AutoPunchEngine {
             if dryRun {
                 print("[dry-run] Would ask wake prompt for scheduled \(action.logLabel)")
             } else {
+                // The wake prompt can land hours after the schedule (closed lid, weekend
+                // laptop). Confirm with the server that the punch is actually still
+                // pending; otherwise we'd ask the user to duplicate a mobile/web punch.
+                if let status = await loadStatusBestEffort(component: component),
+                   let existingPunchTime = existingPunch(for: action, in: status) {
+                    Log.info(component, "already_punched", [
+                        "field": action.fieldName,
+                        "value": existingPunchTime,
+                        "stage": "pre_wake_prompt",
+                    ])
+                    return 0
+                }
                 Log.info(component, "wake_prompt_shown")
                 let choice = SystemUI.prompt(
                     title: appName,
@@ -380,6 +392,46 @@ enum AutoPunchEngine {
             return status.clockIn
         case .clockout:
             return status.clockOut
+        }
+    }
+
+    private static func loadStatusBestEffort(component: String) async -> PunchStatus? {
+        var session: StoredSession
+        if let existing = AuthStore.loadSession(), existing.hasUsableCookies {
+            session = existing
+        } else if let recovered = await awaitFreshSession(
+            baseline: nil,
+            timeout: sessionRefreshTimeoutSeconds,
+            component: component
+        ) {
+            session = recovered
+        } else {
+            return nil
+        }
+
+        do {
+            let status = try await Clock104API.getStatus(session: session)
+            session.lastValidatedAt = Date()
+            try? AuthStore.save(session)
+            return status
+        } catch Clock104Error.unauthorized {
+            guard var refreshed = await awaitFreshSession(
+                baseline: session.lastValidatedAt,
+                timeout: sessionRefreshTimeoutSeconds,
+                component: component
+            ) else {
+                return nil
+            }
+            do {
+                let status = try await Clock104API.getStatus(session: refreshed)
+                refreshed.lastValidatedAt = Date()
+                try? AuthStore.save(refreshed)
+                return status
+            } catch {
+                return nil
+            }
+        } catch {
+            return nil
         }
     }
 
