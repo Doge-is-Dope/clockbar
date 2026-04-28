@@ -4,7 +4,6 @@ import UserNotifications
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
-    static let missedPunchCategoryIdentifier = "missed_punch"
     static let punchNowActionIdentifier = "punchNow"
 
     var punchHandler: (() -> Void)?
@@ -23,13 +22,15 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             title: "Punch Now",
             options: [.foreground]
         )
-        let missedCategory = UNNotificationCategory(
-            identifier: Self.missedPunchCategoryIdentifier,
-            actions: [punchAction],
-            intentIdentifiers: [],
-            options: []
-        )
-        center.setNotificationCategories([missedCategory])
+        let categories = PunchNotificationKind.allCases.map { kind in
+            UNNotificationCategory(
+                identifier: kind.categoryIdentifier,
+                actions: kind.hasPunchAction ? [punchAction] : [],
+                intentIdentifiers: [],
+                options: []
+            )
+        }
+        center.setNotificationCategories(Set(categories))
 
         center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
@@ -77,9 +78,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             ? .default
             : UNNotificationSound(named: UNNotificationSoundName(soundName))
 
-        let categoryIdentifier: String? = (kind == "missed_punch")
-            ? Self.missedPunchCategoryIdentifier
-            : nil
+        let categoryIdentifier = PunchNotificationKind(rawValue: kind)?.categoryIdentifier
 
         send(title, body: body, sound: sound, categoryIdentifier: categoryIdentifier)
     }

@@ -16,4 +16,11 @@ struct PunchStatus: Codable, Equatable {
             error: message
         )
     }
+
+    func punchTime(for action: ClockAction) -> String? {
+        switch action {
+        case .clockin: return clockIn
+        case .clockout: return clockOut
+        }
+    }
 }

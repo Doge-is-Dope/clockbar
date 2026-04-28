@@ -18,6 +18,8 @@ APP_SOURCES := \
 	ClockBar/Support/StringExtensions.swift \
 	ClockBar/Support/TimeHelpers.swift \
 	ClockBar/Support/SystemUI.swift \
+	ClockBar/Support/NotificationKind.swift \
+	ClockBar/Support/NotificationLedger.swift \
 	ClockBar/Models/ClockAction.swift \
 	ClockBar/Models/ClockConfig.swift \
 	ClockBar/Models/NextPunch.swift \
@@ -35,8 +37,9 @@ APP_SOURCES := \
 	ClockBar/Scheduling/AutoPunchEngine.swift \
 	ClockBar/Scheduling/HolidayStore.swift \
 	ClockBar/Scheduling/LaunchAgentManager.swift \
-	ClockBar/Scheduling/PowerStateMonitor.swift \
+	ClockBar/App/PunchReminderCoordinator.swift \
 	ClockBar/App/StatusViewModel.swift \
+	ClockBar/App/WakeObserver.swift \
 	ClockBar/App/AppUpdater.swift \
 	ClockBar/App/ClockBarApp.swift \
 	ClockBar/UI/ContentView.swift \
@@ -58,6 +61,7 @@ HELPER_SOURCES := \
 	ClockBar/Support/StringExtensions.swift \
 	ClockBar/Support/TimeHelpers.swift \
 	ClockBar/Support/SystemUI.swift \
+	ClockBar/Support/NotificationKind.swift \
 	ClockBar/Models/ClockAction.swift \
 	ClockBar/Models/ClockConfig.swift \
 	ClockBar/Models/NextPunch.swift \
@@ -73,7 +77,6 @@ HELPER_SOURCES := \
 	ClockBar/Scheduling/AutoPunchEngine.swift \
 	ClockBar/Scheduling/HolidayStore.swift \
 	ClockBar/Scheduling/LaunchAgentManager.swift \
-	ClockBar/Scheduling/PowerStateMonitor.swift \
 	ClockBarHelper.swift
 
 build: ClockBar.app

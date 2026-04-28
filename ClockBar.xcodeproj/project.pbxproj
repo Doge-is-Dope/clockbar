@@ -28,7 +28,10 @@
 		A200000E /* AutoPunchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* AutoPunchEngine.swift */; };
 		A200000F /* HolidayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* HolidayStore.swift */; };
 		A2000010 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* LaunchAgentManager.swift */; };
-		A2000011 /* PowerStateMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013 /* PowerStateMonitor.swift */; };
+		A2000027 /* NotificationKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000027 /* NotificationKind.swift */; };
+		A2000028 /* NotificationLedger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000028 /* NotificationLedger.swift */; };
+		A2000029 /* PunchReminderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000029 /* PunchReminderCoordinator.swift */; };
+		A200002A /* WakeObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002A /* WakeObserver.swift */; };
 		A2000012 /* AppPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* AppPaths.swift */; };
 		A2000013 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Log.swift */; };
 		A2000060 /* AutoPunchLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000060 /* AutoPunchLock.swift */; };
@@ -76,7 +79,10 @@
 		A1000010 /* AutoPunchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchEngine.swift; sourceTree = "<group>"; };
 		A1000011 /* HolidayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayStore.swift; sourceTree = "<group>"; };
 		A1000012 /* LaunchAgentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAgentManager.swift; sourceTree = "<group>"; };
-		A1000013 /* PowerStateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerStateMonitor.swift; sourceTree = "<group>"; };
+		A1000027 /* NotificationKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationKind.swift; sourceTree = "<group>"; };
+		A1000028 /* NotificationLedger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationLedger.swift; sourceTree = "<group>"; };
+		A1000029 /* PunchReminderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchReminderCoordinator.swift; sourceTree = "<group>"; };
+		A100002A /* WakeObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeObserver.swift; sourceTree = "<group>"; };
 		A1000014 /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
 		A1000015 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		A1000060 /* AutoPunchLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPunchLock.swift; sourceTree = "<group>"; };
@@ -161,6 +167,8 @@
 				A1000070 /* AppContainer.swift */,
 				A1000004 /* StatusViewModel.swift */,
 				A1000026 /* AppUpdater.swift */,
+				A1000029 /* PunchReminderCoordinator.swift */,
+				A100002A /* WakeObserver.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -206,7 +214,6 @@
 				A1000010 /* AutoPunchEngine.swift */,
 				A1000011 /* HolidayStore.swift */,
 				A1000012 /* LaunchAgentManager.swift */,
-				A1000013 /* PowerStateMonitor.swift */,
 			);
 			path = Scheduling;
 			sourceTree = "<group>";
@@ -225,6 +232,8 @@
 				A100001B /* StringExtensions.swift */,
 				A1000031 /* TimeHelpers.swift */,
 				A100001C /* SystemUI.swift */,
+				A1000027 /* NotificationKind.swift */,
+				A1000028 /* NotificationLedger.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -315,6 +324,10 @@
 				A2000070 /* AppContainer.swift in Sources */,
 				A2000002 /* StatusViewModel.swift in Sources */,
 				A2000024 /* AppUpdater.swift in Sources */,
+				A2000027 /* NotificationKind.swift in Sources */,
+				A2000028 /* NotificationLedger.swift in Sources */,
+				A2000029 /* PunchReminderCoordinator.swift in Sources */,
+				A200002A /* WakeObserver.swift in Sources */,
 				A2000003 /* AuthWindowController.swift in Sources */,
 				A2000050 /* SilentAuthRefresher.swift in Sources */,
 				A2000080 /* SessionRefreshSignal.swift in Sources */,
@@ -332,7 +345,6 @@
 				A200000E /* AutoPunchEngine.swift in Sources */,
 				A200000F /* HolidayStore.swift in Sources */,
 				A2000010 /* LaunchAgentManager.swift in Sources */,
-				A2000011 /* PowerStateMonitor.swift in Sources */,
 				A2000012 /* AppPaths.swift in Sources */,
 				A2000060 /* AutoPunchLock.swift in Sources */,
 				A2000013 /* Log.swift in Sources */,
