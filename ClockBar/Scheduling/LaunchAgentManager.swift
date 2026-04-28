@@ -322,7 +322,7 @@ enum LaunchAgentManager {
         body: () throws -> T
     ) throws -> T {
         if force {
-            Log.warn("installer", "force_flag_used")
+            Log.warn("installer", "lock_forced")
             return try body()
         }
         guard let lock = AutoPunchLock.waitAndAcquire(timeout: timeout) else {

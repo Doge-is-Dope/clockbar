@@ -32,18 +32,21 @@ enum ClockService {
             session.lastValidatedAt = Date()
             try? AuthStore.save(session)
             if let clockIn = status.clockIn, status.clockOut == nil {
-                Log.info("manual", "ok", ["action": "clockin", "punched_at": clockIn])
+                Log.info("manual", "completed", ["action": "clockin", "punched_at": clockIn])
             } else if let clockOut = status.clockOut {
-                Log.info("manual", "ok", ["action": "clockout", "punched_at": clockOut])
+                Log.info("manual", "completed", ["action": "clockout", "punched_at": clockOut])
             } else {
-                Log.warn("manual", "unverified")
+                Log.warn("manual", "verification_pending")
             }
             return status
         } catch Clock104Error.unauthorized {
             Log.error("manual", "failed", ["reason": "unauthorized"])
             return .error("Your 104 session expired. Sign in again.")
         } catch {
-            Log.error("manual", "failed", ["reason": error.localizedDescription])
+            Log.error("manual", "failed", [
+                "reason": "exception",
+                "error_message": error.localizedDescription,
+            ])
             return .error(error.localizedDescription)
         }
     }

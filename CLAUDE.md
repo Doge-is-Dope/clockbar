@@ -67,7 +67,7 @@ Layer responsibilities:
 ## Paths and state
 
 - Config: `~/.104/config.json`
-- Logs: `~/.104/clockbar.log` (append-only, no rotation; every auto-punch, manual punch, installer, and notification write via `Log.info/warn/error`; format: `[ts] [LEVEL] component: event [k=v ...]`)
+- Logs: `~/.104/clockbar.log` (append-only, no rotation; every auto-punch, manual punch, installer, and notification write via `Log.info/warn/error`; format: `[ts] [LEVEL] component: event [k=v ...]`). Log conventions: `event` is past-tense or terminal state (`completed`, `skipped`, `failed`, `started`, `notified`, `verification_pending`, `lock_busy`, `already_punched`, `lock_forced`, `bootout`). `reason` always carries a snake_case **code**, never a free-form error string — when the failure is a thrown exception, use `reason=exception` and put the localized message in `error_message`. Use `action=clockin/clockout`, `punched_at=HH:MM`, `dry_run=true`, `*_s` for seconds, `*_at` for timestamps. Component names: `auto.<action>` for the helper auto-punch path, `notification.<action>` for missed-punch notification path, `manual` for `ClockService.punch`, `coordinator` for `PunchReminderCoordinator`, `installer` / `schedule_test` / `helper` for top-level subsystems.
 - Session: `~/.104/session.json` (file-backed, `0600`, managed by `AuthStore`)
 - Disable autopunch without editing config: `touch ~/.104/autopunch-disabled`
 - Launchd plists: `~/Library/LaunchAgents/com.clockbar.104-*.plist`

@@ -8,9 +8,10 @@ struct ClockBarHelper {
             try await run(arguments: Array(CommandLine.arguments.dropFirst()))
         } catch {
             let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
-            Log.error("helper", "uncaught_error", [
+            Log.error("helper", "failed", [
+                "reason": "uncaught_exception",
                 "argv": argv,
-                "message": error.localizedDescription,
+                "error_message": error.localizedDescription,
             ])
             fputs("\(error.localizedDescription)\n", stderr)
             Darwin.exit(1)
