@@ -180,10 +180,7 @@ enum AutoPunchEngine {
             Log.info(component, "step", ["name": "verifyStatus"])
             let verified = try await Clock104API.getStatus(session: session)
             if let punchTime = verified.punchTime(for: action) {
-                var message = "\(action == .clockin ? "Clocked in" : "Clocked out") at \(punchTime)"
-                if action == .clockout, let clockIn = verified.clockIn {
-                    message += " (in: \(clockIn))"
-                }
+                let message = "\(action == .clockin ? "Clocked in" : "Clocked out") at \(punchTime)"
                 if action == .clockout, let clockIn = verified.clockIn {
                     Log.info(component, "completed", [
                         "action": action.rawValue,
