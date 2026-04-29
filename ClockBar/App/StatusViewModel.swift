@@ -35,7 +35,7 @@ final class StatusViewModel: ObservableObject {
     private var wakeSyncStateResetTask: Task<Void, Never>?
     private var syncScheduleTask: Task<Void, Never>?
     private var appliedWakeSnapshot: WakeScheduleSnapshot
-    private var isRecoveringSession = false
+    private var sessionRecoveryTask: Task<Bool, Never>?
 
     private struct WakeScheduleSnapshot: Equatable {
         var wakeEnabled: Bool
@@ -132,7 +132,7 @@ final class StatusViewModel: ObservableObject {
 
         guard isAuthenticated else {
             status = .error("Sign in to 104 to enable status and punching.")
-            recoverSessionIfNeeded()
+            recoverSessionIfNeeded(trigger: "refresh_unauthenticated")
             return
         }
 
@@ -144,17 +144,26 @@ final class StatusViewModel: ObservableObject {
     }
 
     func punchNow() {
-        guard isAuthenticated else {
-            beginAuthentication()
-            return
-        }
-
-        let beforeIn = status?.clockIn
-        let beforeOut = status?.clockOut
+        guard !isPunching else { return }
         isPunching = true
-        Task.detached { [weak self] in
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            // Silent-refresh first so the punch uses fresh cookies even when
+            // the on-disk session is server-expired but structurally valid.
+            let ok = await self.performSessionRecovery(trigger: "punch_now")
+            guard ok else {
+                self.isPunching = false
+                Log.warn("manual", "skipped", ["reason": "auth_required"])
+                self.beginAuthentication()
+                return
+            }
+
+            let beforeIn = self.status?.clockIn
+            let beforeOut = self.status?.clockOut
             let updatedStatus = await ClockService.punch()
-            await self?.finishPunch(with: updatedStatus, beforeIn: beforeIn, beforeOut: beforeOut)
+            self.finishPunch(with: updatedStatus, beforeIn: beforeIn, beforeOut: beforeOut)
         }
     }
 
@@ -377,23 +386,38 @@ final class StatusViewModel: ObservableObject {
         isRefreshing = false
         refreshNextPunchIfNeeded()
         if updatedStatus.error == "Your 104 session expired. Sign in again." {
-            recoverSessionIfNeeded()
+            recoverSessionIfNeeded(trigger: "status_expired")
         }
     }
 
-    func recoverSessionIfNeeded() {
-        guard !isRecoveringSession else { return }
-        isRecoveringSession = true
+    func recoverSessionIfNeeded(trigger: String = "background") {
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let recovered = await SilentAuthRefresher.refresh()
-            self.isRecoveringSession = false
-            guard recovered else { return }
-            self.syncSessionState()
-            if self.isAuthenticated {
-                self.refresh()
-            }
+            let ok = await self.performSessionRecovery(trigger: trigger)
+            if ok { self.refresh() }
         }
+    }
+
+    /// Single source of truth for re-validating the 104 session: silent-refresh
+    /// cookies via the shared WebKit jar, log the attempt, sync the on-disk
+    /// session into `isAuthenticated`, and return the resulting auth state.
+    /// Concurrent callers coalesce onto one in-flight refresh.
+    @discardableResult
+    private func performSessionRecovery(trigger: String) async -> Bool {
+        if let inflight = sessionRecoveryTask {
+            return await inflight.value
+        }
+        let task = Task<Bool, Never> { @MainActor [weak self] in
+            guard let self else { return false }
+            Log.info("auth.recovery", "started", ["trigger": trigger])
+            let recovered = await SilentAuthRefresher.refresh()
+            Log.info("auth.recovery", "completed", ["recovered": recovered ? "true" : "false"])
+            self.syncSessionState()
+            self.sessionRecoveryTask = nil
+            return self.isAuthenticated
+        }
+        sessionRecoveryTask = task
+        return await task.value
     }
 
     private func refreshNextPunchIfNeeded() {

@@ -17,12 +17,12 @@ final class AppContainer: ObservableObject {
         self.appUpdater = updater
         self.settingsController = SettingsWindowController(viewModel: model, appUpdater: updater)
         self.reminderCoordinator = coordinator
-        self.wakeObserver = WakeObserver(coordinator: coordinator)
+        self.wakeObserver = WakeObserver(viewModel: model, coordinator: coordinator)
         NotificationManager.shared.punchHandler = { [weak model] in
             Task { @MainActor in model?.punchNow() }
         }
         self.sessionRefreshToken = SessionRefreshSignal.subscribe { [weak model] in
-            Task { @MainActor in model?.recoverSessionIfNeeded() }
+            Task { @MainActor in model?.recoverSessionIfNeeded(trigger: "distributed_signal") }
         }
         model.start()
         coordinator.checkPending(reason: "app_launch")

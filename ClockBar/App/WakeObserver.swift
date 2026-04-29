@@ -3,10 +3,12 @@ import Foundation
 
 @MainActor
 final class WakeObserver {
+    private let viewModel: StatusViewModel
     private let coordinator: PunchReminderCoordinator
     private var observers: [NSObjectProtocol] = []
 
-    init(coordinator: PunchReminderCoordinator) {
+    init(viewModel: StatusViewModel, coordinator: PunchReminderCoordinator) {
+        self.viewModel = viewModel
         self.coordinator = coordinator
         let center = NSWorkspace.shared.notificationCenter
         let names: [Notification.Name] = [
@@ -20,11 +22,16 @@ final class WakeObserver {
                 queue: .main
             ) { [weak self] _ in
                 MainActor.assumeIsolated {
-                    self?.coordinator.checkPending(reason: name.rawValue)
+                    self?.handleWake(reason: name.rawValue)
                 }
             }
             observers.append(token)
         }
+    }
+
+    private func handleWake(reason: String) {
+        viewModel.refresh()
+        coordinator.checkPending(reason: reason)
     }
 
     deinit {
