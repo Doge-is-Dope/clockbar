@@ -20,7 +20,7 @@ The rules that govern when ClockBar punches automatically, when it notifies, and
 
 ## Same-day
 
-Triggered by the app on `NSWorkspace.didWakeNotification`, `screensDidWakeNotification`, or coarse user-active polling (input within the last 30s while the menu-bar is foreground-eligible).
+Triggered by the app on `NSWorkspace.didWakeNotification` and `screensDidWakeNotification` (see `WakeObserver`). Each wake also fires `viewModel.refresh()` so the menu bar reflects current state without waiting for the next refresh-timer tick.
 
 | Condition | Outcome |
 |---|---|
@@ -43,7 +43,7 @@ A Late and a Missed for the same `(action, date)` may both fire across a single 
 
 ## Cross-day
 
-Triggered on app launch and on first lid-open of the day. The app walks back through `HolidayStore` to find the most recent expected work day before today, then checks `Clock104API.getStatus` for that date.
+Triggered on app launch and on every wake (same `WakeObserver` path as Same-day; the ledger dedupes so each `(action, date)` notifies at most once). The app walks back through `HolidayStore` to find the most recent expected work day before today, then checks `Clock104API.getStatus` for that date.
 
 | Condition | Outcome |
 |---|---|

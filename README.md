@@ -8,7 +8,7 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 - Manual punch with native macOS notifications
 - Scheduled auto-punch via launchd
 - Missed-punch macOS notifications after a configurable delay
-- Built-in 104 web login with session storage in Keychain
+- Built-in 104 web login with session cookies stored at `~/.104/session.json` (file-backed, `0600`)
 - Wake-before-punch scheduling via `pmset` (admin approval required)
 - Launch at login and periodic status refresh
 
