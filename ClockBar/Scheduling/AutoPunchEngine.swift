@@ -78,11 +78,13 @@ enum AutoPunchEngine {
 
         // If launchd misfired this job long after the schedule (e.g. Mac woke from
         // sleep well past target), don't auto-punch — let the app's reminder
-        // coordinator drive a Late or Missed notification instead. A 5-minute
-        // floor prevents tripping on normal launchd jitter when grace is 0.
+        // coordinator drive a Late or Missed notification instead. The grace
+        // accounts for the randomization window (`delayMax`) the helper
+        // legitimately slept toward, plus a 5-minute floor for launchd jitter.
         if !dryRun {
             let secondsLate = Int(Date().timeIntervalSince(scheduledDate))
-            let grace = max(config.missedPunchNotificationDelay, autoPunchLatenessFloorSeconds)
+            let delayMax = config.schedule.delayMax(for: action)
+            let grace = max(config.missedPunchNotificationDelay, autoPunchLatenessFloorSeconds) + delayMax
             if secondsLate > grace {
                 Log.info(component, "skipped", [
                     "reason": "past_grace_at_helper_run",
