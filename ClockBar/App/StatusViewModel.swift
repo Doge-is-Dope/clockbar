@@ -28,6 +28,7 @@ final class StatusViewModel: ObservableObject {
     @Published var statusNote: String?
     @Published var wakeSyncState: WakeSyncState = .idle
     @Published var nextPunch: NextPunch?
+    @Published var isHolidayToday: Bool = false
 
     private var timer: Timer?
     private var didEnsureLaunchAtLogin = false
@@ -122,6 +123,7 @@ final class StatusViewModel: ObservableObject {
             syncScheduledJobs()
         }
         nextPunch = NextPunchStore.loadOrGenerate(config: config)
+        refreshHolidayState()
         refresh()
         installRefreshTimer()
     }
@@ -385,8 +387,19 @@ final class StatusViewModel: ObservableObject {
         }
         isRefreshing = false
         refreshNextPunchIfNeeded()
+        refreshHolidayState()
         if updatedStatus.error == "Your 104 session expired. Sign in again." {
             recoverSessionIfNeeded(trigger: "status_expired")
+        }
+    }
+
+    private func refreshHolidayState() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let value = await HolidayStore.isHoliday(on: Date())
+            if self.isHolidayToday != value {
+                self.isHolidayToday = value
+            }
         }
     }
 

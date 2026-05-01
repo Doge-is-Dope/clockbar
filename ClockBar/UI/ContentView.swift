@@ -118,8 +118,8 @@ struct ContentView: View {
                 )
             )
 
-            if viewModel.config.autopunchEnabled {
-                Text(punchWindowSummary)
+            if viewModel.config.autopunchEnabled, let summary = punchWindowSummary {
+                Text(summary)
                     .font(AppStyle.Font.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -180,7 +180,11 @@ struct ContentView: View {
         return "Punch Now"
     }
 
-    private var punchWindowSummary: String {
+    private var punchWindowSummary: String? {
+        if viewModel.isHolidayToday {
+            return nil
+        }
+
         let hasClockIn = viewModel.status?.clockIn != nil
         let hasClockOut = viewModel.status?.clockOut != nil
 
