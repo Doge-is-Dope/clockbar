@@ -29,6 +29,7 @@ final class StatusViewModel: ObservableObject {
     @Published var wakeSyncState: WakeSyncState = .idle
     @Published var nextPunch: NextPunch?
     @Published var isHolidayToday: Bool = false
+    @Published var holidayName: String = ""
 
     private var timer: Timer?
     private var didEnsureLaunchAtLogin = false
@@ -396,9 +397,12 @@ final class StatusViewModel: ObservableObject {
     private func refreshHolidayState() {
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let value = await HolidayStore.isHoliday(on: Date())
-            if self.isHolidayToday != value {
-                self.isHolidayToday = value
+            let result = await HolidayStore.lookup(on: Date())
+            if self.isHolidayToday != result.isHoliday {
+                self.isHolidayToday = result.isHoliday
+            }
+            if self.holidayName != result.name {
+                self.holidayName = result.name
             }
         }
     }
