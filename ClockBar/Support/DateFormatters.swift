@@ -33,7 +33,7 @@ extension DateFormatter {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
-        formatter.dateFormat = "yyyy/MM/dd"
+        formatter.dateFormat = "yyyyMMdd"
         return formatter
     }()
 }
