@@ -19,6 +19,12 @@ final class AutoPunchLock {
     deinit { release() }
 
     static func tryAcquireExclusive() -> AutoPunchLock? {
+        do {
+            try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        } catch {
+            return nil
+        }
+
         let fd = Darwin.open(autoPunchLockPath.path, O_CREAT | O_RDWR, 0o644)
         guard fd >= 0 else { return nil }
         if c_flock(fd, LOCK_EX | LOCK_NB) != 0 {
