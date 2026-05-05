@@ -3,13 +3,13 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var viewModel: StatusViewModel
     @ObservedObject var appUpdater: AppUpdater
+    var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
     @State private var clockInDate = Date()
     @State private var clockInEndDate = Date()
     @State private var clockOutDate = Date()
     @State private var clockOutEndDate = Date()
-    @State private var maxContentHeight: CGFloat = 0
-    @State private var shouldSnapInitialWindowHeight = true
+    @State private var lastReportedContentHeight: CGFloat = 0
 
     private let calendar = Calendar(identifier: .gregorian)
     private let contentPadding = AppStyle.Spacing.xxl + AppStyle.Spacing.xs
@@ -38,23 +38,16 @@ struct SettingsView: View {
             minWidth: AppStyle.Layout.settingsMinWidth,
             idealWidth: AppStyle.Layout.settingsIdealWidth
         )
-        .background(
-            SettingsWindowHeightController(
-                maxContentHeight: maxContentHeight,
-                shouldSnapInitialHeight: shouldSnapInitialWindowHeight
-            ) {
-                shouldSnapInitialWindowHeight = false
-            }
-        )
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
             clockInEndDate = date(from: viewModel.config.schedule.clockinEnd)
             clockOutDate = date(from: viewModel.config.schedule.clockout)
             clockOutEndDate = date(from: viewModel.config.schedule.clockoutEnd)
-            shouldSnapInitialWindowHeight = true
         }
         .onPreferenceChange(SettingsContentHeightPreferenceKey.self) { height in
-            maxContentHeight = height
+            guard height > 0, height != lastReportedContentHeight else { return }
+            lastReportedContentHeight = height
+            onContentHeightChange?(height)
         }
         .onDisappear {
             viewModel.commitWakeScheduleChangesOnClose()
@@ -680,39 +673,3 @@ private struct SettingsContentHeightPreferenceKey: PreferenceKey {
     }
 }
 
-private struct SettingsWindowHeightController: NSViewRepresentable {
-    let maxContentHeight: CGFloat
-    let shouldSnapInitialHeight: Bool
-    let onInitialHeightApplied: () -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        NSView(frame: .zero)
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard maxContentHeight > 0 else { return }
-
-        let pendingMax = maxContentHeight
-        let pendingSnap = shouldSnapInitialHeight
-        let snapCallback = onInitialHeightApplied
-
-        DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-
-            if window.contentMaxSize.height != pendingMax {
-                var maxSize = window.contentMaxSize
-                maxSize.height = pendingMax
-                window.contentMaxSize = maxSize
-            }
-
-            guard pendingSnap else { return }
-
-            var contentSize = window.contentRect(forFrameRect: window.frame).size
-            if contentSize.height != pendingMax {
-                contentSize.height = pendingMax
-                window.setContentSize(contentSize)
-            }
-            snapCallback()
-        }
-    }
-}

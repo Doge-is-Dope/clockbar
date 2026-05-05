@@ -28,7 +28,13 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             return
         }
 
-        let settingsView = SettingsView(viewModel: viewModel, appUpdater: appUpdater)
+        let settingsView = SettingsView(
+            viewModel: viewModel,
+            appUpdater: appUpdater,
+            onContentHeightChange: { [weak self] height in
+                self?.applyContentHeight(height)
+            }
+        )
         let hostingView = NSHostingView(rootView: settingsView)
 
         let window = NSWindow(
@@ -37,14 +43,12 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
                 width: AppStyle.Layout.settingsIdealWidth,
                 height: 0
             ),
-            styleMask: [.titled, .closable, .resizable],
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         window.title = "Settings"
         window.contentView = hostingView
-        window.contentMinSize = NSSize(width: AppStyle.Layout.settingsMinWidth, height: 200)
-        window.contentMaxSize = NSSize(width: AppStyle.Layout.settingsMaxWidth, height: .greatestFiniteMagnitude)
         window.center()
         // With ARC, `self.window` owns the retain; AppKit's legacy close-time release
         // would otherwise over-release and leave a dangling pointer — crashing the
@@ -55,6 +59,16 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
 
         self.window = window
+    }
+
+    private func applyContentHeight(_ contentHeight: CGFloat) {
+        guard contentHeight > 0, let window else { return }
+
+        var contentSize = window.contentRect(forFrameRect: window.frame).size
+        if contentSize.height != contentHeight {
+            contentSize.height = contentHeight
+            window.setContentSize(contentSize)
+        }
     }
 
     nonisolated func windowWillClose(_ notification: Notification) {
