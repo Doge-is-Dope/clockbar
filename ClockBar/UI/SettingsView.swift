@@ -121,7 +121,7 @@ struct SettingsView: View {
             ) {
                 rowLabel(
                     title: "Minimum hours",
-                    subtitle: "Adjusts clock out if the gap is too short.",
+                    subtitle: "Pushes clock-out later if the workday falls short.",
                     icon: "clock.badge.checkmark"
                 )
             }
@@ -163,7 +163,7 @@ struct SettingsView: View {
                 ) {
                     rowLabel(
                         title: "Notify after",
-                        subtitle: "Delay after the scheduled time before notifying.",
+                        subtitle: "Wait this long after the scheduled time.",
                         icon: "clock.badge.questionmark"
                     )
                 }
@@ -174,7 +174,7 @@ struct SettingsView: View {
     // MARK: - Wake
 
     private var wakeSection: some View {
-        Section("Wake") {
+        Section("Sleep & Wake") {
             Toggle(isOn: Binding(
                 get: { viewModel.wakeEnabledDraft },
                 set: { viewModel.setWakeEnabledDraft($0) }
@@ -198,7 +198,7 @@ struct SettingsView: View {
             ) {
                 rowLabel(
                     title: "Wake before",
-                    subtitle: "Lead time before the scheduled punch.",
+                    subtitle: "How early to wake the Mac.",
                     icon: "alarm"
                 )
             }
@@ -209,7 +209,7 @@ struct SettingsView: View {
     // MARK: - App
 
     private var appSection: some View {
-        Section("App") {
+        Section("General") {
             durationPicker(
                 value: Binding(
                     get: { max(60, viewModel.config.refreshInterval) },
@@ -217,7 +217,7 @@ struct SettingsView: View {
                 ),
                 options: DurationOption.syncStatus
             ) {
-                Label("Sync Status", systemImage: "arrow.triangle.2.circlepath")
+                Label("Refresh interval", systemImage: "arrow.triangle.2.circlepath")
             }
 
             LabeledContent {
@@ -241,7 +241,7 @@ struct SettingsView: View {
     // MARK: - Account
 
     private var accountSection: some View {
-        Section {
+        Section("Account") {
             Button {
                 if viewModel.isAuthenticated {
                     viewModel.signOut()
