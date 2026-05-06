@@ -12,31 +12,28 @@ struct SettingsView: View {
     @State private var lastReportedContentHeight: CGFloat = 0
 
     private let calendar = Calendar(identifier: .gregorian)
-    private let contentPadding = AppStyle.Spacing.xxl + AppStyle.Spacing.xs
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-                automationSection
-                notificationsSection
-                wakeSection
-                appSection
-                accountActionButton
-            }
-            .padding(contentPadding)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: SettingsContentHeightPreferenceKey.self,
-                        value: proxy.size.height
-                    )
-                }
-            )
+        Form {
+            automationSection
+            notificationsSection
+            wakeSection
+            appSection
+            accountSection
         }
+        .formStyle(.grouped)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(
             minWidth: AppStyle.Layout.settingsMinWidth,
             idealWidth: AppStyle.Layout.settingsIdealWidth
+        )
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: SettingsContentHeightPreferenceKey.self,
+                    value: proxy.size.height
+                )
+            }
         )
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)
@@ -81,79 +78,60 @@ struct SettingsView: View {
     // MARK: - Automation
 
     private var automationSection: some View {
-        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Automation")
+        Section {
+            Toggle(isOn: Binding(
+                get: { viewModel.config.autopunchEnabled },
+                set: { viewModel.setAutopunchEnabled($0) }
+            )) {
+                Label("Auto-punch", systemImage: "clock.arrow.2.circlepath")
+            }
+            .tint(AppStyle.Palette.accent)
 
-            VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
-                cardContainer {
-                    SettingsCardRow(
-                        icon: "clock.arrow.2.circlepath",
-                        label: "Auto-punch"
-                    ) {
-                        Toggle("", isOn: Binding(
-                            get: { viewModel.config.autopunchEnabled },
-                            set: { viewModel.setAutopunchEnabled($0) }
-                        ))
-                        .toggleStyle(.switch)
-                        .tint(AppStyle.Palette.accent)
-                        .labelsHidden()
-                    }
-
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "sunrise",
-                        label: "Clock In"
-                    ) {
-                        timeRangePicker(
-                            start: $clockInDate,
-                            end: $clockInEndDate,
-                            isEnabled: true
-                        ) { startDate, endDate in
-                            persistTimeRange(start: startDate, end: endDate, for: .clockin)
-                        }
-                    }
-
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "sunset",
-                        label: "Clock Out"
-                    ) {
-                        timeRangePicker(
-                            start: $clockOutDate,
-                            end: $clockOutEndDate,
-                            isEnabled: true
-                        ) { startDate, endDate in
-                            persistTimeRange(start: startDate, end: endDate, for: .clockout)
-                        }
-                    }
-
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "clock.badge.checkmark",
-                        label: "Minimum hours",
-                        subtitle: "Adjusts clock out if the gap is too short."
-                    ) {
-                        durationControl(
-                            value: Binding(
-                                get: { viewModel.config.minWorkHours },
-                                set: { viewModel.setMinWorkHours($0) }
-                            ),
-                            range: 0...12,
-                            step: 1,
-                            formatter: { $0 == 0 ? "Off" : "\($0)h" }
-                        )
-                    }
+            LabeledContent {
+                timeRangePicker(
+                    start: $clockInDate,
+                    end: $clockInEndDate,
+                    isEnabled: true
+                ) { startDate, endDate in
+                    persistTimeRange(start: startDate, end: endDate, for: .clockin)
                 }
+            } label: {
+                Label("Clock In", systemImage: "sunrise")
+            }
 
-                if let warning = scheduleWarning {
-                    Label(warning, systemImage: "exclamationmark.triangle.fill")
-                        .font(AppStyle.Font.caption)
-                        .foregroundStyle(.orange)
-                        .padding(.leading, AppStyle.Spacing.xs)
+            LabeledContent {
+                timeRangePicker(
+                    start: $clockOutDate,
+                    end: $clockOutEndDate,
+                    isEnabled: true
+                ) { startDate, endDate in
+                    persistTimeRange(start: startDate, end: endDate, for: .clockout)
                 }
+            } label: {
+                Label("Clock Out", systemImage: "sunset")
+            }
+
+            durationPicker(
+                value: Binding(
+                    get: { viewModel.config.minWorkHours },
+                    set: { viewModel.setMinWorkHours($0) }
+                ),
+                options: DurationOption.minWorkHours,
+                formatter: { $0 == 0 ? "Off" : "\($0)h" }
+            ) {
+                rowLabel(
+                    title: "Minimum hours",
+                    subtitle: "Adjusts clock out if the gap is too short.",
+                    icon: "clock.badge.checkmark"
+                )
+            }
+        } header: {
+            Text("Automation")
+        } footer: {
+            if let warning = scheduleWarning {
+                Label(warning, systemImage: "exclamationmark.triangle.fill")
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.orange)
             }
         }
     }
@@ -161,42 +139,33 @@ struct SettingsView: View {
     // MARK: - Notifications
 
     private var notificationsSection: some View {
-        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Notifications")
+        Section("Notifications") {
+            Toggle(isOn: Binding(
+                get: { viewModel.config.missedPunchNotificationEnabled },
+                set: { viewModel.setMissedPunchNotificationEnabled($0) }
+            )) {
+                rowLabel(
+                    title: "Missed punch notification",
+                    subtitle: "Notifies when no punch is recorded on time.",
+                    icon: "bell.badge"
+                )
+            }
+            .tint(AppStyle.Palette.accent)
 
-            cardContainer {
-                SettingsCardRow(
-                    icon: "bell.badge",
-                    label: "Missed punch notification",
-                    subtitle: "Notifies when no punch is recorded on time."
+            if viewModel.config.missedPunchNotificationEnabled {
+                durationPicker(
+                    value: Binding(
+                        get: { max(0, viewModel.config.missedPunchNotificationDelay) },
+                        set: { viewModel.setMissedPunchNotificationDelay($0) }
+                    ),
+                    options: DurationOption.notifyAfter,
+                    zeroLabel: "Immediately"
                 ) {
-                    Toggle("", isOn: Binding(
-                        get: { viewModel.config.missedPunchNotificationEnabled },
-                        set: { viewModel.setMissedPunchNotificationEnabled($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.accent)
-                    .labelsHidden()
-                }
-
-                if viewModel.config.missedPunchNotificationEnabled {
-                    insetDivider
-
-                    SettingsCardRow(
-                        icon: "clock.badge.questionmark",
-                        label: "Notify after",
-                        subtitle: "Delay after the scheduled time before notifying."
-                    ) {
-                        durationControl(
-                            value: Binding(
-                                get: { max(0, viewModel.config.missedPunchNotificationDelay) },
-                                set: { viewModel.setMissedPunchNotificationDelay($0) }
-                            ),
-                            range: 0...3600,
-                            step: 60,
-                            zeroLabel: "Immediately"
-                        )
-                    }
+                    rowLabel(
+                        title: "Notify after",
+                        subtitle: "Delay after the scheduled time before notifying.",
+                        icon: "clock.badge.questionmark"
+                    )
                 }
             }
         }
@@ -205,192 +174,148 @@ struct SettingsView: View {
     // MARK: - Wake
 
     private var wakeSection: some View {
-        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("Wake")
-
-            cardContainer {
-                SettingsCardRow(
-                    icon: "powersleep",
-                    label: "Wake for auto-punch",
-                    subtitle: wakeScheduleSubtitle
-                ) {
-                    Toggle("", isOn: Binding(
-                        get: { viewModel.wakeEnabledDraft },
-                        set: { viewModel.setWakeEnabledDraft($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .tint(AppStyle.Palette.accent)
-                    .labelsHidden()
-                    .disabled(viewModel.wakeSyncState.isApplying)
-                    .opacity(viewModel.wakeSyncState.isApplying ? AppStyle.Opacity.disabled : 1)
-                }
-
-                insetDivider
-
-                SettingsCardRow(
-                    icon: "alarm",
-                    label: "Wake before",
-                    subtitle: "Lead time before the scheduled punch."
-                ) {
-                    durationControl(
-                        value: Binding(
-                            get: { max(0, viewModel.wakeBeforeDraft) },
-                            set: { viewModel.setWakeBeforeDraft($0) }
-                        ),
-                        range: 0...3600,
-                        step: 60,
-                        zeroLabel: "At punch time",
-                        isEnabled: !viewModel.wakeSyncState.isApplying
-                    )
-                }
+        Section("Wake") {
+            Toggle(isOn: Binding(
+                get: { viewModel.wakeEnabledDraft },
+                set: { viewModel.setWakeEnabledDraft($0) }
+            )) {
+                rowLabel(
+                    title: "Wake for auto-punch",
+                    subtitle: viewModel.wakeStatusMessage,
+                    icon: "powersleep"
+                )
             }
+            .tint(AppStyle.Palette.accent)
+            .disabled(viewModel.wakeSyncState.isApplying)
+
+            durationPicker(
+                value: Binding(
+                    get: { max(0, viewModel.wakeBeforeDraft) },
+                    set: { viewModel.setWakeBeforeDraft($0) }
+                ),
+                options: DurationOption.wakeBefore,
+                zeroLabel: "At punch time"
+            ) {
+                rowLabel(
+                    title: "Wake before",
+                    subtitle: "Lead time before the scheduled punch.",
+                    icon: "alarm"
+                )
+            }
+            .disabled(viewModel.wakeSyncState.isApplying)
         }
     }
 
     // MARK: - App
 
     private var appSection: some View {
-        VStack(alignment: .leading, spacing: AppStyle.Spacing.xxl) {
-            sectionHeader("App")
+        Section("App") {
+            durationPicker(
+                value: Binding(
+                    get: { max(60, viewModel.config.refreshInterval) },
+                    set: { viewModel.setRefreshInterval($0) }
+                ),
+                options: DurationOption.syncStatus
+            ) {
+                Label("Sync Status", systemImage: "arrow.triangle.2.circlepath")
+            }
 
-            cardContainer {
-                SettingsCardRow(
-                    icon: "arrow.triangle.2.circlepath",
-                    label: "Sync Status"
-                ) {
-                    durationControl(
-                        value: Binding(
-                            get: { max(60, viewModel.config.refreshInterval) },
-                            set: { viewModel.setRefreshInterval($0) }
-                        ),
-                        range: 60...3600,
-                        step: 60
-                    )
-                }
+            LabeledContent {
+                VStack(alignment: .trailing, spacing: AppStyle.Spacing.xs) {
+                    Button("Check for Updates") {
+                        appUpdater.checkForUpdates()
+                    }
 
-                insetDivider
-
-                SettingsCardRow(
-                    icon: "info.circle",
-                    label: "ClockBar \(appUpdater.currentVersion)"
-                ) {
-                    VStack(alignment: .trailing, spacing: AppStyle.Spacing.xs) {
-                        Button {
-                            appUpdater.checkForUpdates()
-                        } label: {
-                            Text("Check for Updates")
-                                .font(AppStyle.Font.subheadline)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, AppStyle.Spacing.sm)
-                                .padding(.vertical, AppStyle.Spacing.xs)
-                                .background(AppStyle.Palette.accent, in: RoundedRectangle(cornerRadius: AppStyle.Radius.small))
-                        }
-                        .buttonStyle(.plain)
-
-                        if let lastChecked = appUpdater.lastChecked {
-                            Text("Last checked: \(lastChecked, format: .relative(presentation: .named))")
-                                .font(AppStyle.Font.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                    if let lastChecked = appUpdater.lastChecked {
+                        Text("Last checked: \(lastChecked, format: .relative(presentation: .named))")
+                            .font(AppStyle.Font.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
+            } label: {
+                Label("ClockBar \(appUpdater.currentVersion)", systemImage: "info.circle")
             }
         }
     }
 
-    // MARK: - Components
+    // MARK: - Account
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(AppStyle.Font.sectionTitle)
-            .foregroundStyle(.primary)
-    }
-
-    private func cardContainer<Content: View>(
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(spacing: 0) {
-            content()
+    private var accountSection: some View {
+        Section {
+            Button {
+                if viewModel.isAuthenticated {
+                    viewModel.signOut()
+                } else {
+                    viewModel.beginAuthentication()
+                }
+            } label: {
+                Label(accountActionTitle, systemImage: accountActionIcon)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.isAuthenticating)
         }
-        .background(
-            RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous)
-                .fill(AppStyle.Palette.label.opacity(AppStyle.Opacity.cardFill))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous))
     }
 
-    private var insetDivider: some View {
-        Divider()
-            .padding(.leading, AppStyle.Spacing.cardPadding
-                     + AppStyle.Layout.iconBackgroundSize)
-            .padding(.horizontal, AppStyle.Spacing.cardPadding)
-    }
+    // MARK: - Pickers
 
-    private func durationControl(
+    private func durationPicker<Label: View>(
         value: Binding<Int>,
-        range: ClosedRange<Int>,
-        step: Int,
+        options: [DurationOption],
         zeroLabel: String? = nil,
         formatter: ((Int) -> String)? = nil,
-        isEnabled: Bool = true
+        @ViewBuilder label: () -> Label
     ) -> some View {
-        HStack(spacing: AppStyle.Spacing.sm) {
-            Text(formatter?(value.wrappedValue) ?? durationText(value.wrappedValue, zeroLabel: zeroLabel))
-                .font(AppStyle.Font.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(minWidth: AppStyle.Layout.durationLabelWidth, alignment: .trailing)
-
-            Stepper("", value: value, in: range, step: step)
-                .labelsHidden()
-                .controlSize(.small)
-                .fixedSize()
+        let current = value.wrappedValue
+        let resolvedFormatter: (Int) -> String = formatter ?? { [zeroLabel] in
+            durationText($0, zeroLabel: zeroLabel)
         }
-        .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
-        .disabled(!isEnabled)
-    }
+        let merged = mergedOptions(
+            options,
+            current: current,
+            formatter: resolvedFormatter
+        )
 
-    private var accountActionButton: some View {
-        Button {
-            if viewModel.isAuthenticated {
-                viewModel.signOut()
-            } else {
-                viewModel.beginAuthentication()
+        return Picker(selection: value) {
+            ForEach(merged) { opt in
+                Text(opt.label).tag(opt.value)
             }
         } label: {
-            HStack(spacing: AppStyle.Spacing.xl) {
-                Image(systemName: accountActionIcon)
-                    .font(AppStyle.Font.icon)
-                    .foregroundStyle(.secondary)
-                    .frame(
-                        width: AppStyle.Layout.iconBackgroundSize,
-                        height: AppStyle.Layout.iconBackgroundSize
-                    )
-
-                Text(accountActionTitle)
-                    .font(AppStyle.Font.body)
-                    .foregroundStyle(.primary)
-
-                Spacer(minLength: AppStyle.Spacing.md)
-            }
-            .frame(minHeight: AppStyle.Layout.settingsRowHeight)
-            .padding(.horizontal, AppStyle.Spacing.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            label()
         }
-        .buttonStyle(.plain)
-        .disabled(viewModel.isAuthenticating)
-        .opacity(viewModel.isAuthenticating ? AppStyle.Opacity.disabled : 1)
-        .background(
-            RoundedRectangle(cornerRadius: AppStyle.Radius.card, style: .continuous)
-                .fill(AppStyle.Palette.label.opacity(AppStyle.Opacity.cardFill))
-        )
+        .pickerStyle(.menu)
+    }
+
+    private func mergedOptions(
+        _ base: [DurationOption],
+        current: Int,
+        formatter: (Int) -> String
+    ) -> [DurationOption] {
+        if base.contains(where: { $0.value == current }) {
+            return base
+        }
+        let synthetic = DurationOption(value: current, label: formatter(current))
+        return (base + [synthetic]).sorted { $0.value < $1.value }
+    }
+
+    // MARK: - Row labels
+
+    @ViewBuilder
+    private func rowLabel(title: String, subtitle: String, icon: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
+                Text(title)
+                Text(subtitle)
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: icon)
+        }
     }
 
     // MARK: - Helpers
-
-    private var wakeScheduleSubtitle: String {
-        viewModel.wakeStatusMessage
-    }
 
     private var scheduleWarning: String? {
         let s = viewModel.config.schedule
@@ -561,52 +486,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - SettingsCardRow
-
-private struct SettingsCardRow<Control: View>: View {
-    let icon: String
-    let label: String
-    var subtitle: String? = nil
-    var isEnabled = true
-    @ViewBuilder var control: () -> Control
-
-    var body: some View {
-        HStack(spacing: AppStyle.Spacing.xl) {
-            HStack(spacing: AppStyle.Spacing.xl) {
-                Image(systemName: icon)
-                    .font(AppStyle.Font.icon)
-                    .foregroundStyle(.secondary)
-                    .frame(
-                        width: AppStyle.Layout.iconBackgroundSize,
-                        height: AppStyle.Layout.iconBackgroundSize
-                    )
-
-                VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
-                    Text(label)
-                        .font(AppStyle.Font.body)
-                        .foregroundStyle(.primary)
-
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(AppStyle.Font.caption)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                    }
-                }
-            }
-            .opacity(isEnabled ? 1 : AppStyle.Opacity.disabled)
-
-            Spacer(minLength: AppStyle.Spacing.md)
-
-            control()
-                .disabled(!isEnabled)
-        }
-        .frame(minHeight: AppStyle.Layout.settingsRowHeight)
-        .padding(.horizontal, AppStyle.Spacing.cardPadding)
-    }
-}
-
 // MARK: - TimeFieldPicker
 
 private struct TimeFieldPicker: NSViewRepresentable {
@@ -673,3 +552,48 @@ private struct SettingsContentHeightPreferenceKey: PreferenceKey {
     }
 }
 
+// MARK: - DurationOption
+
+struct DurationOption: Identifiable {
+    let value: Int
+    let label: String
+    var id: Int { value }
+
+    static let minWorkHours: [DurationOption] = [
+        .init(value: 0, label: "Off"),
+        .init(value: 6, label: "6h"),
+        .init(value: 7, label: "7h"),
+        .init(value: 8, label: "8h"),
+        .init(value: 9, label: "9h"),
+        .init(value: 10, label: "10h"),
+    ]
+
+    static let notifyAfter: [DurationOption] = [
+        .init(value: 0, label: "Immediately"),
+        .init(value: 60, label: "1m"),
+        .init(value: 300, label: "5m"),
+        .init(value: 600, label: "10m"),
+        .init(value: 900, label: "15m"),
+        .init(value: 1800, label: "30m"),
+        .init(value: 3600, label: "1h"),
+    ]
+
+    static let wakeBefore: [DurationOption] = [
+        .init(value: 0, label: "At punch time"),
+        .init(value: 60, label: "1m"),
+        .init(value: 120, label: "2m"),
+        .init(value: 300, label: "5m"),
+        .init(value: 600, label: "10m"),
+        .init(value: 900, label: "15m"),
+        .init(value: 1800, label: "30m"),
+    ]
+
+    static let syncStatus: [DurationOption] = [
+        .init(value: 60, label: "1m"),
+        .init(value: 300, label: "5m"),
+        .init(value: 600, label: "10m"),
+        .init(value: 900, label: "15m"),
+        .init(value: 1800, label: "30m"),
+        .init(value: 3600, label: "1h"),
+    ]
+}
