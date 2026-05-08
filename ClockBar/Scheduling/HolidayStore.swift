@@ -14,7 +14,26 @@ enum HolidayStore {
     }
 
     static func lookup(on date: Date = Date()) async -> HolidayLookup {
+        let dayKey = DateFormatter.taiwanHolidayFormatter.string(from: date)
+
+        if let cached = cache.read(forKey: dayKey) {
+            return cached
+        }
+
         let calendar = Calendar(identifier: .gregorian)
+        if let result = await loadFromSource(on: date, dayKey: dayKey, calendar: calendar) {
+            cache.write(result, forKey: dayKey)
+            return result
+        }
+
+        return HolidayLookup(isHoliday: calendar.isDateInWeekend(date), name: "")
+    }
+
+    private static func loadFromSource(
+        on date: Date,
+        dayKey: String,
+        calendar: Calendar
+    ) async -> HolidayLookup? {
         let year = calendar.component(.year, from: date)
         let cacheURL = holidayDirectory.appendingPathComponent("\(year).json")
 
@@ -34,11 +53,10 @@ enum HolidayStore {
         guard let data = try? Data(contentsOf: cacheURL),
               let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         else {
-            return HolidayLookup(isHoliday: calendar.isDateInWeekend(date), name: "")
+            return nil
         }
 
-        let todayString = DateFormatter.taiwanHolidayFormatter.string(from: date)
-        for entry in entries where (entry["date"] as? String) == todayString {
+        for entry in entries where (entry["date"] as? String) == dayKey {
             return HolidayLookup(
                 isHoliday: (entry["isHoliday"] as? Bool) ?? false,
                 name: (entry["description"] as? String) ?? ""
@@ -46,5 +64,27 @@ enum HolidayStore {
         }
 
         return HolidayLookup(isHoliday: calendar.isDateInWeekend(date), name: "")
+    }
+
+    private static let cache = LookupCache()
+}
+
+private final class LookupCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var key: String?
+    private var value: HolidayLookup?
+
+    func read(forKey requested: String) -> HolidayLookup? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard key == requested else { return nil }
+        return value
+    }
+
+    func write(_ result: HolidayLookup, forKey newKey: String) {
+        lock.lock()
+        key = newKey
+        value = result
+        lock.unlock()
     }
 }

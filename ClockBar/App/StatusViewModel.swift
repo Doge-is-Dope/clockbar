@@ -38,6 +38,7 @@ final class StatusViewModel: ObservableObject {
     private var syncScheduleTask: Task<Void, Never>?
     private var appliedWakeSnapshot: WakeScheduleSnapshot
     private var sessionRecoveryTask: Task<Bool, Never>?
+    private var lastRecoveryAttemptAt: Date?
 
     private struct WakeScheduleSnapshot: Equatable {
         var wakeEnabled: Bool
@@ -237,7 +238,7 @@ final class StatusViewModel: ObservableObject {
     }
 
     func setMinWorkHours(_ value: Int) {
-        updateConfig(reloadScheduleState: true) {
+        updateConfig(reloadScheduleState: false) {
             $0.minWorkHours = max(0, value)
         }
     }
@@ -256,7 +257,7 @@ final class StatusViewModel: ObservableObject {
     }
 
     func setMissedPunchNotificationDelay(_ value: Int) {
-        updateConfig(reloadScheduleState: true) {
+        updateConfig(reloadScheduleState: false) {
             $0.missedPunchNotificationDelay = max(0, value)
         }
     }
@@ -320,7 +321,7 @@ final class StatusViewModel: ObservableObject {
     }
 
     func setRefreshInterval(_ value: Int) {
-        updateConfig(reloadScheduleState: true) {
+        updateConfig(reloadScheduleState: false) {
             $0.refreshInterval = max(60, value)
         }
         restartRefreshTimerIfNeeded()
@@ -408,10 +409,19 @@ final class StatusViewModel: ObservableObject {
     }
 
     func recoverSessionIfNeeded(trigger: String = "background") {
+        if let last = lastRecoveryAttemptAt,
+           Date().timeIntervalSince(last) < Self.recoveryBackoffInterval {
+            Log.info("auth.recovery", "skipped", ["trigger": trigger, "reason": "backoff"])
+            return
+        }
+        lastRecoveryAttemptAt = Date()
         Task { @MainActor [weak self] in
             guard let self else { return }
             let ok = await self.performSessionRecovery(trigger: trigger)
-            if ok { self.refresh() }
+            if ok {
+                self.lastRecoveryAttemptAt = nil
+                self.refresh()
+            }
         }
     }
 
@@ -643,6 +653,7 @@ final class StatusViewModel: ObservableObject {
     }
 
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
+    private static let recoveryBackoffInterval: TimeInterval = 60
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()
