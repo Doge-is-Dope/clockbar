@@ -45,3 +45,7 @@ dmg_staging/
 
 # Python
 __pycache__/
+
+# Local AI agent state
+.claude/
+.agents/
