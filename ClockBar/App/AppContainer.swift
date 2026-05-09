@@ -3,7 +3,6 @@ import Foundation
 @MainActor
 final class AppContainer: ObservableObject {
     let viewModel: StatusViewModel
-    let appUpdater: AppUpdater
     let settingsController: SettingsWindowController
     let reminderCoordinator: PunchReminderCoordinator
     private let wakeObserver: WakeObserver
@@ -11,11 +10,9 @@ final class AppContainer: ObservableObject {
 
     init() {
         let model = StatusViewModel()
-        let updater = AppUpdater()
         let coordinator = PunchReminderCoordinator()
         self.viewModel = model
-        self.appUpdater = updater
-        self.settingsController = SettingsWindowController(viewModel: model, appUpdater: updater)
+        self.settingsController = SettingsWindowController(viewModel: model)
         self.reminderCoordinator = coordinator
         self.wakeObserver = WakeObserver(viewModel: model, coordinator: coordinator)
         NotificationManager.shared.punchHandler = { [weak model] in

@@ -31,9 +31,5 @@
 	<true/>
 	<key>NSAccentColorName</key>
 	<string>AccentColor</string>
-	<key>SUFeedURL</key>
-	<string>https://doge-is-dope.github.io/104-clock/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
 </dict>
 </plist>

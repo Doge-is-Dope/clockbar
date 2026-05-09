@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		A2000001 /* ClockBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001 /* ClockBarApp.swift */; };
 		A2000002 /* StatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* StatusViewModel.swift */; };
-		A2000024 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000026 /* AppUpdater.swift */; };
 		A2000070 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000070 /* AppContainer.swift */; };
 		A2000003 /* AuthWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000005 /* AuthWindowController.swift */; };
 		A2000050 /* SilentAuthRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000050 /* SilentAuthRefresher.swift */; };
@@ -52,7 +51,6 @@
 		A2000022 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SettingsView.swift */; };
 			A2000040 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000040 /* SettingsWindowController.swift */; };
 		A2000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000025 /* Assets.xcassets */; };
-		A2000025 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A9000002 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,7 +58,6 @@
 		A1000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000003 /* ClockBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClockBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000004 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
-		A1000026 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		A1000070 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A1000005 /* AuthWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthWindowController.swift; sourceTree = "<group>"; };
 		A1000050 /* SilentAuthRefresher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilentAuthRefresher.swift; sourceTree = "<group>"; };
@@ -110,7 +107,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A2000025 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,7 +162,6 @@
 				A1000001 /* ClockBarApp.swift */,
 				A1000070 /* AppContainer.swift */,
 				A1000004 /* StatusViewModel.swift */,
-				A1000026 /* AppUpdater.swift */,
 				A1000029 /* PunchReminderCoordinator.swift */,
 				A100002A /* WakeObserver.swift */,
 			);
@@ -277,9 +272,6 @@
 			dependencies = (
 			);
 			name = ClockBar;
-			packageProductDependencies = (
-				A9000002 /* Sparkle */,
-			);
 			productName = ClockBar;
 			productReference = A1000003 /* ClockBar.app */;
 			productType = "com.apple.product-type.application";
@@ -303,9 +295,6 @@
 				Base,
 			);
 			mainGroup = A3000001;
-			packageReferences = (
-				A9000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			productRefGroup = A3000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -323,7 +312,6 @@
 				A2000001 /* ClockBarApp.swift in Sources */,
 				A2000070 /* AppContainer.swift in Sources */,
 				A2000002 /* StatusViewModel.swift in Sources */,
-				A2000024 /* AppUpdater.swift in Sources */,
 				A2000027 /* NotificationKind.swift in Sources */,
 				A2000028 /* NotificationLedger.swift in Sources */,
 				A2000029 /* PunchReminderCoordinator.swift in Sources */,
@@ -494,25 +482,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		A9000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A9000002 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A9000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A6000001 /* Project object */;
 }

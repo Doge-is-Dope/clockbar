@@ -5,11 +5,9 @@ import SwiftUI
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private let viewModel: StatusViewModel
-    private let appUpdater: AppUpdater
 
-    init(viewModel: StatusViewModel, appUpdater: AppUpdater) {
+    init(viewModel: StatusViewModel) {
         self.viewModel = viewModel
-        self.appUpdater = appUpdater
         super.init()
     }
 
@@ -30,7 +28,6 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
         let settingsView = SettingsView(
             viewModel: viewModel,
-            appUpdater: appUpdater,
             onContentHeightChange: { [weak self] height in
                 self?.applyContentHeight(height)
             }

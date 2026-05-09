@@ -12,34 +12,23 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 - Wake-before-punch scheduling via `pmset` (admin approval required)
 - Launch at login and periodic status refresh
 
-## Install
-
-Download the latest `.dmg` from [GitHub Releases](../../releases/latest), open it, and drag **ClockBar** to your Applications folder.
-
-## Updates
-
-ClockBar uses Sparkle for in-app update checks. The appcast is expected at:
-
-```text
-https://doge-is-dope.github.io/104-clock/appcast.xml
-```
-
-Before producing a release, generate Sparkle EdDSA keys with Sparkle's `generate_keys` tool and pass the public key into the build:
-
-```sh
-make build SPARKLE_PUBLIC_ED_KEY="..."
-```
-
-Publish signed release archives on GitHub Releases, then generate and upload the Sparkle appcast to GitHub Pages.
-
 ## Requirements
 
 - macOS 15+
+- Xcode 16+
 
-## Build from Source
+## Install
 
 ```sh
-make build
+git clone https://github.com/Doge-is-Dope/104-clock.git
+cd 104-clock
+make install
+```
+
+To update:
+
+```sh
+git pull
 make install
 ```
 

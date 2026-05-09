@@ -2,8 +2,11 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var viewModel: StatusViewModel
-    @ObservedObject var appUpdater: AppUpdater
     var onContentHeightChange: ((CGFloat) -> Void)? = nil
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    }
 
     @State private var clockInDate = Date()
     @State private var clockInEndDate = Date()
@@ -220,21 +223,7 @@ struct SettingsView: View {
                 Label("Refresh interval", systemImage: "arrow.triangle.2.circlepath")
             }
 
-            LabeledContent {
-                VStack(alignment: .trailing, spacing: AppStyle.Spacing.xs) {
-                    Button("Check for Updates") {
-                        appUpdater.checkForUpdates()
-                    }
-
-                    if let lastChecked = appUpdater.lastChecked {
-                        Text("Last checked: \(lastChecked, format: .relative(presentation: .named))")
-                            .font(AppStyle.Font.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } label: {
-                Label("ClockBar \(appUpdater.currentVersion)", systemImage: "info.circle")
-            }
+            Label("ClockBar \(appVersion)", systemImage: "info.circle")
         }
     }
 
@@ -533,13 +522,13 @@ private struct TimeFieldPicker: NSViewRepresentable {
 }
 
 #Preview("Light") {
-    SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
+    SettingsView(viewModel: StatusViewModel())
         .frame(width: AppStyle.Layout.settingsIdealWidth)
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    SettingsView(viewModel: StatusViewModel(), appUpdater: AppUpdater(startingUpdater: false))
+    SettingsView(viewModel: StatusViewModel())
         .frame(width: AppStyle.Layout.settingsIdealWidth)
         .preferredColorScheme(.dark)
 }

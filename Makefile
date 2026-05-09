@@ -4,7 +4,6 @@ VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' | g
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 DERIVED_DATA := build/DerivedData
 XCODE_APP := $(DERIVED_DATA)/Build/Products/Release/ClockBar.app
-SPARKLE_PUBLIC_ED_KEY ?=
 
 APP_SOURCES := \
 	ClockBar/Support/AppPaths.swift \
@@ -40,7 +39,6 @@ APP_SOURCES := \
 	ClockBar/App/PunchReminderCoordinator.swift \
 	ClockBar/App/StatusViewModel.swift \
 	ClockBar/App/WakeObserver.swift \
-	ClockBar/App/AppUpdater.swift \
 	ClockBar/App/ClockBarApp.swift \
 	ClockBar/UI/ContentView.swift \
 	ClockBar/UI/DesignSystem.swift \
@@ -82,7 +80,7 @@ HELPER_SOURCES := \
 build: ClockBar.app
 
 ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist ClockBar.xcodeproj/project.pbxproj
-	xcodebuild -project ClockBar.xcodeproj -scheme ClockBar -configuration Release -destination "platform=macOS" -derivedDataPath $(DERIVED_DATA) SPARKLE_PUBLIC_ED_KEY="$(SPARKLE_PUBLIC_ED_KEY)" MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
+	xcodebuild -project ClockBar.xcodeproj -scheme ClockBar -configuration Release -destination "platform=macOS" -derivedDataPath $(DERIVED_DATA) MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
 	rm -rf ClockBar.app
 	cp -R "$(XCODE_APP)" ClockBar.app
 	swiftc -o ClockBar.app/Contents/MacOS/clockbar-helper $(HELPER_SOURCES) \
