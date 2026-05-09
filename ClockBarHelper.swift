@@ -3,9 +3,16 @@ import Darwin
 
 @main
 struct ClockBarHelper {
+    private struct UsageError: Error {
+        let message: String
+    }
+
     static func main() async {
         do {
             try await run(arguments: Array(CommandLine.arguments.dropFirst()))
+        } catch let usage as UsageError {
+            fputs("\(usage.message)\n", stderr)
+            Darwin.exit(64)
         } catch {
             let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
             Log.error("helper", "failed", [
@@ -20,7 +27,7 @@ struct ClockBarHelper {
 
     private static func run(arguments: [String]) async throws {
         guard let command = arguments.first else {
-            throw Clock104Error.api(helperUsage)
+            throw UsageError(message: helperUsage)
         }
 
         switch command {
@@ -45,7 +52,7 @@ struct ClockBarHelper {
             guard let actionArgument = actionArguments.first,
                   actionArguments.count == 1,
                   let action = ClockAction(rawValue: actionArgument) else {
-                throw Clock104Error.api("Usage: clockbar-helper auto clockin|clockout [--dry-run]")
+                throw UsageError(message: "Usage: clockbar-helper auto clockin|clockout [--dry-run]")
             }
             let code = await AutoPunchEngine.run(action: action, dryRun: dryRun)
             if code != 0 {
@@ -55,7 +62,7 @@ struct ClockBarHelper {
 
         case "schedule":
             guard arguments.count >= 2 else {
-                throw Clock104Error.api(scheduleUsage)
+                throw UsageError(message: scheduleUsage)
             }
 
             let scheduleRest = Array(arguments.dropFirst(2))
@@ -77,17 +84,17 @@ struct ClockBarHelper {
             case "test":
                 try handleScheduleTest(arguments: Array(arguments.dropFirst(2)))
             default:
-                throw Clock104Error.api(scheduleUsage)
+                throw UsageError(message: scheduleUsage)
             }
 
         default:
-            throw Clock104Error.api(helperUsage)
+            throw UsageError(message: helperUsage)
         }
     }
 
     private static func handleScheduleTest(arguments: [String]) throws {
         guard let sub = arguments.first else {
-            throw Clock104Error.api(scheduleTestUsage)
+            throw UsageError(message: scheduleTestUsage)
         }
 
         switch sub {
@@ -99,7 +106,7 @@ struct ClockBarHelper {
             guard positional.count == 2,
                   let action = ClockAction(rawValue: positional[0]),
                   let time = ScheduledTime(string: positional[1]) else {
-                throw Clock104Error.api(scheduleTestUsage)
+                throw UsageError(message: scheduleTestUsage)
             }
 
             if realPunch {
@@ -127,13 +134,13 @@ struct ClockBarHelper {
             let positional = rest.filter { $0 != "--force" }
             let action = positional.first.flatMap { ClockAction(rawValue: $0) }
             if !positional.isEmpty && action == nil {
-                throw Clock104Error.api(scheduleTestUsage)
+                throw UsageError(message: scheduleTestUsage)
             }
             try LaunchAgentManager.removeTest(action: action, force: force)
             print("Removed test job(s).")
 
         default:
-            throw Clock104Error.api(scheduleTestUsage)
+            throw UsageError(message: scheduleTestUsage)
         }
     }
 
