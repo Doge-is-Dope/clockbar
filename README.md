@@ -4,13 +4,13 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 
 ## Features
 
-- Menu bar status for today’s clock-in / clock-out
-- Manual punch with native macOS notifications
-- Scheduled auto-punch via launchd
-- Missed-punch macOS notifications after a configurable delay
-- Built-in 104 web login with session cookies stored at `~/.104/session.json` (file-backed, `0600`)
-- Wake-before-punch scheduling via `pmset` (admin approval required)
-- Launch at login and periodic status refresh
+- Today's clock-in / clock-out status in the menu bar
+- Manual punch with macOS notifications
+- Scheduled auto-punch on weekdays via launchd
+- Late and missed-punch reminders
+- Built-in 104 sign-in — no separate browser session needed
+- Optional wake-before-punch via `pmset` (one-time admin approval)
+- Launches at login
 
 ## Requirements
 
@@ -32,55 +32,54 @@ git pull
 make install
 ```
 
-For development:
+## First run
+
+1. Click the ClockBar icon in the menu bar.
+2. Open **Settings → Account** and sign in to 104 in the built-in web view.
+3. In **Settings → Automation**, set your **Clock In** and **Clock Out** windows. Auto-punch fires at a random time inside each window, weekdays only, when the Mac is awake.
+4. Optionally enable **Sleep & Wake → Wake for auto-punch** so the Mac wakes itself shortly before clock-in. macOS will prompt for admin once to install the `pmset` rule.
+
+If the Mac is asleep at the scheduled time, you get a Missed notification with a Punch Now button when it next wakes.
+
+## Pause auto-punch
 
 ```sh
-make menubar
+touch ~/.104/autopunch-disabled
 ```
 
-## Usage
+Delete the file to resume.
 
-Launch ClockBar from the menu bar, sign in through the built-in 104 web view, then:
+## Diagnostics
 
-- view today’s clock-in / clock-out status
-- punch manually
-- configure scheduled punch windows
-- enable or disable auto-punch
-- enable or disable missed-punch notifications
-
-The bundled `clockbar-helper` manages launchd jobs and automation logic.
-
-Useful helper commands:
+State, logs, and a dry-run path live behind `clockbar-helper`:
 
 ```sh
 ./ClockBar.app/Contents/MacOS/clockbar-helper config
 ./ClockBar.app/Contents/MacOS/clockbar-helper status
 ./ClockBar.app/Contents/MacOS/clockbar-helper punch
 ./ClockBar.app/Contents/MacOS/clockbar-helper auto clockin|clockout [--dry-run]
-./ClockBar.app/Contents/MacOS/clockbar-helper schedule install|status [--force]
-./ClockBar.app/Contents/MacOS/clockbar-helper schedule remove [--force]
+./ClockBar.app/Contents/MacOS/clockbar-helper schedule install|remove|status [--force]
 ./ClockBar.app/Contents/MacOS/clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
 ./ClockBar.app/Contents/MacOS/clockbar-helper schedule test status
 ./ClockBar.app/Contents/MacOS/clockbar-helper schedule test remove [<clockin|clockout>] [--force]
 ```
 
-`schedule install`/`remove` wait for any in-flight auto-punch to finish before tearing down launchd jobs. Pass `--force` to interrupt a stuck run instead of waiting.
+`schedule install` / `remove` wait for any in-flight auto-punch to finish before tearing down launchd jobs. Pass `--force` to interrupt a stuck run.
 
-## Makefile Targets
+Logs: `~/.104/clockbar.log`.
 
-| Target      | Description |
-|-------------|-------------|
-| `build`     | Compile `ClockBar.app` and bundle the helper |
-| `menubar`   | Build and launch ClockBar |
-| `install`   | Copy to `/Applications` and install launchd schedules |
-| `uninstall` | Remove launchd schedules and delete `/Applications/ClockBar.app` |
-| `status`    | Show launchd job state and recent auto-punch logs |
-| `dmg`       | Create a `.dmg` disk image for distribution |
-| `clean`     | Delete the local build output |
+## Development
 
-## Configuration
+```sh
+make menubar      # build and launch
+make uninstall    # remove from /Applications, unload launchd jobs
+make status       # launchd state + recent auto-punch log lines
+make clean
+```
 
-Config lives at `~/.104/config.json`:
+## Configuration file
+
+The Settings window writes `~/.104/config.json`. Edit it directly only if you need to:
 
 ```json
 {
@@ -100,12 +99,4 @@ Config lives at `~/.104/config.json`:
 }
 ```
 
-Randomized punch timing is derived from each configured schedule window (`clockin` to `clockin_end`, `clockout` to `clockout_end`) rather than a standalone `random_delay_max` setting.
-
-All time-based values (`missed_punch_notification_delay`, `wake_before`, `refresh_interval`) are in **seconds**.
-
-Temporarily disable auto-punch with:
-
-```sh
-touch ~/.104/autopunch-disabled
-```
+`missed_punch_notification_delay`, `wake_before`, and `refresh_interval` are in seconds.
