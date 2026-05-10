@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 
+// swift-format-ignore: AlwaysUseLowerCamelCase
 @_silgen_name("flock")
 private func c_flock(_ fd: Int32, _ operation: Int32) -> Int32
 

@@ -3,7 +3,7 @@ import Foundation
 enum ConfigManager {
     static func load() -> ClockConfig {
         guard let data = try? Data(contentsOf: configPath),
-              let config = try? JSONDecoder.clockStore.decode(ClockConfig.self, from: data)
+            let config = try? JSONDecoder.clockStore.decode(ClockConfig.self, from: data)
         else {
             return .default
         }

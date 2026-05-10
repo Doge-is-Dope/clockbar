@@ -42,16 +42,17 @@ enum HolidayStore {
             if let sourceURL = URL(
                 string: holidayBaseURL + "\(year).json"
             ),
-               let (data, response) = try? await URLSession.shared.data(
-                   for: URLRequest(url: sourceURL, timeoutInterval: 3)
-               ),
-               (response as? HTTPURLResponse)?.statusCode == 200 {
+                let (data, response) = try? await URLSession.shared.data(
+                    for: URLRequest(url: sourceURL, timeoutInterval: 3)
+                ),
+                (response as? HTTPURLResponse)?.statusCode == 200
+            {
                 try? data.write(to: cacheURL, options: .atomic)
             }
         }
 
         guard let data = try? Data(contentsOf: cacheURL),
-              let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+            let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         else {
             return nil
         }

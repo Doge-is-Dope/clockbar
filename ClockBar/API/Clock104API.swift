@@ -25,7 +25,8 @@ enum Clock104API {
         let endOfMonth = calendar.date(from: endComponents) ?? now
 
         let json = try await requestJSON(
-            path: calendarPath + "\(Int(startOfMonth.timeIntervalSince1970 * 1000))/\(Int(endOfMonth.timeIntervalSince1970 * 1000))",
+            path: calendarPath
+                + "\(Int(startOfMonth.timeIntervalSince1970 * 1000))/\(Int(endOfMonth.timeIntervalSince1970 * 1000))",
             method: "GET",
             session: session
         )
@@ -51,7 +52,7 @@ enum Clock104API {
 
             let clockInfo = entry["clockIn"] as? [String: Any] ?? [:]
             return PunchStatus(
-                date: DateFormatter.statusDateFormatter.string(from: now),
+                date: DateFormatter.statusDate.string(from: now),
                 clockIn: formatTimestamp(clockInfo["start"]),
                 clockOut: formatTimestamp(clockInfo["end"]),
                 clockInCode: clockInfo["clockInCode"] as? Int,
@@ -60,7 +61,7 @@ enum Clock104API {
         }
 
         return PunchStatus(
-            date: DateFormatter.statusDateFormatter.string(from: now),
+            date: DateFormatter.statusDate.string(from: now),
             clockIn: nil,
             clockOut: nil,
             clockInCode: nil,

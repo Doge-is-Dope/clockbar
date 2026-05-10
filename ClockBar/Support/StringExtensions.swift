@@ -8,8 +8,8 @@ extension String {
 
     func firstInteger(matching pattern: String) -> Int? {
         guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: self, range: NSRange(startIndex..., in: self)),
-              let range = Range(match.range(at: 1), in: self)
+            let match = regex.firstMatch(in: self, range: NSRange(startIndex..., in: self)),
+            let range = Range(match.range(at: 1), in: self)
         else { return nil }
 
         return Int(self[range])

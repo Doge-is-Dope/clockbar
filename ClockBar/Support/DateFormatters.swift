@@ -1,7 +1,7 @@
 import Foundation
 
 extension DateFormatter {
-    static let statusDateFormatter: DateFormatter = {
+    static let statusDate: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")

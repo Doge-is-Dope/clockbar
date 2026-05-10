@@ -17,10 +17,12 @@ make install      # copy to /Applications and install launchd schedules
 make uninstall    # remove launchd schedules, then delete /Applications/ClockBar.app
 make status       # print launchd job state + recent auto-punch logs
 make dmg          # produce ClockBar-<version>.dmg
+make lint         # swift-format lint --strict (config: .swift-format); runs in CI
+make format       # swift-format --in-place over the Swift sources
 make clean
 ```
 
-There are **no unit tests** in this repo. Verification is manual via the built app + helper CLI.
+There are **no unit tests** in this repo. Verification is manual via the built app + helper CLI. CI also runs `make lint` — run it (or `make format`) before pushing. `brew install swift-format` pins the version; otherwise the `make` targets use whatever `swift-format` the active Xcode bundles.
 
 ## When adding or removing a Swift file
 
@@ -74,4 +76,4 @@ Layer responsibilities:
 
 ## CI
 
-`.github/workflows/ci.yml` runs `make build` on `macos-15` for push/PR to `main`. Anything that breaks `make build` breaks CI.
+`.github/workflows/ci.yml` runs `make lint` then `make build` on `macos-15` for push/PR to `main` (docs-only changes are skipped via `paths-ignore`). Anything that breaks `make lint` or `make build` breaks CI.

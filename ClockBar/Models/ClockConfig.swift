@@ -101,12 +101,18 @@ struct ClockConfig: Codable, Equatable {
         let defaults = ClockConfig.default
         self.schedule = try container.decodeIfPresent(Schedule.self, forKey: .schedule) ?? defaults.schedule
         self.minWorkHours = try container.decodeIfPresent(Int.self, forKey: .minWorkHours) ?? defaults.minWorkHours
-        self.missedPunchNotificationEnabled = try container.decodeIfPresent(Bool.self, forKey: .missedPunchNotificationEnabled) ?? defaults.missedPunchNotificationEnabled
-        self.missedPunchNotificationDelay = try container.decodeIfPresent(Int.self, forKey: .missedPunchNotificationDelay) ?? defaults.missedPunchNotificationDelay
-        self.autopunchEnabled = try container.decodeIfPresent(Bool.self, forKey: .autopunchEnabled) ?? defaults.autopunchEnabled
+        self.missedPunchNotificationEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .missedPunchNotificationEnabled)
+            ?? defaults.missedPunchNotificationEnabled
+        self.missedPunchNotificationDelay =
+            try container.decodeIfPresent(Int.self, forKey: .missedPunchNotificationDelay)
+            ?? defaults.missedPunchNotificationDelay
+        self.autopunchEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .autopunchEnabled) ?? defaults.autopunchEnabled
         self.wakeEnabled = try container.decodeIfPresent(Bool.self, forKey: .wakeEnabled) ?? defaults.wakeEnabled
         self.wakeBefore = try container.decodeIfPresent(Int.self, forKey: .wakeBefore) ?? defaults.wakeBefore
-        self.refreshInterval = try container.decodeIfPresent(Int.self, forKey: .refreshInterval) ?? defaults.refreshInterval
+        self.refreshInterval =
+            try container.decodeIfPresent(Int.self, forKey: .refreshInterval) ?? defaults.refreshInterval
     }
 
     var requiresScheduledJobs: Bool {

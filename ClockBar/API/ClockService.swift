@@ -43,10 +43,12 @@ enum ClockService {
             Log.error("manual", "failed", ["reason": "unauthorized"])
             return .error("Your 104 session expired. Sign in again.")
         } catch {
-            Log.error("manual", "failed", [
-                "reason": "exception",
-                "error_message": error.localizedDescription,
-            ])
+            Log.error(
+                "manual", "failed",
+                [
+                    "reason": "exception",
+                    "error_message": error.localizedDescription,
+                ])
             return .error(error.localizedDescription)
         }
     }
