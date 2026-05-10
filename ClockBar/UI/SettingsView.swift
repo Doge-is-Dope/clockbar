@@ -82,10 +82,12 @@ struct SettingsView: View {
 
     private var automationSection: some View {
         Section {
-            Toggle(isOn: Binding(
-                get: { viewModel.config.autopunchEnabled },
-                set: { viewModel.setAutopunchEnabled($0) }
-            )) {
+            Toggle(
+                isOn: Binding(
+                    get: { viewModel.config.autopunchEnabled },
+                    set: { viewModel.setAutopunchEnabled($0) }
+                )
+            ) {
                 Label("Auto-punch", systemImage: "clock.arrow.2.circlepath")
             }
             .tint(AppStyle.Palette.accent)
@@ -143,10 +145,12 @@ struct SettingsView: View {
 
     private var notificationsSection: some View {
         Section("Notifications") {
-            Toggle(isOn: Binding(
-                get: { viewModel.config.missedPunchNotificationEnabled },
-                set: { viewModel.setMissedPunchNotificationEnabled($0) }
-            )) {
+            Toggle(
+                isOn: Binding(
+                    get: { viewModel.config.missedPunchNotificationEnabled },
+                    set: { viewModel.setMissedPunchNotificationEnabled($0) }
+                )
+            ) {
                 rowLabel(
                     title: "Missed punch notification",
                     subtitle: "Notifies when no punch is recorded on time.",
@@ -178,10 +182,12 @@ struct SettingsView: View {
 
     private var wakeSection: some View {
         Section("Sleep & Wake") {
-            Toggle(isOn: Binding(
-                get: { viewModel.wakeEnabledDraft },
-                set: { viewModel.setWakeEnabledDraft($0) }
-            )) {
+            Toggle(
+                isOn: Binding(
+                    get: { viewModel.wakeEnabledDraft },
+                    set: { viewModel.setWakeEnabledDraft($0) }
+                )
+            ) {
                 rowLabel(
                     title: "Wake for auto-punch",
                     subtitle: viewModel.wakeStatusMessage,
@@ -257,9 +263,10 @@ struct SettingsView: View {
         @ViewBuilder label: () -> Label
     ) -> some View {
         let current = value.wrappedValue
-        let resolvedFormatter: (Int) -> String = formatter ?? { [zeroLabel] in
-            durationText($0, zeroLabel: zeroLabel)
-        }
+        let resolvedFormatter: (Int) -> String =
+            formatter ?? { [zeroLabel] in
+                durationText($0, zeroLabel: zeroLabel)
+            }
         let merged = mergedOptions(
             options,
             current: current,
@@ -320,7 +327,8 @@ struct SettingsView: View {
 
         let workHours = Double(outStart - inEnd) / 60
         if workHours < Double(minHours) {
-            return String(format: "Only %.1f hours between clock in and out (minimum %d recommended).", workHours, minHours)
+            return String(
+                format: "Only %.1f hours between clock in and out (minimum %d recommended).", workHours, minHours)
         }
 
         return nil

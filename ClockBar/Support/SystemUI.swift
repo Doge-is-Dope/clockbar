@@ -25,12 +25,13 @@ enum SystemUI {
         var components = URLComponents()
         components.scheme = "clockbar"
         components.host = "notify"
-        components.queryItems = [
-            URLQueryItem(name: "kind", value: kind),
-            URLQueryItem(name: "title", value: title),
-            URLQueryItem(name: "body", value: body),
-            URLQueryItem(name: "sound", value: sound),
-        ] + extraQueryItems
+        components.queryItems =
+            [
+                URLQueryItem(name: "kind", value: kind),
+                URLQueryItem(name: "title", value: title),
+                URLQueryItem(name: "body", value: body),
+                URLQueryItem(name: "sound", value: sound),
+            ] + extraQueryItems
 
         guard let url = components.url else { return }
         _ = Shell.run("/usr/bin/open", arguments: ["-g", url.absoluteString])

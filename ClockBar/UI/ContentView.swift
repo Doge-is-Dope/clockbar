@@ -203,7 +203,8 @@ struct ContentView: View {
         if s.clockin == s.clockinEnd && s.clockout == s.clockoutEnd {
             return "\(displayTime(s.clockin)) – \(displayTime(s.clockout))"
         }
-        return "In \(displayTime(s.clockin)) – \(displayTime(s.clockinEnd)), Out \(displayTime(s.clockout)) – \(displayTime(s.clockoutEnd))"
+        return
+            "In \(displayTime(s.clockin)) – \(displayTime(s.clockinEnd)), Out \(displayTime(s.clockout)) – \(displayTime(s.clockoutEnd))"
     }
 
     private func displayTime(_ time: String) -> String {

@@ -9,7 +9,7 @@ struct PunchStatus: Codable, Equatable {
 
     static func error(_ message: String) -> PunchStatus {
         PunchStatus(
-            date: DateFormatter.statusDateFormatter.string(from: Date()),
+            date: DateFormatter.statusDate.string(from: Date()),
             clockIn: nil,
             clockOut: nil,
             clockInCode: nil,

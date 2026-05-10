@@ -1,8 +1,8 @@
 import Foundation
 
 enum LogLevel: String {
-    case info  = "INFO"
-    case warn  = "WARN"
+    case info = "INFO"
+    case warn = "WARN"
     case error = "ERROR"
 }
 
@@ -48,7 +48,8 @@ enum Log {
         guard let data = line.data(using: .utf8) else { return }
 
         if FileManager.default.fileExists(atPath: logPath.path),
-           let handle = try? FileHandle(forWritingTo: logPath) {
+            let handle = try? FileHandle(forWritingTo: logPath)
+        {
             defer { try? handle.close() }
             _ = try? handle.seekToEnd()
             try? handle.write(contentsOf: data)

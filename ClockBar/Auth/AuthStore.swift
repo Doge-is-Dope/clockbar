@@ -7,7 +7,7 @@ enum AuthStore {
         }
 
         guard let data = try? Data(contentsOf: sessionPath),
-              let session = try? JSONDecoder.clockStore.decode(StoredSession.self, from: data)
+            let session = try? JSONDecoder.clockStore.decode(StoredSession.self, from: data)
         else { return nil }
 
         return session

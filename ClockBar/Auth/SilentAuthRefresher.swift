@@ -51,7 +51,9 @@ final class SilentAuthRefresher: NSObject, WKNavigationDelegate {
         Task { @MainActor [weak self] in self?.finish(false) }
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    nonisolated func webView(
+        _ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error
+    ) {
         Task { @MainActor [weak self] in self?.finish(false) }
     }
 

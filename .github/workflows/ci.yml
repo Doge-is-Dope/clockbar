@@ -19,5 +19,9 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v6
+      - name: Install swift-format
+        run: brew install swift-format
+      - name: Lint (swift-format)
+        run: make lint
       - name: Build
         run: make build

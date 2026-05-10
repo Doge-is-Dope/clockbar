@@ -1,5 +1,5 @@
-import Foundation
 import Darwin
+import Foundation
 
 @main
 struct ClockBarHelper {
@@ -15,11 +15,13 @@ struct ClockBarHelper {
             Darwin.exit(64)
         } catch {
             let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
-            Log.error("helper", "failed", [
-                "reason": "uncaught_exception",
-                "argv": argv,
-                "error_message": error.localizedDescription,
-            ])
+            Log.error(
+                "helper", "failed",
+                [
+                    "reason": "uncaught_exception",
+                    "argv": argv,
+                    "error_message": error.localizedDescription,
+                ])
             fputs("\(error.localizedDescription)\n", stderr)
             Darwin.exit(1)
         }
@@ -50,8 +52,9 @@ struct ClockBarHelper {
             let dryRun = arguments.contains("--dry-run")
             let actionArguments = arguments.dropFirst().filter { $0 != "--dry-run" }
             guard let actionArgument = actionArguments.first,
-                  actionArguments.count == 1,
-                  let action = ClockAction(rawValue: actionArgument) else {
+                actionArguments.count == 1,
+                let action = ClockAction(rawValue: actionArgument)
+            else {
                 throw UsageError(message: "Usage: clockbar-helper auto clockin|clockout [--dry-run]")
             }
             let code = await AutoPunchEngine.run(action: action, dryRun: dryRun)
@@ -104,8 +107,9 @@ struct ClockBarHelper {
             let force = rest.contains("--force")
             let positional = rest.filter { $0 != "--real" && $0 != "--force" }
             guard positional.count == 2,
-                  let action = ClockAction(rawValue: positional[0]),
-                  let time = ScheduledTime(string: positional[1]) else {
+                let action = ClockAction(rawValue: positional[0]),
+                let time = ScheduledTime(string: positional[1])
+            else {
                 throw UsageError(message: scheduleTestUsage)
             }
 
@@ -145,30 +149,30 @@ struct ClockBarHelper {
     }
 
     private static let scheduleUsage = """
-    Usage: clockbar-helper schedule install|status [--force]
-           clockbar-helper schedule remove [--force]
-           clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
-           clockbar-helper schedule test status
-           clockbar-helper schedule test remove [<clockin|clockout>] [--force]
+        Usage: clockbar-helper schedule install|status [--force]
+               clockbar-helper schedule remove [--force]
+               clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
+               clockbar-helper schedule test status
+               clockbar-helper schedule test remove [<clockin|clockout>] [--force]
 
-    --force interrupts any in-flight auto-punch instead of waiting for it.
-    """
+        --force interrupts any in-flight auto-punch instead of waiting for it.
+        """
 
     private static let scheduleTestUsage = """
-    Usage: clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
-           clockbar-helper schedule test status
-           clockbar-helper schedule test remove [<clockin|clockout>] [--force]
+        Usage: clockbar-helper schedule test install <clockin|clockout> <HH:MM> [--real] [--force]
+               clockbar-helper schedule test status
+               clockbar-helper schedule test remove [<clockin|clockout>] [--force]
 
-    --force interrupts any in-flight auto-punch instead of waiting for it.
-    """
+        --force interrupts any in-flight auto-punch instead of waiting for it.
+        """
 
     private static let helperUsage = """
-    Usage:
-      clockbar-helper config
-      clockbar-helper status
-      clockbar-helper punch
-      clockbar-helper auto clockin|clockout [--dry-run]
-      clockbar-helper schedule install|remove|status [--force]
-      clockbar-helper schedule test install|status|remove ... [--force]
-    """
+        Usage:
+          clockbar-helper config
+          clockbar-helper status
+          clockbar-helper punch
+          clockbar-helper auto clockin|clockout [--dry-run]
+          clockbar-helper schedule install|remove|status [--force]
+          clockbar-helper schedule test install|status|remove ... [--force]
+        """
 }

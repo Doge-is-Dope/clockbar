@@ -42,8 +42,10 @@ enum LaunchAgentManager {
                 bootoutIgnoringNotLoaded(label: action.launchdLabel, plistPath: plist)
                 do {
                     try FileManager.default.removeItem(at: plist)
-                } catch let error as NSError where error.domain == NSCocoaErrorDomain
-                    && error.code == NSFileNoSuchFileError {
+                } catch let error as NSError
+                    where error.domain == NSCocoaErrorDomain
+                    && error.code == NSFileNoSuchFileError
+                {
                     // Already gone — fine
                 } catch {
                     errors.append("\(action): \(error.localizedDescription)")
@@ -146,7 +148,8 @@ enum LaunchAgentManager {
         let now = Date()
         let calendar = Calendar(identifier: .gregorian)
         if let target = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: now),
-           target.timeIntervalSince(now) < 60 {
+            target.timeIntervalSince(now) < 60
+        {
             throw Clock104Error.scheduler(
                 "Time \(time.displayString) is within the next 60s or already passed — launchd may skip today's fire or not fire until tomorrow. Pick a time at least 1 minute in the future."
             )
@@ -156,11 +159,13 @@ enum LaunchAgentManager {
         let spec = testSpec(action: action, time: time, helperPath: helperPath, realPunch: realPunch)
         try installSpecs([spec], force: force, timeout: testInstallerTimeout)
 
-        Log.info("schedule_test", "installed", [
-            "label": spec.label,
-            "time": time.displayString,
-            "dry_run": !realPunch,
-        ])
+        Log.info(
+            "schedule_test", "installed",
+            [
+                "label": spec.label,
+                "time": time.displayString,
+                "dry_run": !realPunch,
+            ])
     }
 
     static func removeTest(action: ClockAction? = nil, force: Bool = false) throws {
@@ -173,11 +178,15 @@ enum LaunchAgentManager {
                 bootoutIgnoringNotLoaded(label: testLabel(for: target), plistPath: path)
                 do {
                     try FileManager.default.removeItem(at: path)
-                    Log.info("schedule_test", "removed", [
-                        "label": testLabel(for: target),
-                    ])
-                } catch let error as NSError where error.domain == NSCocoaErrorDomain
-                    && error.code == NSFileNoSuchFileError {
+                    Log.info(
+                        "schedule_test", "removed",
+                        [
+                            "label": testLabel(for: target)
+                        ])
+                } catch let error as NSError
+                    where error.domain == NSCocoaErrorDomain
+                    && error.code == NSFileNoSuchFileError
+                {
                     // Already gone — fine
                 } catch {
                     errors.append("\(target): \(error.localizedDescription)")
@@ -237,9 +246,11 @@ enum LaunchAgentManager {
                 plistPath: productionPlistPath(for: action),
                 time: time,
                 programArguments: [helperPath, "auto", action.rawValue],
-                stdoutPath: cacheDirectory
+                stdoutPath:
+                    cacheDirectory
                     .appendingPathComponent("launchd-\(action.rawValue).stdout.log"),
-                stderrPath: cacheDirectory
+                stderrPath:
+                    cacheDirectory
                     .appendingPathComponent("launchd-\(action.rawValue).stderr.log")
             )
         }
@@ -353,16 +364,20 @@ enum LaunchAgentManager {
         if stderr.contains("Could not find specified service") { return }
 
         if stderr.isEmpty {
-            Log.info("installer", "bootout", [
-                "label": label,
-                "exit": result.status,
-            ])
+            Log.info(
+                "installer", "bootout",
+                [
+                    "label": label,
+                    "exit": result.status,
+                ])
         } else {
-            Log.info("installer", "bootout", [
-                "label": label,
-                "exit": result.status,
-                "stderr": stderr,
-            ])
+            Log.info(
+                "installer", "bootout",
+                [
+                    "label": label,
+                    "exit": result.status,
+                    "stderr": stderr,
+                ])
         }
     }
 
@@ -372,7 +387,7 @@ enum LaunchAgentManager {
             "ProgramArguments": spec.programArguments,
             "StartCalendarInterval": ["Hour": spec.time.hour, "Minute": spec.time.minute],
             "EnvironmentVariables": [
-                "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+                "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
             ],
             "StandardOutPath": spec.stdoutPath.path,
             "StandardErrorPath": spec.stderrPath.path,
@@ -420,10 +435,10 @@ enum LaunchAgentManager {
 
     private static func installedTime(at path: URL) -> ScheduledTime? {
         guard let data = try? Data(contentsOf: path),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let calendar = plist["StartCalendarInterval"] as? [String: Any],
-              let hour = calendar["Hour"] as? Int,
-              let minute = calendar["Minute"] as? Int
+            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+            let calendar = plist["StartCalendarInterval"] as? [String: Any],
+            let hour = calendar["Hour"] as? Int,
+            let minute = calendar["Minute"] as? Int
         else { return nil }
 
         return ScheduledTime(hour: hour, minute: minute)
@@ -431,8 +446,8 @@ enum LaunchAgentManager {
 
     private static func installedProgramArguments(at path: URL) -> [String]? {
         guard let data = try? Data(contentsOf: path),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let args = plist["ProgramArguments"] as? [String]
+            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+            let args = plist["ProgramArguments"] as? [String]
         else { return nil }
         return args
     }

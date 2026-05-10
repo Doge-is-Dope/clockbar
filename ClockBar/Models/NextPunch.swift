@@ -34,7 +34,7 @@ enum NextPunchStore {
 
     static func load() -> NextPunch? {
         guard let data = try? Data(contentsOf: nextPunchPath),
-              let punch = try? JSONDecoder.clockStore.decode(NextPunch.self, from: data)
+            let punch = try? JSONDecoder.clockStore.decode(NextPunch.self, from: data)
         else { return nil }
         return punch
     }
@@ -46,7 +46,7 @@ enum NextPunchStore {
     }
 
     private static func todayString() -> String {
-        DateFormatter.statusDateFormatter.string(from: Date())
+        DateFormatter.statusDate.string(from: Date())
     }
 
     private static func randomTime(from start: String, to end: String) -> String {

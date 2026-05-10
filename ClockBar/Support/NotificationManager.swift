@@ -59,8 +59,9 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     func handleURL(_ url: URL) {
         guard url.scheme == "clockbar",
-              url.host == "notify",
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            url.host == "notify",
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else {
             return
         }
 
@@ -74,7 +75,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let kind = value("kind") ?? "plain"
         let soundName = value("sound") ?? "default"
 
-        let sound: UNNotificationSound = (soundName == "default")
+        let sound: UNNotificationSound =
+            (soundName == "default")
             ? .default
             : UNNotificationSound(named: UNNotificationSoundName(soundName))
 

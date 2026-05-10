@@ -1,9 +1,11 @@
-.PHONY: build install uninstall status clean menubar dmg
+.PHONY: build install uninstall status clean menubar dmg lint format
 
 VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' | grep . || echo "0.0.0-dev")
 MACOS_TARGET := $(shell uname -m)-apple-macos15.0
 DERIVED_DATA := build/DerivedData
 XCODE_APP := $(DERIVED_DATA)/Build/Products/Release/ClockBar.app
+SWIFT_PATHS := ClockBar ClockBarHelper.swift
+SWIFT_FORMAT := $(shell command -v swift-format 2>/dev/null || echo xcrun swift-format)
 
 APP_SOURCES := \
 	ClockBar/Support/AppPaths.swift \
@@ -87,6 +89,12 @@ ClockBar.app: $(APP_SOURCES) $(HELPER_SOURCES) ClockBar/Info.plist ClockBar.xcod
 		-target $(MACOS_TARGET) \
 		-framework UserNotifications -O
 	codesign --force --sign - ClockBar.app
+
+lint:
+	$(SWIFT_FORMAT) lint --strict --recursive $(SWIFT_PATHS)
+
+format:
+	$(SWIFT_FORMAT) format --in-place --recursive $(SWIFT_PATHS)
 
 menubar: ClockBar.app
 	-pkill -f ClockBar 2>/dev/null

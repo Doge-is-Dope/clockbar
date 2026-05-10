@@ -32,7 +32,7 @@ final class PunchReminderCoordinator {
             return
         }
 
-        let today = DateFormatter.statusDateFormatter.string(from: now)
+        let today = DateFormatter.statusDate.string(from: now)
         let calendar = Calendar(identifier: .gregorian)
         let grace = max(0, config.missedPunchNotificationDelay)
 
@@ -41,12 +41,13 @@ final class PunchReminderCoordinator {
             if status.punchTime(for: action) != nil { continue }
 
             guard let schedule = ScheduledTime(string: config.schedule.time(for: action)),
-                  let scheduledDate = calendar.date(
-                      bySettingHour: schedule.hour,
-                      minute: schedule.minute,
-                      second: 0,
-                      of: now
-                  ) else { continue }
+                let scheduledDate = calendar.date(
+                    bySettingHour: schedule.hour,
+                    minute: schedule.minute,
+                    second: 0,
+                    of: now
+                )
+            else { continue }
 
             let secondsLate = Int(now.timeIntervalSince(scheduledDate))
             guard secondsLate > 0 else { continue }
@@ -70,9 +71,11 @@ final class PunchReminderCoordinator {
             body = "Yesterday's \(action.logLabel) is missing — file a correction in 104."
         }
         NotificationManager.shared.send(appName, body: body, categoryIdentifier: kind.categoryIdentifier)
-        Log.info("coordinator", "notified", [
-            "kind": kind.rawValue,
-            "action": action.rawValue,
-        ])
+        Log.info(
+            "coordinator", "notified",
+            [
+                "kind": kind.rawValue,
+                "action": action.rawValue,
+            ])
     }
 }

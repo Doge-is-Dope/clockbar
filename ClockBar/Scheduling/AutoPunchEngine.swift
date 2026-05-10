@@ -6,11 +6,13 @@ enum AutoPunchEngine {
     static func run(action: ClockAction, dryRun: Bool = false) async -> Int32 {
         let component = "auto.\(action.rawValue)"
         let argv = CommandLine.arguments.dropFirst().joined(separator: " ")
-        Log.info(component, "invoked", [
-            "pid": ProcessInfo.processInfo.processIdentifier,
-            "dry_run": dryRun,
-            "argv": argv,
-        ])
+        Log.info(
+            component, "invoked",
+            [
+                "pid": ProcessInfo.processInfo.processIdentifier,
+                "dry_run": dryRun,
+                "argv": argv,
+            ])
 
         guard let lock = AutoPunchLock.tryAcquireExclusive() else {
             Log.info(component, "lock_busy")
@@ -21,7 +23,8 @@ enum AutoPunchEngine {
         let config = ConfigManager.load()
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
-            || (!config.autopunchEnabled && !config.missedPunchNotificationEnabled) {
+            || (!config.autopunchEnabled && !config.missedPunchNotificationEnabled)
+        {
             Log.info(component, "skipped", ["reason": "disabled"])
             return 0
         }
@@ -46,12 +49,13 @@ enum AutoPunchEngine {
 
         let now = Date()
         let calendar = Calendar(identifier: .gregorian)
-        let scheduledDate = calendar.date(
-            bySettingHour: schedule.hour,
-            minute: schedule.minute,
-            second: 0,
-            of: now
-        ) ?? now
+        let scheduledDate =
+            calendar.date(
+                bySettingHour: schedule.hour,
+                minute: schedule.minute,
+                second: 0,
+                of: now
+            ) ?? now
         if notificationOnly {
             await notifyMissedPunchAfterThresholdIfNeeded(
                 action: action,
@@ -65,11 +69,13 @@ enum AutoPunchEngine {
 
         let plan = Self.computeDelayPlan(for: action, config: config)
         let targetText = plan.target?.displayString ?? "(\(plan.delay)s from now)"
-        Log.info(component, "sleeping", [
-            "delay_s": plan.delay,
-            "target": targetText,
-            "source": plan.source.rawValue,
-        ])
+        Log.info(
+            component, "sleeping",
+            [
+                "delay_s": plan.delay,
+                "target": targetText,
+                "source": plan.source.rawValue,
+            ])
         if dryRun {
             print("[dry-run] Would sleep \(plan.delay)s (\(plan.delay / 60)m\(plan.delay % 60)s)")
         } else if plan.delay > 0 {
@@ -86,11 +92,13 @@ enum AutoPunchEngine {
             let delayMax = config.schedule.delayMax(for: action)
             let grace = max(config.missedPunchNotificationDelay, autoPunchLatenessFloorSeconds) + delayMax
             if secondsLate > grace {
-                Log.info(component, "skipped", [
-                    "reason": "past_grace_at_helper_run",
-                    "seconds_late": secondsLate,
-                    "grace_s": grace,
-                ])
+                Log.info(
+                    component, "skipped",
+                    [
+                        "reason": "past_grace_at_helper_run",
+                        "seconds_late": secondsLate,
+                        "grace_s": grace,
+                    ])
                 if config.missedPunchNotificationEnabled {
                     await notifyMissedPunchAfterThresholdIfNeeded(
                         action: action,
@@ -158,10 +166,12 @@ enum AutoPunchEngine {
             }
 
             if let existingPunchTime = status.punchTime(for: action) {
-                Log.info(component, "already_punched", [
-                    "action": action.rawValue,
-                    "punched_at": existingPunchTime,
-                ])
+                Log.info(
+                    component, "already_punched",
+                    [
+                        "action": action.rawValue,
+                        "punched_at": existingPunchTime,
+                    ])
                 return 0
             }
 
@@ -184,16 +194,20 @@ enum AutoPunchEngine {
             if let punchTime = verified.punchTime(for: action) {
                 let message = "\(action == .clockin ? "Clocked in" : "Clocked out") at \(punchTime)"
                 if action == .clockout, let clockIn = verified.clockIn {
-                    Log.info(component, "completed", [
-                        "action": action.rawValue,
-                        "punched_at": punchTime,
-                        "previous_in": clockIn,
-                    ])
+                    Log.info(
+                        component, "completed",
+                        [
+                            "action": action.rawValue,
+                            "punched_at": punchTime,
+                            "previous_in": clockIn,
+                        ])
                 } else {
-                    Log.info(component, "completed", [
-                        "action": action.rawValue,
-                        "punched_at": punchTime,
-                    ])
+                    Log.info(
+                        component, "completed",
+                        [
+                            "action": action.rawValue,
+                            "punched_at": punchTime,
+                        ])
                 }
                 notify(title: appName, body: message, dryRun: dryRun)
                 return 0
@@ -217,10 +231,12 @@ enum AutoPunchEngine {
             }
             return 1
         } catch Clock104Error.unauthorized {
-            Log.error(component, "failed", [
-                "reason": "unauthorized",
-                "step": currentStep,
-            ])
+            Log.error(
+                component, "failed",
+                [
+                    "reason": "unauthorized",
+                    "step": currentStep,
+                ])
             if !dryRun {
                 SessionRefreshSignal.post()
                 Log.info(component, "session_refresh_requested", ["trigger": "unauthorized"])
@@ -243,11 +259,13 @@ enum AutoPunchEngine {
             }
             return 1
         } catch {
-            Log.error(component, "failed", [
-                "reason": "exception",
-                "error_message": error.localizedDescription,
-                "step": currentStep,
-            ])
+            Log.error(
+                component, "failed",
+                [
+                    "reason": "exception",
+                    "error_message": error.localizedDescription,
+                    "step": currentStep,
+                ])
             notify(
                 title: "\(appName) - Failed",
                 body: error.localizedDescription,
@@ -341,19 +359,20 @@ enum AutoPunchEngine {
     }
 
     private static func computeDelayPlan(for action: ClockAction, config: ClockConfig) -> DelayPlan {
-        let today = DateFormatter.statusDateFormatter.string(from: Date())
+        let today = DateFormatter.statusDate.string(from: Date())
 
         if let punch = NextPunchStore.load(), punch.date == today {
             let targetTime = action == .clockin ? punch.clockin : punch.clockout
             if let target = ScheduledTime(string: targetTime) {
                 let now = Date()
                 let calendar = Calendar(identifier: .gregorian)
-                let targetDate = calendar.date(
-                    bySettingHour: target.hour,
-                    minute: target.minute,
-                    second: 0,
-                    of: now
-                ) ?? now
+                let targetDate =
+                    calendar.date(
+                        bySettingHour: target.hour,
+                        minute: target.minute,
+                        second: 0,
+                        of: now
+                    ) ?? now
                 return DelayPlan(
                     delay: max(0, Int(targetDate.timeIntervalSince(now))),
                     target: target,

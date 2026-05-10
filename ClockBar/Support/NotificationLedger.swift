@@ -24,18 +24,20 @@ final class NotificationLedger {
 
     func record(kind: PunchNotificationKind, action: ClockAction, date: String) {
         guard !hasFired(kind: kind, action: action, date: date) else { return }
-        entries.append(Entry(
-            kind: kind.rawValue,
-            action: action.rawValue,
-            date: date,
-            recordedAt: Date()
-        ))
+        entries.append(
+            Entry(
+                kind: kind.rawValue,
+                action: action.rawValue,
+                date: date,
+                recordedAt: Date()
+            ))
         save()
     }
 
     private func load() {
         guard let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder.iso8601.decode([Entry].self, from: data) else {
+            let decoded = try? JSONDecoder.iso8601.decode([Entry].self, from: data)
+        else {
             entries = []
             return
         }
@@ -53,16 +55,16 @@ final class NotificationLedger {
     }
 }
 
-private extension JSONDecoder {
-    static let iso8601: JSONDecoder = {
+extension JSONDecoder {
+    fileprivate static let iso8601: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
     }()
 }
 
-private extension JSONEncoder {
-    static let iso8601: JSONEncoder = {
+extension JSONEncoder {
+    fileprivate static let iso8601: JSONEncoder = {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
         e.outputFormatting = [.prettyPrinted, .sortedKeys]

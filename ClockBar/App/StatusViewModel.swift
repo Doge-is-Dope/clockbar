@@ -210,7 +210,8 @@ final class StatusViewModel: ObservableObject {
 
         guard nextConfig != config else { return }
 
-        let startTimesChanged = nextConfig.schedule.clockin != config.schedule.clockin
+        let startTimesChanged =
+            nextConfig.schedule.clockin != config.schedule.clockin
             || nextConfig.schedule.clockout != config.schedule.clockout
 
         let previousConfig = config
@@ -226,9 +227,10 @@ final class StatusViewModel: ObservableObject {
                 syncScheduledJobs()
             }
             if startTimesChanged,
-               !appliedWakeSnapshot.wakeEnabled,
-               !wakeEnabledDraft,
-               wakeBeforeDraft == appliedWakeSnapshot.wakeBefore {
+                !appliedWakeSnapshot.wakeEnabled,
+                !wakeEnabledDraft,
+                wakeBeforeDraft == appliedWakeSnapshot.wakeBefore
+            {
                 appliedWakeSnapshot = currentWakeSnapshot
             }
         } else {
@@ -410,7 +412,8 @@ final class StatusViewModel: ObservableObject {
 
     func recoverSessionIfNeeded(trigger: String = "background") {
         if let last = lastRecoveryAttemptAt,
-           Date().timeIntervalSince(last) < Self.recoveryBackoffInterval {
+            Date().timeIntervalSince(last) < Self.recoveryBackoffInterval
+        {
             Log.info("auth.recovery", "skipped", ["trigger": trigger, "reason": "backoff"])
             return
         }
@@ -448,7 +451,7 @@ final class StatusViewModel: ObservableObject {
     }
 
     private func refreshNextPunchIfNeeded() {
-        let today = DateFormatter.statusDateFormatter.string(from: Date())
+        let today = DateFormatter.statusDate.string(from: Date())
         if nextPunch?.date != today {
             nextPunch = NextPunchStore.loadOrGenerate(config: config)
         }
