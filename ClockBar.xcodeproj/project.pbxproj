@@ -46,12 +46,64 @@
 		A200001C /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* DesignSystem.swift */; };
 		A200001D /* MenuPanelButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001F /* MenuPanelButton.swift */; };
 		A200001E /* MenuPanelToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020 /* MenuPanelToggleRow.swift */; };
-			A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
+		A200001F /* PunchButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000021 /* PunchButtonStyle.swift */; };
 		A2000021 /* StatusMetric.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000023 /* StatusMetric.swift */; };
 		A2000022 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SettingsView.swift */; };
-			A2000040 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000040 /* SettingsWindowController.swift */; };
+		A2000040 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000040 /* SettingsWindowController.swift */; };
 		A2000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000025 /* Assets.xcassets */; };
+		A2000200 /* clockbar-helper in CopyFiles */ = {isa = PBXBuildFile; fileRef = A1000100 /* clockbar-helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		A2001027 /* ClockBarHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000200 /* ClockBarHelper.swift */; };
+		A2001001 /* AppPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* AppPaths.swift */; };
+		A2001002 /* AutoPunchLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000060 /* AutoPunchLock.swift */; };
+		A2001003 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* Log.swift */; };
+		A2001004 /* ClockStoreCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* ClockStoreCoding.swift */; };
+		A2001005 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* ConfigManager.swift */; };
+		A2001006 /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* DateFormatters.swift */; };
+		A2001007 /* Shell.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A /* Shell.swift */; };
+		A2001008 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001B /* StringExtensions.swift */; };
+		A2001009 /* TimeHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031 /* TimeHelpers.swift */; };
+		A2001010 /* SystemUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C /* SystemUI.swift */; };
+		A2001011 /* NotificationKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000027 /* NotificationKind.swift */; };
+		A2001012 /* ClockAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000A /* ClockAction.swift */; };
+		A2001013 /* ClockConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000B /* ClockConfig.swift */; };
+		A2001014 /* NextPunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000030 /* NextPunch.swift */; };
+		A2001015 /* PunchStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000C /* PunchStatus.swift */; };
+		A2001016 /* ScheduledTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000D /* ScheduledTime.swift */; };
+		A2001017 /* ScheduleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000E /* ScheduleState.swift */; };
+		A2001018 /* StoredSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000F /* StoredSession.swift */; };
+		A2001019 /* Clock104API.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000007 /* Clock104API.swift */; };
+		A2001020 /* Clock104Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* Clock104Error.swift */; };
+		A2001021 /* ClockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000009 /* ClockService.swift */; };
+		A2001022 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* AuthStore.swift */; };
+		A2001023 /* SessionRefreshSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000080 /* SessionRefreshSignal.swift */; };
+		A2001024 /* AutoPunchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* AutoPunchEngine.swift */; };
+		A2001025 /* HolidayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011 /* HolidayStore.swift */; };
+		A2001026 /* LaunchAgentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* LaunchAgentManager.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AA000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A6000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5000002;
+			remoteInfo = "clockbar-helper";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A4000005 /* Embed Helper */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				A2000200 /* clockbar-helper in CopyFiles */,
+			);
+			name = "Embed Helper";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A1000001 /* ClockBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBarApp.swift; sourceTree = "<group>"; };
@@ -95,11 +147,13 @@
 		A100001E /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A100001F /* MenuPanelButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelButton.swift; sourceTree = "<group>"; };
 		A1000020 /* MenuPanelToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPanelToggleRow.swift; sourceTree = "<group>"; };
-			A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
-			A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
-			A1000024 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-				A1000040 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		A1000021 /* PunchButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PunchButtonStyle.swift; sourceTree = "<group>"; };
+		A1000023 /* StatusMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMetric.swift; sourceTree = "<group>"; };
+		A1000024 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000040 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		A1000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000200 /* ClockBarHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBarHelper.swift; sourceTree = "<group>"; };
+		A1000100 /* clockbar-helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "clockbar-helper"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,22 +166,12 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
-/* Begin PBXResourcesBuildPhase section */
-		A4000003 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A2000023 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
 /* Begin PBXGroup section */
 		A3000001 = {
 			isa = PBXGroup;
 			children = (
 				A3000002 /* ClockBar */,
+				A1000200 /* ClockBarHelper.swift */,
 				A3000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -152,6 +196,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000003 /* ClockBar.app */,
+				A1000100 /* clockbar-helper */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -266,15 +311,32 @@
 				A4000001 /* Sources */,
 				A4000002 /* Frameworks */,
 				A4000003 /* Resources */,
+				A4000005 /* Embed Helper */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A9000001 /* PBXTargetDependency */,
 			);
 			name = ClockBar;
 			productName = ClockBar;
 			productReference = A1000003 /* ClockBar.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A5000002 /* clockbar-helper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A8000003 /* Build configuration list for PBXNativeTarget "clockbar-helper" */;
+			buildPhases = (
+				A4000004 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "clockbar-helper";
+			productName = "clockbar-helper";
+			productReference = A1000100 /* clockbar-helper */;
+			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
@@ -300,9 +362,21 @@
 			projectRoot = "";
 			targets = (
 				A5000001 /* ClockBar */,
+				A5000002 /* clockbar-helper */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A4000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2000023 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A4000001 /* Sources */ = {
@@ -355,7 +429,49 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A4000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2001027 /* ClockBarHelper.swift in Sources */,
+				A2001001 /* AppPaths.swift in Sources */,
+				A2001002 /* AutoPunchLock.swift in Sources */,
+				A2001003 /* Log.swift in Sources */,
+				A2001004 /* ClockStoreCoding.swift in Sources */,
+				A2001005 /* ConfigManager.swift in Sources */,
+				A2001006 /* DateFormatters.swift in Sources */,
+				A2001007 /* Shell.swift in Sources */,
+				A2001008 /* StringExtensions.swift in Sources */,
+				A2001009 /* TimeHelpers.swift in Sources */,
+				A2001010 /* SystemUI.swift in Sources */,
+				A2001011 /* NotificationKind.swift in Sources */,
+				A2001012 /* ClockAction.swift in Sources */,
+				A2001013 /* ClockConfig.swift in Sources */,
+				A2001014 /* NextPunch.swift in Sources */,
+				A2001015 /* PunchStatus.swift in Sources */,
+				A2001016 /* ScheduledTime.swift in Sources */,
+				A2001017 /* ScheduleState.swift in Sources */,
+				A2001018 /* StoredSession.swift in Sources */,
+				A2001019 /* Clock104API.swift in Sources */,
+				A2001020 /* Clock104Error.swift in Sources */,
+				A2001021 /* ClockService.swift in Sources */,
+				A2001022 /* AuthStore.swift in Sources */,
+				A2001023 /* SessionRefreshSignal.swift in Sources */,
+				A2001024 /* AutoPunchEngine.swift in Sources */,
+				A2001025 /* HolidayStore.swift in Sources */,
+				A2001026 /* LaunchAgentManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A9000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5000002 /* clockbar-helper */;
+			targetProxy = AA000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A7000001 /* Debug */ = {
@@ -377,7 +493,6 @@
 				OTHER_CODE_SIGN_FLAGS = "--deep";
 				PRODUCT_BUNDLE_IDENTIFIER = com.clockbar.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SPARKLE_PUBLIC_ED_KEY = "jPpjNAvnIiJmgOWgj7hrEesiqAEvKVj+Oa0v1KnX1ys=";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -401,7 +516,6 @@
 				OTHER_CODE_SIGN_FLAGS = "--deep";
 				PRODUCT_BUNDLE_IDENTIFIER = com.clockbar.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SPARKLE_PUBLIC_ED_KEY = "jPpjNAvnIiJmgOWgj7hrEesiqAEvKVj+Oa0v1KnX1ys=";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -460,6 +574,28 @@
 			};
 			name = Release;
 		};
+		A7000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A7000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -477,6 +613,15 @@
 			buildConfigurations = (
 				A7000003 /* Debug */,
 				A7000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A8000003 /* Build configuration list for PBXNativeTarget "clockbar-helper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7000005 /* Debug */,
+				A7000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
