@@ -26,12 +26,9 @@ There are **no unit tests** in this repo. Verification is manual via the built a
 
 ## When adding or removing a Swift file
 
-The build is doubly-tracked — update **both** places, or the helper build will break:
+Edit `ClockBar.xcodeproj/project.pbxproj` only — the `Makefile` builds the app and the helper through the Xcode project and discovers sources with `find`, so it has no source list to keep in sync. In the pbxproj, add: a `PBXFileReference`; the file in the correct `PBXGroup` (App / API / Auth / Models / Scheduling / Support / UI); and, for **every target that compiles it**, a `PBXBuildFile` plus an entry in that target's `Sources` build phase — `A4000001` for the `ClockBar` app, `A4000004` for the `clockbar-helper` tool target. Most files outside `App/` and `UI/` belong in both phases; the helper `Sources` phase (`A4000004`) lists exactly which. ID conventions: `A1000xxx` file ref, `A2000xxx` / `A2001xxx` app / helper build file, `A3000xxx` group, `A4000xxx` build phase.
 
-1. `ClockBar.xcodeproj/project.pbxproj` — add a `PBXBuildFile`, a `PBXFileReference`, an entry in the correct `PBXGroup` (App / API / Auth / Models / Scheduling / Support / UI), and an entry in the `Sources` build phase. IDs follow the `A1000xxx` (file ref) / `A2000xxx` (build file) / `A3000xxx` (group) / `A4000xxx` (build phase) pattern.
-2. `Makefile` — append to `APP_SOURCES`. If the file is also needed by the CLI helper, append to `HELPER_SOURCES` too.
-
-The helper is compiled with a bare `swiftc` invocation from `HELPER_SOURCES`, not via Xcode. Anything not listed there is invisible to the helper target.
+The helper is a real Xcode target (`com.apple.product-type.tool`); the `ClockBar` app target depends on it and copies its product into `Contents/MacOS/clockbar-helper` via the "Embed Helper" copy-files phase, so `make build` produces a bundle with the helper already embedded and signed.
 
 ## Architecture
 
