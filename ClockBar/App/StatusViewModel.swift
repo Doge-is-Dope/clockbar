@@ -89,12 +89,12 @@ final class StatusViewModel: ObservableObject {
             return "Signing in…"
         }
 
-        guard let session = AuthStore.loadSession(), session.hasUsableCookies else {
+        guard let session = AuthStore.loadSession(), session.hasUsableCookies,
+            let lastValidatedAt = session.lastValidatedAt
+        else {
+            // Cookies on disk but never validated against 104 (e.g. a silent
+            // refresh that never confirmed) — nothing trustworthy to show yet.
             return ""
-        }
-
-        guard let lastValidatedAt = session.lastValidatedAt else {
-            return "Connected"
         }
 
         return "Last synced \(Self.authFormatter.string(from: lastValidatedAt))"
