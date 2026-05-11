@@ -39,6 +39,10 @@ final class StatusViewModel: ObservableObject {
     private var appliedWakeSnapshot: WakeScheduleSnapshot
     private var sessionRecoveryTask: Task<Bool, Never>?
     private var lastRecoveryAttemptAt: Date?
+    /// Failed silent-recovery attempts since the session was last good. At
+    /// `maxRecoveryAttempts`, auto-recovery gives up — a silent refresh just
+    /// re-reads the same cookies, so only an interactive sign-in can fix it.
+    private var recoveryAttempts = 0
 
     private struct WakeScheduleSnapshot: Equatable {
         var wakeEnabled: Bool
@@ -74,17 +78,22 @@ final class StatusViewModel: ObservableObject {
         return status?.error?.trimmedNonEmpty
     }
 
+    /// Cookies exist on disk but 104 keeps rejecting them — the primary button
+    /// should re-auth rather than punch.
+    var sessionNeedsReauth: Bool {
+        status?.error == Self.sessionExpiredMessage
+    }
+
     var authStatusText: String {
         if isAuthenticating {
             return "Signing in…"
         }
 
-        guard let session = AuthStore.loadSession(), session.hasUsableCookies else {
+        guard let session = AuthStore.loadSession(), session.hasUsableCookies,
+            let lastValidatedAt = session.lastValidatedAt
+        else {
+            // Cookies on disk but never validated — nothing trustworthy to show.
             return ""
-        }
-
-        guard let lastValidatedAt = session.lastValidatedAt else {
-            return "Connected"
         }
 
         return "Last synced \(Self.authFormatter.string(from: lastValidatedAt))"
@@ -333,6 +342,7 @@ final class StatusViewModel: ObservableObject {
         ClockService.clearSession()
         status = nil
         statusNote = nil
+        resetRecoveryThrottle()
         syncSessionState()
     }
 
@@ -350,6 +360,7 @@ final class StatusViewModel: ObservableObject {
                 guard let self else { return }
                 do {
                     try ClockService.saveSession(session)
+                    self.resetRecoveryThrottle()
                     self.syncSessionState()
                     self.statusNote = nil
                     self.refresh()
@@ -392,8 +403,10 @@ final class StatusViewModel: ObservableObject {
         isRefreshing = false
         refreshNextPunchIfNeeded()
         refreshHolidayState()
-        if updatedStatus.error == "Your 104 session expired. Sign in again." {
+        if updatedStatus.error == Self.sessionExpiredMessage {
             recoverSessionIfNeeded(trigger: "status_expired")
+        } else if updatedStatus.error == nil {
+            resetRecoveryThrottle()
         }
     }
 
@@ -411,6 +424,10 @@ final class StatusViewModel: ObservableObject {
     }
 
     func recoverSessionIfNeeded(trigger: String = "background") {
+        if recoveryAttempts >= Self.maxRecoveryAttempts {
+            Log.info("auth.recovery", "skipped", ["trigger": trigger, "reason": "recovery_exhausted"])
+            return
+        }
         if let last = lastRecoveryAttemptAt,
             Date().timeIntervalSince(last) < Self.recoveryBackoffInterval
         {
@@ -418,11 +435,11 @@ final class StatusViewModel: ObservableObject {
             return
         }
         lastRecoveryAttemptAt = Date()
+        recoveryAttempts += 1
         Task { @MainActor [weak self] in
             guard let self else { return }
             let ok = await self.performSessionRecovery(trigger: trigger)
             if ok {
-                self.lastRecoveryAttemptAt = nil
                 self.refresh()
             }
         }
@@ -431,7 +448,9 @@ final class StatusViewModel: ObservableObject {
     /// Single source of truth for re-validating the 104 session: silent-refresh
     /// cookies via the shared WebKit jar, log the attempt, sync the on-disk
     /// session into `isAuthenticated`, and return the resulting auth state.
-    /// Concurrent callers coalesce onto one in-flight refresh.
+    /// Concurrent callers coalesce onto one in-flight refresh. `recoverSessionIfNeeded`
+    /// counts attempts and gives up at the cap; `punchNow` calls this directly
+    /// and is intentionally not capped.
     @discardableResult
     private func performSessionRecovery(trigger: String) async -> Bool {
         if let inflight = sessionRecoveryTask {
@@ -448,6 +467,13 @@ final class StatusViewModel: ObservableObject {
         }
         sessionRecoveryTask = task
         return await task.value
+    }
+
+    /// Re-arm auto recovery after the session is known-good again (clean status,
+    /// successful punch, or interactive sign-in / sign-out).
+    private func resetRecoveryThrottle() {
+        recoveryAttempts = 0
+        lastRecoveryAttemptAt = nil
     }
 
     private func refreshNextPunchIfNeeded() {
@@ -467,6 +493,7 @@ final class StatusViewModel: ObservableObject {
         isPunching = false
 
         if updatedStatus.error == nil {
+            resetRecoveryThrottle()
             if updatedStatus.clockIn != beforeIn, let time = updatedStatus.clockIn {
                 NotificationManager.shared.send(appName, body: "Clocked in at \(time)")
             } else if updatedStatus.clockOut != beforeOut, let time = updatedStatus.clockOut {
@@ -657,6 +684,8 @@ final class StatusViewModel: ObservableObject {
 
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
     private static let recoveryBackoffInterval: TimeInterval = 60
+    private static let maxRecoveryAttempts = 3
+    private static let sessionExpiredMessage = Clock104Error.unauthorized.localizedDescription
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()

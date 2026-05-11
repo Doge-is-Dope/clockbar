@@ -4,22 +4,22 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var viewModel: StatusViewModel
     var settingsController: SettingsWindowController?
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if viewModel.isAuthenticated {
                 summarySection
                 rowDivider
-                actionsSection
-                rowDivider
+            }
+
+            primaryActionButton
+            rowDivider
+
+            if viewModel.isAuthenticated {
                 automationSection
                 rowDivider
             }
-            if !viewModel.isAuthenticated {
-                sessionActionRow
-                rowDivider
-            }
+
             settingsRow
             rowDivider
             quitRow
@@ -65,42 +65,30 @@ struct ContentView: View {
         .padding(.vertical, AppStyle.Spacing.lg)
     }
 
-    private var actionsSection: some View {
-        Button(action: { viewModel.punchNow() }) {
+    private var primaryActionButton: some View {
+        Button {
+            if isSignInAction {
+                viewModel.beginAuthentication()
+            } else {
+                viewModel.punchNow()
+            }
+        } label: {
             HStack(spacing: AppStyle.Spacing.lg) {
-                if viewModel.isPunching {
+                if viewModel.isPunching || viewModel.isAuthenticating {
                     Image(systemName: "progress.indicator")
                         .font(AppStyle.Font.bodyMedium)
                         .symbolEffect(.rotate, isActive: true)
                 }
 
-                Text(viewModel.isPunching ? "Punching..." : punchButtonTitle)
+                Text(primaryActionTitle)
                     .font(AppStyle.Font.bodyMedium)
             }
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PunchButtonStyle())
-        .disabled(viewModel.isPunching)
+        .disabled(viewModel.isPunching || viewModel.isAuthenticating)
         .padding(.horizontal, AppStyle.Spacing.xl)
         .padding(.vertical, AppStyle.Spacing.sm)
-    }
-
-    private var sessionActionRow: some View {
-        MenuPanelButton(
-            action: { viewModel.beginAuthentication() },
-            isEnabled: !viewModel.isAuthenticating
-        ) { _ in
-            HStack(spacing: AppStyle.Spacing.lg) {
-                Label(
-                    viewModel.isAuthenticating ? "Signing In..." : "Sign In",
-                    systemImage: "person.crop.circle"
-                )
-                .font(AppStyle.Font.body)
-                Spacer(minLength: AppStyle.Spacing.md)
-            }
-            .foregroundStyle(.secondary)
-        }
-        .padding(AppStyle.Spacing.md)
     }
 
     private var automationSection: some View {
@@ -168,6 +156,26 @@ struct ContentView: View {
         viewModel.bannerText?.trimmedNonEmpty
     }
 
+    private var isSignInAction: Bool {
+        !viewModel.isAuthenticated || viewModel.sessionNeedsReauth
+    }
+
+    private var primaryActionTitle: String {
+        if viewModel.isAuthenticating {
+            return "Signing In..."
+        }
+
+        if viewModel.isPunching {
+            return "Punching..."
+        }
+
+        if isSignInAction {
+            return "Sign In"
+        }
+
+        return punchButtonTitle
+    }
+
     private var punchButtonTitle: String {
         if viewModel.status?.clockIn == nil {
             return "Clock In Now"
@@ -230,6 +238,13 @@ struct ContentView: View {
     vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: "18:15", clockInCode: nil, error: nil)
     return ContentView(viewModel: vm)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Session Expired") {
+    let vm = StatusViewModel()
+    vm.isAuthenticated = true
+    vm.status = .error(Clock104Error.unauthorized.localizedDescription)
+    return ContentView(viewModel: vm)
 }
 
 #Preview("Signed Out") {

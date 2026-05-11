@@ -12,7 +12,7 @@ enum ClockService {
             try? AuthStore.save(session)
             return status
         } catch Clock104Error.unauthorized {
-            return .error("Your 104 session expired. Sign in again.")
+            return .error(Clock104Error.unauthorized.localizedDescription)
         } catch {
             return .error(error.localizedDescription)
         }
@@ -41,7 +41,7 @@ enum ClockService {
             return status
         } catch Clock104Error.unauthorized {
             Log.error("manual", "failed", ["reason": "unauthorized"])
-            return .error("Your 104 session expired. Sign in again.")
+            return .error(Clock104Error.unauthorized.localizedDescription)
         } catch {
             Log.error(
                 "manual", "failed",
