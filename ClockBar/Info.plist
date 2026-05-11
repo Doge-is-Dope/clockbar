@@ -16,7 +16,7 @@
 		</dict>
 	</array>
 	<key>CFBundleName</key>
-	<string>104 ClockBar</string>
+	<string>ClockBar</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundlePackageType</key>
