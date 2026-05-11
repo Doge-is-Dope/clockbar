@@ -1,6 +1,6 @@
 import Foundation
 
-let appName = "104 Clock"
+let appName = "ClockBar"
 let baseURL = URL(string: "https://pro.104.com.tw")!
 let holidayBaseURL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/"
 let launchdLabelPrefix = "com.clockbar.104-"

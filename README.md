@@ -1,4 +1,4 @@
-# 104 Clock
+# ClockBar
 
 Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 
