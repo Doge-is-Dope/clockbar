@@ -11,15 +11,16 @@ struct ContentView: View {
             if viewModel.isAuthenticated {
                 summarySection
                 rowDivider
-                actionsSection
-                rowDivider
+            }
+
+            primaryActionButton
+            rowDivider
+
+            if viewModel.isAuthenticated {
                 automationSection
                 rowDivider
             }
-            if !viewModel.isAuthenticated {
-                sessionActionRow
-                rowDivider
-            }
+
             settingsRow
             rowDivider
             quitRow
@@ -65,9 +66,9 @@ struct ContentView: View {
         .padding(.vertical, AppStyle.Spacing.lg)
     }
 
-    private var actionsSection: some View {
+    private var primaryActionButton: some View {
         Button {
-            if viewModel.sessionNeedsReauth {
+            if isSignInAction {
                 viewModel.beginAuthentication()
             } else {
                 viewModel.punchNow()
@@ -89,24 +90,6 @@ struct ContentView: View {
         .disabled(viewModel.isPunching || viewModel.isAuthenticating)
         .padding(.horizontal, AppStyle.Spacing.xl)
         .padding(.vertical, AppStyle.Spacing.sm)
-    }
-
-    private var sessionActionRow: some View {
-        MenuPanelButton(
-            action: { viewModel.beginAuthentication() },
-            isEnabled: !viewModel.isAuthenticating
-        ) { _ in
-            HStack(spacing: AppStyle.Spacing.lg) {
-                Label(
-                    viewModel.isAuthenticating ? "Signing In..." : "Sign In",
-                    systemImage: "person.crop.circle"
-                )
-                .font(AppStyle.Font.body)
-                Spacer(minLength: AppStyle.Spacing.md)
-            }
-            .foregroundStyle(.secondary)
-        }
-        .padding(AppStyle.Spacing.md)
     }
 
     private var automationSection: some View {
@@ -174,6 +157,12 @@ struct ContentView: View {
         viewModel.bannerText?.trimmedNonEmpty
     }
 
+    /// The 104 session is unusable (signed out, or cookies the server rejects),
+    /// so the primary button signs in rather than punching.
+    private var isSignInAction: Bool {
+        !viewModel.isAuthenticated || viewModel.sessionNeedsReauth
+    }
+
     private var primaryActionTitle: String {
         if viewModel.isAuthenticating {
             return "Signing In..."
@@ -183,8 +172,8 @@ struct ContentView: View {
             return "Punching..."
         }
 
-        if viewModel.sessionNeedsReauth {
-            return "Sign In Again"
+        if isSignInAction {
+            return "Sign In"
         }
 
         return punchButtonTitle
