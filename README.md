@@ -20,8 +20,8 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 ## Install
 
 ```sh
-git clone https://github.com/Doge-is-Dope/104-clock.git
-cd 104-clock
+git clone https://github.com/Doge-is-Dope/clockbar.git
+cd clockbar
 make install
 ```
 
