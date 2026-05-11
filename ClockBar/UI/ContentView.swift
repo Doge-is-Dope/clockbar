@@ -66,21 +66,27 @@ struct ContentView: View {
     }
 
     private var actionsSection: some View {
-        Button(action: { viewModel.punchNow() }) {
+        Button {
+            if viewModel.sessionNeedsReauth {
+                viewModel.beginAuthentication()
+            } else {
+                viewModel.punchNow()
+            }
+        } label: {
             HStack(spacing: AppStyle.Spacing.lg) {
-                if viewModel.isPunching {
+                if viewModel.isPunching || viewModel.isAuthenticating {
                     Image(systemName: "progress.indicator")
                         .font(AppStyle.Font.bodyMedium)
                         .symbolEffect(.rotate, isActive: true)
                 }
 
-                Text(viewModel.isPunching ? "Punching..." : punchButtonTitle)
+                Text(primaryActionTitle)
                     .font(AppStyle.Font.bodyMedium)
             }
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PunchButtonStyle())
-        .disabled(viewModel.isPunching)
+        .disabled(viewModel.isPunching || viewModel.isAuthenticating)
         .padding(.horizontal, AppStyle.Spacing.xl)
         .padding(.vertical, AppStyle.Spacing.sm)
     }
@@ -168,6 +174,22 @@ struct ContentView: View {
         viewModel.bannerText?.trimmedNonEmpty
     }
 
+    private var primaryActionTitle: String {
+        if viewModel.isAuthenticating {
+            return "Signing In..."
+        }
+
+        if viewModel.isPunching {
+            return "Punching..."
+        }
+
+        if viewModel.sessionNeedsReauth {
+            return "Sign In Again"
+        }
+
+        return punchButtonTitle
+    }
+
     private var punchButtonTitle: String {
         if viewModel.status?.clockIn == nil {
             return "Clock In Now"
@@ -230,6 +252,13 @@ struct ContentView: View {
     vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: "18:15", clockInCode: nil, error: nil)
     return ContentView(viewModel: vm)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Session Expired") {
+    let vm = StatusViewModel()
+    vm.isAuthenticated = true
+    vm.status = .error(Clock104Error.unauthorized.localizedDescription)
+    return ContentView(viewModel: vm)
 }
 
 #Preview("Signed Out") {

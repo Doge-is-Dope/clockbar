@@ -78,6 +78,12 @@ final class StatusViewModel: ObservableObject {
         return status?.error?.trimmedNonEmpty
     }
 
+    /// True when the on-disk session is structurally usable but 104 keeps
+    /// rejecting it — the popover's primary action should be re-auth, not punch.
+    var sessionNeedsReauth: Bool {
+        status?.error == Self.sessionExpiredMessage
+    }
+
     var authStatusText: String {
         if isAuthenticating {
             return "Signing in…"
@@ -398,7 +404,7 @@ final class StatusViewModel: ObservableObject {
         isRefreshing = false
         refreshNextPunchIfNeeded()
         refreshHolidayState()
-        if updatedStatus.error == "Your 104 session expired. Sign in again." {
+        if updatedStatus.error == Self.sessionExpiredMessage {
             recoverSessionIfNeeded(trigger: "status_expired")
         } else if updatedStatus.error == nil {
             resetRecoveryThrottle()
@@ -682,6 +688,7 @@ final class StatusViewModel: ObservableObject {
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
     private static let recoveryBackoffInterval: TimeInterval = 60
     private static let maxRecoveryAttempts = 3
+    private static let sessionExpiredMessage = Clock104Error.unauthorized.localizedDescription
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()
