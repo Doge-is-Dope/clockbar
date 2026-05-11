@@ -4,7 +4,6 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var viewModel: StatusViewModel
     var settingsController: SettingsWindowController?
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -157,8 +156,6 @@ struct ContentView: View {
         viewModel.bannerText?.trimmedNonEmpty
     }
 
-    /// The 104 session is unusable (signed out, or cookies the server rejects),
-    /// so the primary button signs in rather than punching.
     private var isSignInAction: Bool {
         !viewModel.isAuthenticated || viewModel.sessionNeedsReauth
     }

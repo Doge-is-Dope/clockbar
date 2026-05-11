@@ -39,9 +39,9 @@ final class StatusViewModel: ObservableObject {
     private var appliedWakeSnapshot: WakeScheduleSnapshot
     private var sessionRecoveryTask: Task<Bool, Never>?
     private var lastRecoveryAttemptAt: Date?
-    /// Silent session-recovery attempts since the 104 session was last known-good.
-    /// A healthy status (or an interactive sign-in / sign-out) resets it; once it
-    /// reaches `maxRecoveryAttempts`, `recoverSessionIfNeeded` stops auto-retrying.
+    /// Failed silent-recovery attempts since the session was last good. At
+    /// `maxRecoveryAttempts`, auto-recovery gives up — a silent refresh just
+    /// re-reads the same cookies, so only an interactive sign-in can fix it.
     private var recoveryAttempts = 0
 
     private struct WakeScheduleSnapshot: Equatable {
@@ -78,8 +78,8 @@ final class StatusViewModel: ObservableObject {
         return status?.error?.trimmedNonEmpty
     }
 
-    /// True when the on-disk session is structurally usable but 104 keeps
-    /// rejecting it — the popover's primary action should be re-auth, not punch.
+    /// Cookies exist on disk but 104 keeps rejecting them — the primary button
+    /// should re-auth rather than punch.
     var sessionNeedsReauth: Bool {
         status?.error == Self.sessionExpiredMessage
     }
@@ -92,8 +92,7 @@ final class StatusViewModel: ObservableObject {
         guard let session = AuthStore.loadSession(), session.hasUsableCookies,
             let lastValidatedAt = session.lastValidatedAt
         else {
-            // Cookies on disk but never validated against 104 (e.g. a silent
-            // refresh that never confirmed) — nothing trustworthy to show yet.
+            // Cookies on disk but never validated — nothing trustworthy to show.
             return ""
         }
 
@@ -449,9 +448,9 @@ final class StatusViewModel: ObservableObject {
     /// Single source of truth for re-validating the 104 session: silent-refresh
     /// cookies via the shared WebKit jar, log the attempt, sync the on-disk
     /// session into `isAuthenticated`, and return the resulting auth state.
-    /// Concurrent callers coalesce onto one in-flight refresh. Attempt-counting
-    /// and the give-up cap live in `recoverSessionIfNeeded`; `punchNow` also
-    /// calls this directly and is intentionally not gated by that cap.
+    /// Concurrent callers coalesce onto one in-flight refresh. `recoverSessionIfNeeded`
+    /// counts attempts and gives up at the cap; `punchNow` calls this directly
+    /// and is intentionally not capped.
     @discardableResult
     private func performSessionRecovery(trigger: String) async -> Bool {
         if let inflight = sessionRecoveryTask {
@@ -470,10 +469,8 @@ final class StatusViewModel: ObservableObject {
         return await task.value
     }
 
-    /// Re-arm auto session recovery once the 104 session is known-good again — a
-    /// clean status, an interactive sign-in, or a sign-out. Re-arming matters
-    /// because a silent refresh just re-reads cookies from the shared WebKit jar,
-    /// so when the server keeps rejecting them, only an interactive login helps.
+    /// Re-arm auto recovery after the session is known-good again (clean status,
+    /// successful punch, or interactive sign-in / sign-out).
     private func resetRecoveryThrottle() {
         recoveryAttempts = 0
         lastRecoveryAttemptAt = nil
