@@ -21,7 +21,6 @@ struct SettingsView: View {
             automationSection
             notificationsSection
             wakeSection
-            appSection
             accountSection
         }
         .formStyle(.grouped)
@@ -130,6 +129,20 @@ struct SettingsView: View {
                     icon: "clock.badge.checkmark"
                 )
             }
+
+            durationPicker(
+                value: Binding(
+                    get: { max(60, viewModel.config.refreshInterval) },
+                    set: { viewModel.setRefreshInterval($0) }
+                ),
+                options: DurationOption.syncStatus
+            ) {
+                rowLabel(
+                    title: "Refresh interval",
+                    subtitle: "How often to refresh the status from 104.",
+                    icon: "arrow.triangle.2.circlepath"
+                )
+            }
         } header: {
             Text("Automation")
         } footer: {
@@ -215,28 +228,10 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - App
-
-    private var appSection: some View {
-        Section("General") {
-            durationPicker(
-                value: Binding(
-                    get: { max(60, viewModel.config.refreshInterval) },
-                    set: { viewModel.setRefreshInterval($0) }
-                ),
-                options: DurationOption.syncStatus
-            ) {
-                Label("Refresh interval", systemImage: "arrow.triangle.2.circlepath")
-            }
-
-            Label("ClockBar \(appVersion)", systemImage: "info.circle")
-        }
-    }
-
     // MARK: - Account
 
     private var accountSection: some View {
-        Section("Account") {
+        Section {
             Button {
                 if viewModel.isAuthenticated {
                     viewModel.signOut()
@@ -250,6 +245,9 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
             .disabled(viewModel.isAuthenticating)
+        } footer: {
+            Text("ClockBar · v\(appVersion)")
+                .frame(maxWidth: .infinity)
         }
     }
 
