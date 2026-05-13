@@ -18,11 +18,13 @@ enum ClockService {
         }
     }
 
-    static func punch() async -> PunchStatus {
-        Log.info("manual", "invoked")
+    /// `component` is the log component label — `"manual"` for the menu-bar
+    /// button (default), `"wake.autopunch"` for the on-wake catch-up path.
+    static func punch(component: String = "manual") async -> PunchStatus {
+        Log.info(component, "invoked")
 
         guard var session = AuthStore.loadSession() else {
-            Log.error("manual", "failed", ["reason": "missing_session"])
+            Log.error(component, "failed", ["reason": "missing_session"])
             return .error("Sign in to 104 before punching.")
         }
 
@@ -32,19 +34,19 @@ enum ClockService {
             session.lastValidatedAt = Date()
             try? AuthStore.save(session)
             if let clockIn = status.clockIn, status.clockOut == nil {
-                Log.info("manual", "completed", ["action": "clockin", "punched_at": clockIn])
+                Log.info(component, "completed", ["action": "clockin", "punched_at": clockIn])
             } else if let clockOut = status.clockOut {
-                Log.info("manual", "completed", ["action": "clockout", "punched_at": clockOut])
+                Log.info(component, "completed", ["action": "clockout", "punched_at": clockOut])
             } else {
-                Log.warn("manual", "verification_pending")
+                Log.warn(component, "verification_pending")
             }
             return status
         } catch Clock104Error.unauthorized {
-            Log.error("manual", "failed", ["reason": "unauthorized"])
+            Log.error(component, "failed", ["reason": "unauthorized"])
             return .error(Clock104Error.unauthorized.localizedDescription)
         } catch {
             Log.error(
-                "manual", "failed",
+                component, "failed",
                 [
                     "reason": "exception",
                     "error_message": error.localizedDescription,

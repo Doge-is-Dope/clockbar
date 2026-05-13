@@ -6,6 +6,8 @@ struct ClockConfig: Codable, Equatable {
     var missedPunchNotificationEnabled: Bool
     var missedPunchNotificationDelay: Int
     var autopunchEnabled: Bool
+    /// Finish a punch missed while asleep, on wake, if still inside the window. Opt-in.
+    var autoPunchOnWakeEnabled: Bool
     var wakeEnabled: Bool
     var wakeBefore: Int
     var refreshInterval: Int
@@ -71,6 +73,7 @@ struct ClockConfig: Codable, Equatable {
         case missedPunchNotificationEnabled = "missed_punch_notification_enabled"
         case missedPunchNotificationDelay = "missed_punch_notification_delay"
         case autopunchEnabled = "autopunch_enabled"
+        case autoPunchOnWakeEnabled = "autopunch_on_wake_enabled"
         case wakeEnabled = "wake_enabled"
         case wakeBefore = "wake_before"
         case refreshInterval = "refresh_interval"
@@ -82,6 +85,7 @@ struct ClockConfig: Codable, Equatable {
         missedPunchNotificationEnabled: Bool,
         missedPunchNotificationDelay: Int,
         autopunchEnabled: Bool,
+        autoPunchOnWakeEnabled: Bool,
         wakeEnabled: Bool,
         wakeBefore: Int,
         refreshInterval: Int
@@ -91,6 +95,7 @@ struct ClockConfig: Codable, Equatable {
         self.missedPunchNotificationEnabled = missedPunchNotificationEnabled
         self.missedPunchNotificationDelay = missedPunchNotificationDelay
         self.autopunchEnabled = autopunchEnabled
+        self.autoPunchOnWakeEnabled = autoPunchOnWakeEnabled
         self.wakeEnabled = wakeEnabled
         self.wakeBefore = wakeBefore
         self.refreshInterval = refreshInterval
@@ -109,6 +114,8 @@ struct ClockConfig: Codable, Equatable {
             ?? defaults.missedPunchNotificationDelay
         self.autopunchEnabled =
             try container.decodeIfPresent(Bool.self, forKey: .autopunchEnabled) ?? defaults.autopunchEnabled
+        self.autoPunchOnWakeEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .autoPunchOnWakeEnabled) ?? defaults.autoPunchOnWakeEnabled
         self.wakeEnabled = try container.decodeIfPresent(Bool.self, forKey: .wakeEnabled) ?? defaults.wakeEnabled
         self.wakeBefore = try container.decodeIfPresent(Int.self, forKey: .wakeBefore) ?? defaults.wakeBefore
         self.refreshInterval =
@@ -125,6 +132,7 @@ struct ClockConfig: Codable, Equatable {
         missedPunchNotificationEnabled: true,
         missedPunchNotificationDelay: 0,
         autopunchEnabled: true,
+        autoPunchOnWakeEnabled: false,
         wakeEnabled: false,
         wakeBefore: 300,
         refreshInterval: 1800

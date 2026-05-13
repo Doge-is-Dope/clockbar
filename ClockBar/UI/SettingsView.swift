@@ -125,7 +125,7 @@ struct SettingsView: View {
             ) {
                 rowLabel(
                     title: "Minimum hours",
-                    subtitle: "Pushes clock-out later if the workday falls short.",
+                    subtitle: "Pushes clock-out later to reach this length.",
                     icon: "clock.badge.checkmark"
                 )
             }
@@ -137,11 +137,7 @@ struct SettingsView: View {
                 ),
                 options: DurationOption.syncStatus
             ) {
-                rowLabel(
-                    title: "Refresh interval",
-                    subtitle: "How often to refresh the status from 104.",
-                    icon: "arrow.triangle.2.circlepath"
-                )
+                Label("Refresh interval", systemImage: "arrow.triangle.2.circlepath")
             }
         } header: {
             Text("Automation")
@@ -164,11 +160,7 @@ struct SettingsView: View {
                     set: { viewModel.setMissedPunchNotificationEnabled($0) }
                 )
             ) {
-                rowLabel(
-                    title: "Missed punch notification",
-                    subtitle: "Notifies when no punch is recorded on time.",
-                    icon: "bell.badge"
-                )
+                Label("Missed-punch alert", systemImage: "bell.badge")
             }
             .tint(AppStyle.Palette.accent)
 
@@ -181,11 +173,7 @@ struct SettingsView: View {
                     options: DurationOption.notifyAfter,
                     zeroLabel: "Immediately"
                 ) {
-                    rowLabel(
-                        title: "Notify after",
-                        subtitle: "Wait this long after the scheduled time.",
-                        icon: "clock.badge.questionmark"
-                    )
+                    Label("Notify after", systemImage: "clock.badge.questionmark")
                 }
             }
         }
@@ -194,7 +182,7 @@ struct SettingsView: View {
     // MARK: - Wake
 
     private var wakeSection: some View {
-        Section("Sleep & Wake") {
+        Section {
             Toggle(
                 isOn: Binding(
                     get: { viewModel.wakeEnabledDraft },
@@ -202,7 +190,7 @@ struct SettingsView: View {
                 )
             ) {
                 rowLabel(
-                    title: "Wake for auto-punch",
+                    title: "Wake before clock-in",
                     subtitle: viewModel.wakeStatusMessage,
                     icon: "powersleep"
                 )
@@ -220,11 +208,35 @@ struct SettingsView: View {
             ) {
                 rowLabel(
                     title: "Wake before",
-                    subtitle: "How early to wake the Mac.",
+                    subtitle: "How early to wake it.",
                     icon: "alarm"
                 )
             }
             .disabled(viewModel.wakeSyncState.isApplying)
+
+            Toggle(
+                isOn: Binding(
+                    get: { viewModel.config.autoPunchOnWakeEnabled },
+                    set: { viewModel.setAutoPunchOnWakeEnabled($0) }
+                )
+            ) {
+                rowLabel(
+                    title: "Punch on wake",
+                    subtitle: "Catches up a punch missed while asleep.",
+                    icon: "bolt"
+                )
+            }
+            .tint(AppStyle.Palette.accent)
+            .disabled(!viewModel.config.autopunchEnabled)
+        } header: {
+            Text("Sleep & Wake")
+        } footer: {
+            Text(
+                "On battery, a MacBook only wakes with the lid open — keep it plugged in overnight. "
+                    + "Clock-out won't wake a sleeping Mac."
+            )
+            .font(AppStyle.Font.caption)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -296,13 +308,15 @@ struct SettingsView: View {
     // MARK: - Row labels
 
     @ViewBuilder
-    private func rowLabel(title: String, subtitle: String, icon: String) -> some View {
+    private func rowLabel(title: String, subtitle: String?, icon: String) -> some View {
         Label {
             VStack(alignment: .leading, spacing: AppStyle.Spacing.xxs) {
                 Text(title)
-                Text(subtitle)
-                    .font(AppStyle.Font.caption)
-                    .foregroundStyle(.secondary)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         } icon: {
             Image(systemName: icon)
@@ -317,7 +331,7 @@ struct SettingsView: View {
         let outStart = minutesSinceMidnight(s.clockout)
 
         if outStart <= inEnd {
-            return "Clock out must be later than clock in."
+            return "Clock-out must be later than clock-in."
         }
 
         let minHours = viewModel.config.minWorkHours
@@ -326,7 +340,7 @@ struct SettingsView: View {
         let workHours = Double(outStart - inEnd) / 60
         if workHours < Double(minHours) {
             return String(
-                format: "Only %.1f hours between clock in and out (minimum %d recommended).", workHours, minHours)
+                format: "Only %.1f h between clock-in and clock-out — your minimum is %d h.", workHours, minHours)
         }
 
         return nil

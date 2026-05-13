@@ -18,6 +18,9 @@ final class AppContainer: ObservableObject {
         NotificationManager.shared.punchHandler = { [weak model] in
             Task { @MainActor in model?.punchNow() }
         }
+        NotificationManager.shared.signInHandler = { [weak model] in
+            Task { @MainActor in model?.beginAuthentication() }
+        }
         self.sessionRefreshToken = SessionRefreshSignal.subscribe { [weak model] in
             Task { @MainActor in model?.recoverSessionIfNeeded(trigger: "distributed_signal") }
         }

@@ -52,6 +52,15 @@ struct ContentView: View {
                     .foregroundStyle(.tertiary)
             }
 
+            if let reloginNoticeText {
+                Text(reloginNoticeText)
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             if let errorText {
                 Label(errorText, systemImage: "exclamationmark.triangle.fill")
                     .font(AppStyle.Font.subheadlineMedium)
@@ -150,6 +159,10 @@ struct ContentView: View {
 
     private var authStatusText: String? {
         viewModel.authStatusText.trimmedNonEmpty
+    }
+
+    private var reloginNoticeText: String? {
+        viewModel.reloginNoticeText?.trimmedNonEmpty
     }
 
     private var errorText: String? {
