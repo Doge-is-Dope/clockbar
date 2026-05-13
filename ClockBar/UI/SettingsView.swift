@@ -87,7 +87,7 @@ struct SettingsView: View {
                     set: { viewModel.setAutopunchEnabled($0) }
                 )
             ) {
-                Label("Auto-punch", systemImage: "clock.arrow.2.circlepath")
+                Label("Auto clock-in/out", systemImage: "clock.arrow.2.circlepath")
             }
             .tint(AppStyle.Palette.accent)
 
@@ -100,7 +100,7 @@ struct SettingsView: View {
                     persistTimeRange(start: startDate, end: endDate, for: .clockin)
                 }
             } label: {
-                Label("Clock In", systemImage: "sunrise")
+                Label("Clock-in window", systemImage: "sunrise")
             }
 
             LabeledContent {
@@ -112,7 +112,7 @@ struct SettingsView: View {
                     persistTimeRange(start: startDate, end: endDate, for: .clockout)
                 }
             } label: {
-                Label("Clock Out", systemImage: "sunset")
+                Label("Clock-out window", systemImage: "sunset")
             }
 
             durationPicker(
@@ -124,8 +124,8 @@ struct SettingsView: View {
                 formatter: { $0 == 0 ? "Off" : "\($0)h" }
             ) {
                 rowLabel(
-                    title: "Minimum hours",
-                    subtitle: "Pushes clock-out later to reach this length.",
+                    title: "Minimum work time",
+                    subtitle: nil,
                     icon: "clock.badge.checkmark"
                 )
             }
@@ -137,7 +137,11 @@ struct SettingsView: View {
                 ),
                 options: DurationOption.syncStatus
             ) {
-                Label("Refresh interval", systemImage: "arrow.triangle.2.circlepath")
+                rowLabel(
+                    title: "Status refresh",
+                    subtitle: "How often the app re-checks 104 for your punch status.",
+                    icon: "arrow.triangle.2.circlepath"
+                )
             }
         } header: {
             Text("Automation")
@@ -160,7 +164,7 @@ struct SettingsView: View {
                     set: { viewModel.setMissedPunchNotificationEnabled($0) }
                 )
             ) {
-                Label("Missed-punch alert", systemImage: "bell.badge")
+                Label("Missed punch alerts", systemImage: "bell.badge")
             }
             .tint(AppStyle.Palette.accent)
 
@@ -173,7 +177,7 @@ struct SettingsView: View {
                     options: DurationOption.notifyAfter,
                     zeroLabel: "Immediately"
                 ) {
-                    Label("Notify after", systemImage: "clock.badge.questionmark")
+                    Label("Alert delay", systemImage: "clock.badge.questionmark")
                 }
             }
         }
@@ -190,7 +194,7 @@ struct SettingsView: View {
                 )
             ) {
                 rowLabel(
-                    title: "Wake before clock-in",
+                    title: "Wake Mac",
                     subtitle: viewModel.wakeStatusMessage,
                     icon: "powersleep"
                 )
@@ -207,8 +211,8 @@ struct SettingsView: View {
                 zeroLabel: "At punch time"
             ) {
                 rowLabel(
-                    title: "Wake before",
-                    subtitle: "How early to wake it.",
+                    title: "Wake lead time",
+                    subtitle: nil,
                     icon: "alarm"
                 )
             }
@@ -221,8 +225,8 @@ struct SettingsView: View {
                 )
             ) {
                 rowLabel(
-                    title: "Punch on wake",
-                    subtitle: "Catches up a punch missed while asleep.",
+                    title: "Auto-punch after wake",
+                    subtitle: "Catch up a missed punch when your Mac wakes, if it's not too late.",
                     icon: "bolt"
                 )
             }
@@ -232,8 +236,7 @@ struct SettingsView: View {
             Text("Sleep & Wake")
         } footer: {
             Text(
-                "On battery, a MacBook only wakes with the lid open — keep it plugged in overnight. "
-                    + "Clock-out won't wake a sleeping Mac."
+                "Keep MacBooks plugged in for scheduled wake. Clock-out can't wake the Mac."
             )
             .font(AppStyle.Font.caption)
             .foregroundStyle(.secondary)
@@ -331,7 +334,7 @@ struct SettingsView: View {
         let outStart = minutesSinceMidnight(s.clockout)
 
         if outStart <= inEnd {
-            return "Clock-out must be later than clock-in."
+            return "Clock-out must be after clock-in."
         }
 
         let minHours = viewModel.config.minWorkHours
@@ -340,7 +343,7 @@ struct SettingsView: View {
         let workHours = Double(outStart - inEnd) / 60
         if workHours < Double(minHours) {
             return String(
-                format: "Only %.1f h between clock-in and clock-out — your minimum is %d h.", workHours, minHours)
+                format: "%.1f h between windows; minimum is %d h.", workHours, minHours)
         }
 
         return nil
@@ -351,7 +354,7 @@ struct SettingsView: View {
             return "Sign Out"
         }
 
-        return viewModel.isAuthenticating ? "Signing In..." : "Sign In"
+        return viewModel.isAuthenticating ? "Signing in..." : "Sign In"
     }
 
     private var accountActionIcon: String {

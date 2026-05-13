@@ -22,7 +22,13 @@ final class AppContainer: ObservableObject {
             Task { @MainActor in model?.beginAuthentication() }
         }
         self.sessionRefreshToken = SessionRefreshSignal.subscribe { [weak model] in
-            Task { @MainActor in model?.recoverSessionIfNeeded(trigger: "distributed_signal") }
+            Task { @MainActor in
+                guard let model else { return }
+                let recovered = await model.forceSessionRecovery(trigger: "distributed_signal")
+                if recovered {
+                    model.refresh()
+                }
+            }
         }
         model.start()
         coordinator.checkPending(reason: "app_launch")

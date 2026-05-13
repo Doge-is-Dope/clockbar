@@ -122,7 +122,7 @@ final class StatusViewModel: ObservableObject {
         case .updated where !hasPendingWakeChanges:
             return "Saved"
         default:
-            return hasPendingWakeChanges ? "Saved when you close Settings." : nil
+            return hasPendingWakeChanges ? "Saves on close" : nil
         }
     }
 

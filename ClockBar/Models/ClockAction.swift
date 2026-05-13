@@ -13,15 +13,6 @@ enum ClockAction: String, Codable, CaseIterable {
         }
     }
 
-    var fieldName: String {
-        switch self {
-        case .clockin:
-            return "clockIn"
-        case .clockout:
-            return "clockOut"
-        }
-    }
-
     var logLabel: String {
         switch self {
         case .clockin:
