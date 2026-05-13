@@ -384,6 +384,9 @@ enum LaunchAgentManager {
     private static func generatePlist(spec: LaunchJobSpec) -> [String: Any] {
         [
             "Label": spec.label,
+            // Attribute the agent to ClockBar.app so System Settings > Login Items
+            // labels it "ClockBar" instead of a bare "clockbar-helper".
+            "AssociatedBundleIdentifiers": [appBundleIdentifier],
             "ProgramArguments": spec.programArguments,
             "StartCalendarInterval": ["Hour": spec.time.hour, "Minute": spec.time.minute],
             "EnvironmentVariables": [
