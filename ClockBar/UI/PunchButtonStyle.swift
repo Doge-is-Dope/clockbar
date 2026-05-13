@@ -38,7 +38,7 @@ struct PunchButtonStyle: ButtonStyle {
         HStack(spacing: AppStyle.Spacing.lg) {
             Image(systemName: "hand.tap.fill")
                 .font(AppStyle.Font.bodyMedium)
-            Text("Clock In Now")
+            Text("Clock In")
                 .font(AppStyle.Font.bodyMedium)
             Spacer()
         }
@@ -55,7 +55,7 @@ struct PunchButtonStyle: ButtonStyle {
         HStack(spacing: AppStyle.Spacing.lg) {
             Image(systemName: "hand.tap.fill")
                 .font(AppStyle.Font.bodyMedium)
-            Text("Clock In Now")
+            Text("Clock In")
                 .font(AppStyle.Font.bodyMedium)
             Spacer()
         }

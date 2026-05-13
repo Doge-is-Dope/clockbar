@@ -148,7 +148,7 @@ final class StatusViewModel: ObservableObject {
         syncSessionState()
 
         guard isAuthenticated else {
-            status = .error("Sign in to 104 to enable status and punching.")
+            status = .signedOut
             recoverSessionIfNeeded(trigger: "refresh_unauthenticated")
             return
         }

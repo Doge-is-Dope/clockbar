@@ -34,14 +34,14 @@ struct ContentView: View {
         VStack(alignment: .trailing, spacing: AppStyle.Spacing.xl) {
             HStack(spacing: 0) {
                 StatusMetric(
-                    title: "Clock In",
-                    icon: "arrow.down.to.line",
+                    title: ClockAction.clockin.displayName,
+                    icon: ClockAction.clockin.iconSystemName,
                     value: viewModel.status?.clockIn ?? "--:--"
                 )
 
                 StatusMetric(
-                    title: "Clock Out",
-                    icon: "arrow.up.to.line",
+                    title: ClockAction.clockout.displayName,
+                    icon: ClockAction.clockout.iconSystemName,
                     value: viewModel.status?.clockOut ?? "--:--"
                 )
             }
@@ -191,11 +191,11 @@ struct ContentView: View {
 
     private var punchButtonTitle: String {
         if viewModel.status?.clockIn == nil {
-            return "Clock In Now"
+            return ClockAction.clockin.displayName
         }
 
         if viewModel.status?.clockOut == nil {
-            return "Clock Out Now"
+            return ClockAction.clockout.displayName
         }
 
         return "Punch Now"

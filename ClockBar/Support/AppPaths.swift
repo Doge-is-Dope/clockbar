@@ -2,6 +2,9 @@ import Foundation
 
 let appName = "ClockBar"
 let appBundleIdentifier = "com.clockbar.app"
+/// True when SwiftUI is rendering a `#Preview` — skip side effects (network,
+/// disk) that would otherwise break the preview.
+let isRunningInSwiftUIPreviews = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 let baseURL = URL(string: "https://pro.104.com.tw")!
 let holidayBaseURL = "https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/"
 let launchdLabelPrefix = "com.clockbar.104-"

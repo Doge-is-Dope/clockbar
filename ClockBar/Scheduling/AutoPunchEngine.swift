@@ -367,7 +367,7 @@ enum AutoPunchEngine {
         if !config.missedPunchNotificationEnabled {
             notify(
                 title: "\(appName) - Login Required",
-                body: "Your 104 session expired. Sign in again.",
+                body: Clock104Error.unauthorized.localizedDescription,
                 sound: notificationErrorSound,
                 dryRun: dryRun
             )

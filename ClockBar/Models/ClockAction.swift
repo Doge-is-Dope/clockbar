@@ -22,6 +22,15 @@ enum ClockAction: String, Codable, CaseIterable {
         }
     }
 
+    var iconSystemName: String {
+        switch self {
+        case .clockin:
+            return "arrow.down.to.line"
+        case .clockout:
+            return "arrow.up.to.line"
+        }
+    }
+
     var launchdLabel: String {
         launchdLabelPrefix + rawValue
     }

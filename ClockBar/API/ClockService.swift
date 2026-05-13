@@ -3,7 +3,7 @@ import Foundation
 enum ClockService {
     static func getStatus() async -> PunchStatus {
         guard var session = AuthStore.loadSession() else {
-            return .error("Sign in to 104 to enable status and punching.")
+            return .signedOut
         }
 
         do {

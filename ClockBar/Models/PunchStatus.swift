@@ -17,6 +17,12 @@ struct PunchStatus: Codable, Equatable {
         )
     }
 
+    /// "No session loaded" status. Use when surfacing as `PunchStatus`; throw
+    /// `Clock104Error.missingSession` when bubbling through the API layer.
+    static var signedOut: PunchStatus {
+        .error("Sign in to 104 to enable status and punching.")
+    }
+
     func punchTime(for action: ClockAction) -> String? {
         switch action {
         case .clockin: return clockIn
