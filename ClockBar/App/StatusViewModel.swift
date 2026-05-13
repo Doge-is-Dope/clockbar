@@ -16,6 +16,13 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
+    /// Where `now` sits relative to a punch window today. See `punchWindowState`.
+    enum PunchWindowState {
+        case beforeWindow
+        case inWindow
+        case afterWindow
+    }
+
     @Published var status: PunchStatus?
     @Published var config: ClockConfig
     @Published var wakeEnabledDraft: Bool
@@ -30,6 +37,9 @@ final class StatusViewModel: ObservableObject {
     @Published var nextPunch: NextPunch?
     @Published var isHolidayToday: Bool = false
     @Published var holidayName: String = ""
+    /// OIDC session nearing expiry — shown as a notice line in the popover, or
+    /// nil. Maintained by `checkReloginSoonNotification`.
+    @Published var reloginNoticeText: String?
 
     private var timer: Timer?
     private var didEnsureLaunchAtLogin = false
@@ -103,7 +113,7 @@ final class StatusViewModel: ObservableObject {
         currentWakeSnapshot != appliedWakeSnapshot
     }
 
-    var wakeStatusMessage: String {
+    var wakeStatusMessage: String? {
         switch wakeSyncState {
         case .applying:
             return "Saving..."
@@ -112,13 +122,7 @@ final class StatusViewModel: ObservableObject {
         case .updated where !hasPendingWakeChanges:
             return "Saved"
         default:
-            if hasPendingWakeChanges {
-                return "Saved when Settings closes."
-            }
-            if !wakeEnabledDraft {
-                return "Disabled"
-            }
-            return "Wakes weekdays before clock-in (AC only). Clock-out won't wake a sleeping Mac."
+            return hasPendingWakeChanges ? "Saves on close" : nil
         }
     }
 
@@ -144,7 +148,7 @@ final class StatusViewModel: ObservableObject {
         syncSessionState()
 
         guard isAuthenticated else {
-            status = .error("Sign in to 104 to enable status and punching.")
+            status = .signedOut
             recoverSessionIfNeeded(trigger: "refresh_unauthenticated")
             return
         }
@@ -180,6 +184,43 @@ final class StatusViewModel: ObservableObject {
         }
     }
 
+    /// Where `now` sits relative to `action`'s window today, measured from the
+    /// *configured* schedule time (same as the helper's lateness math).
+    /// `leadMinutes` extends the start earlier ("is a punch imminent?");
+    /// `trailingGraceSeconds`, if set, replaces the schedule end with
+    /// `start + grace`. A malformed schedule yields `.afterWindow`.
+    func punchWindowState(
+        for action: ClockAction,
+        now: Date = Date(),
+        leadMinutes: Int = 0,
+        trailingGraceSeconds: Int = 0
+    ) -> PunchWindowState {
+        let calendar = Calendar(identifier: .gregorian)
+        guard let start = ScheduledTime(string: config.schedule.time(for: action)),
+            var startDate = calendar.date(bySettingHour: start.hour, minute: start.minute, second: 0, of: now)
+        else {
+            return .afterWindow
+        }
+
+        var endDate: Date
+        if trailingGraceSeconds > 0 {
+            endDate = startDate.addingTimeInterval(TimeInterval(trailingGraceSeconds))
+        } else if let end = ScheduledTime(string: config.schedule.endTime(for: action)),
+            let parsedEnd = calendar.date(bySettingHour: end.hour, minute: end.minute, second: 0, of: now)
+        {
+            endDate = parsedEnd
+        } else {
+            return .afterWindow
+        }
+
+        startDate.addTimeInterval(TimeInterval(-max(0, leadMinutes) * 60))
+        if endDate < startDate { endDate = startDate }
+
+        if now < startDate { return .beforeWindow }
+        if now > endDate { return .afterWindow }
+        return .inWindow
+    }
+
     func setAutopunchEnabled(_ isEnabled: Bool) {
         guard config.autopunchEnabled != isEnabled else { return }
         let shouldSyncJobs = config.requiresScheduledJobs != (isEnabled || config.missedPunchNotificationEnabled)
@@ -190,6 +231,12 @@ final class StatusViewModel: ObservableObject {
             if shouldSyncJobs { syncScheduledJobs() }
         } else {
             config = previousConfig
+        }
+    }
+
+    func setAutoPunchOnWakeEnabled(_ isEnabled: Bool) {
+        updateConfig(reloadScheduleState: false) {
+            $0.autoPunchOnWakeEnabled = isEnabled
         }
     }
 
@@ -342,6 +389,7 @@ final class StatusViewModel: ObservableObject {
         ClockService.clearSession()
         status = nil
         statusNote = nil
+        reloginNoticeText = nil
         resetRecoveryThrottle()
         syncSessionState()
     }
@@ -408,6 +456,43 @@ final class StatusViewModel: ObservableObject {
         } else if updatedStatus.error == nil {
             resetRecoveryThrottle()
         }
+        checkReloginSoonNotification()
+    }
+
+    /// Within `reloginWarningThresholdDays` of the OIDC session expiring, show a
+    /// popover notice + a one-time notification (deduped per cookie cycle via the
+    /// expiry date). Past that point only an interactive sign-in recovers it.
+    private func checkReloginSoonNotification() {
+        guard isAuthenticated,
+            let session = AuthStore.loadSession(),
+            let expiry = session.oidcSessionExpiry
+        else {
+            reloginNoticeText = nil
+            return
+        }
+
+        let daysLeft = expiry.timeIntervalSinceNow / 86_400
+        guard daysLeft <= Self.reloginWarningThresholdDays else {
+            reloginNoticeText = nil
+            return
+        }
+
+        let days = max(0, Int(daysLeft.rounded()))
+        let notice =
+            days <= 0
+            ? "Sign in to 104 again to keep auto clock-in working."
+            : "Session expires in \(days) day\(days == 1 ? "" : "s") — sign in to 104 again."
+        reloginNoticeText = notice
+
+        let key = Self.expiryKeyFormatter.string(from: expiry)
+        guard !NotificationLedger.shared.hasFired(kind: .reloginSoon, key: key, date: key) else { return }
+        NotificationManager.shared.send(
+            appName,
+            body: notice,
+            categoryIdentifier: PunchNotificationKind.reloginSoon.categoryIdentifier
+        )
+        NotificationLedger.shared.record(kind: .reloginSoon, key: key, date: key)
+        Log.info("auth.relogin_warning", "notified", ["days_left": days, "expires_at": key])
     }
 
     private func refreshHolidayState() {
@@ -443,6 +528,15 @@ final class StatusViewModel: ObservableObject {
                 self.refresh()
             }
         }
+    }
+
+    /// Silent recovery now, ignoring the backoff — used when a punch is imminent
+    /// (Mac just woke) so the helper finds fresh cookies at fire time. Coalesces
+    /// with any in-flight recovery.
+    @discardableResult
+    func forceSessionRecovery(trigger: String) async -> Bool {
+        resetRecoveryThrottle()
+        return await performSessionRecovery(trigger: trigger)
     }
 
     /// Single source of truth for re-validating the 104 session: silent-refresh
@@ -685,12 +779,21 @@ final class StatusViewModel: ObservableObject {
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
     private static let recoveryBackoffInterval: TimeInterval = 60
     private static let maxRecoveryAttempts = 3
+    private static let reloginWarningThresholdDays: Double = 3
     private static let sessionExpiredMessage = Clock104Error.unauthorized.localizedDescription
 
     private static let authFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let expiryKeyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
 }

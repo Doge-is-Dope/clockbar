@@ -15,7 +15,7 @@ struct ClockBarApp: App {
         MenuBarExtra {
             ContentView(viewModel: app.viewModel, settingsController: app.settingsController)
         } label: {
-            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
+            if !isRunningInSwiftUIPreviews {
                 Image(systemName: app.viewModel.bannerText != nil ? "clock.badge.exclamationmark" : "clock")
             }
         }

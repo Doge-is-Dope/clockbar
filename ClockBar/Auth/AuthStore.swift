@@ -2,9 +2,7 @@ import Foundation
 
 enum AuthStore {
     static func loadSession() -> StoredSession? {
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            return nil
-        }
+        if isRunningInSwiftUIPreviews { return nil }
 
         guard let data = try? Data(contentsOf: sessionPath),
             let session = try? JSONDecoder.clockStore.decode(StoredSession.self, from: data)

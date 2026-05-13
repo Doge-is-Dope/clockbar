@@ -57,7 +57,7 @@ Punching today does not fix yesterday, so no CTA is offered. 104 corrections req
 
 - **Already punched on another device.** The coordinator queries the server before notifying. If the server reports the punch, no notification fires (and the helper exits at the same `existingPunch` guard during auto-punch).
 - **Offline.** `getStatus` failures cause the coordinator to skip the check and retry on the next wake / active tick. No speculative notifications.
-- **Holidays and weekends.** Both helper (via `HolidayStore` and the launchd weekday gate) and the app coordinator skip these days entirely.
+- **Holidays and weekends.** Both helper and app coordinator gate on `HolidayStore.isHoliday`, which covers Taiwan public holidays plus weekends (`Calendar.isDateInWeekend` fallback). The launchd plist itself fires every day; the day-of-week filter is application-level.
 - **Notification cap.** At most one Late, one Missed, and one Cross-day notification per `(action, date)`. Confirmation notifications from successful punches are not capped.
 - **Manual punch.** Always available from the menu-bar UI regardless of the rules above. A successful manual punch posts the same confirmation notification as a successful auto-punch.
 

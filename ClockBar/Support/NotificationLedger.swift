@@ -19,15 +19,25 @@ final class NotificationLedger {
     }
 
     func hasFired(kind: PunchNotificationKind, action: ClockAction, date: String) -> Bool {
-        entries.contains { $0.kind == kind.rawValue && $0.action == action.rawValue && $0.date == date }
+        hasFired(kind: kind, key: action.rawValue, date: date)
     }
 
     func record(kind: PunchNotificationKind, action: ClockAction, date: String) {
-        guard !hasFired(kind: kind, action: action, date: date) else { return }
+        record(kind: kind, key: action.rawValue, date: date)
+    }
+
+    /// Generic-key variant — e.g. the re-login warning keys on the OIDC expiry
+    /// date so it fires once per cookie cycle.
+    func hasFired(kind: PunchNotificationKind, key: String, date: String) -> Bool {
+        entries.contains { $0.kind == kind.rawValue && $0.action == key && $0.date == date }
+    }
+
+    func record(kind: PunchNotificationKind, key: String, date: String) {
+        guard !hasFired(kind: kind, key: key, date: date) else { return }
         entries.append(
             Entry(
                 kind: kind.rawValue,
-                action: action.rawValue,
+                action: key,
                 date: date,
                 recordedAt: Date()
             ))

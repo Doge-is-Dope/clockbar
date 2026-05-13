@@ -63,7 +63,6 @@ enum AppStyle {
     enum Layout {
         static let panelWidth: CGFloat = 280
         static let menuRowMinHeight: CGFloat = 22
-        static let scheduleRowMinHeight: CGFloat = 34
         static let timeRangeSeparatorWidth: CGFloat = 12
         static let timeRangeSeparatorRuleWidth: CGFloat = 8
         static let timeRangeSeparatorHeight: CGFloat = 12

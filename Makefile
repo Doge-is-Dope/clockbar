@@ -22,7 +22,10 @@ format:
 
 menubar: ClockBar.app
 	-pkill -f ClockBar 2>/dev/null
-	open ClockBar.app
+	@sleep 1
+	@# Prefer the installed copy; opening the repo build while /Applications/ClockBar.app
+	@# is registered with the same bundle ID makes LaunchServices return error -600.
+	@if [ -d /Applications/ClockBar.app ]; then open /Applications/ClockBar.app; else open ClockBar.app; fi
 
 install: ClockBar.app
 	cp -R ClockBar.app /Applications/

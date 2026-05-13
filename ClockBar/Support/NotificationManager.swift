@@ -5,8 +5,10 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
     static let punchNowActionIdentifier = "punchNow"
+    static let signInActionIdentifier = "signIn"
 
     var punchHandler: (() -> Void)?
+    var signInHandler: (() -> Void)?
 
     private var didSetup = false
 
@@ -22,10 +24,15 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             title: "Punch Now",
             options: [.foreground]
         )
+        let signInAction = UNNotificationAction(
+            identifier: Self.signInActionIdentifier,
+            title: "Sign In",
+            options: [.foreground]
+        )
         let categories = PunchNotificationKind.allCases.map { kind in
             UNNotificationCategory(
                 identifier: kind.categoryIdentifier,
-                actions: kind.hasPunchAction ? [punchAction] : [],
+                actions: kind.hasPunchAction ? [punchAction] : (kind.hasSignInAction ? [signInAction] : []),
                 intentIdentifiers: [],
                 options: []
             )
@@ -99,10 +106,17 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler handler: @escaping () -> Void
     ) {
         defer { handler() }
-        if response.actionIdentifier == Self.punchNowActionIdentifier {
+        switch response.actionIdentifier {
+        case Self.punchNowActionIdentifier:
             DispatchQueue.main.async { [weak self] in
                 self?.punchHandler?()
             }
+        case Self.signInActionIdentifier:
+            DispatchQueue.main.async { [weak self] in
+                self?.signInHandler?()
+            }
+        default:
+            break
         }
     }
 }

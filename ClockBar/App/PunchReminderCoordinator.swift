@@ -69,6 +69,9 @@ final class PunchReminderCoordinator {
             body = "\(action.displayName) is overdue. Tap Punch Now to record it."
         case .crossDay:
             body = "Yesterday's \(action.logLabel) is missing — file a correction in 104."
+        case .reloginSoon:
+            // Not produced by the reminder coordinator (StatusViewModel posts it).
+            return
         }
         NotificationManager.shared.send(appName, body: body, categoryIdentifier: kind.categoryIdentifier)
         Log.info(

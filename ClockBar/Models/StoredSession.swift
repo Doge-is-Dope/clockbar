@@ -39,4 +39,12 @@ struct StoredSession: Codable, Equatable {
     var hasUsableCookies: Bool {
         !cookieHeader.isEmpty
     }
+
+    /// Expiry of the OIDC root session cookie (`ory_hydra_session`, ~28-day life
+    /// on `boidc.104.com.tw`). Once it lapses no silent refresh can recover the
+    /// session — only an interactive sign-in — so it's worth warning about ahead
+    /// of time. `nil` if the cookie is absent or has no expiry.
+    var oidcSessionExpiry: Date? {
+        cookies.first { $0.name == "ory_hydra_session" && $0.domain.contains("boidc.104.com.tw") }?.expiresAt
+    }
 }
