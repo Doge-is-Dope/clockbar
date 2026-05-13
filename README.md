@@ -6,8 +6,9 @@ Swift-native clock-in/out automation for [104](https://pro.104.com.tw) on macOS.
 
 - Today's clock-in / clock-out status in the menu bar
 - Manual punch with macOS notifications
-- Scheduled auto-punch on weekdays via launchd
+- Scheduled auto-punch via launchd, skipping weekends and Taiwan public holidays
 - Late and missed-punch reminders
+- Optional **Auto-punch after wake** — if the Mac slept through a window, the app completes the punch when it wakes (still inside the on-time window)
 - Built-in 104 sign-in — no separate browser session needed
 - Optional wake-before-punch via `pmset` (one-time admin approval)
 - Launches at login
@@ -36,10 +37,11 @@ make install
 
 1. Click the ClockBar icon in the menu bar.
 2. Open **Settings → Account** and sign in to 104 in the built-in web view.
-3. In **Settings → Automation**, set your **Clock In** and **Clock Out** windows. Auto-punch fires at a random time inside each window, weekdays only, when the Mac is awake.
-4. Optionally enable **Sleep & Wake → Wake for auto-punch** so the Mac wakes itself shortly before clock-in. macOS will prompt for admin once to install the `pmset` rule.
+3. In **Settings → Automation**, set your **Clock-in window** and **Clock-out window**. Auto-punch fires at a random time inside each window, on workdays, when the Mac is awake.
+4. Optionally enable **Sleep & Wake → Wake Mac** so the Mac wakes itself shortly before clock-in. macOS will prompt for admin once to install the `pmset` rule.
+5. Optionally enable **Sleep & Wake → Auto-punch after wake** so a punch the Mac slept through is completed automatically on the next wake — as long as it's still inside the on-time window.
 
-If the Mac is asleep at the scheduled time, you get a Missed notification with a Punch Now button when it next wakes.
+If the Mac is asleep at the scheduled time and **Auto-punch after wake** is off, you get a Missed notification with a Punch Now button when it next wakes.
 
 ## Pause auto-punch
 
@@ -93,6 +95,7 @@ The Settings window writes `~/.104/config.json`. Edit it directly only if you ne
   "missed_punch_notification_enabled": true,
   "missed_punch_notification_delay": 0,
   "autopunch_enabled": true,
+  "autopunch_on_wake_enabled": false,
   "wake_enabled": false,
   "wake_before": 300,
   "refresh_interval": 1800
