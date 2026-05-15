@@ -20,12 +20,8 @@ enum AutoPunchEngine {
         }
         defer { lock.release() }
 
-        // Hold a power assertion for the full punch attempt so the system
-        // can't idle-sleep mid-recovery. Without this, a Mac that wakes
-        // briefly to fire launchd can re-sleep while we're waiting for the
-        // app's silent session refresh — observed 2026-05-14: getStatus
-        // returned `unauthorized`, refresh hung 15 minutes through suspend,
-        // and the helper missed the punch.
+        // Keep the system awake for the whole attempt so we can't idle-sleep
+        // mid-recovery and miss the punch window.
         let powerAssertion = PowerAssertion.preventIdleSleep(reason: "ClockBar auto-punch in progress")
         if powerAssertion == nil {
             Log.warn(component, "power_assertion_unavailable")
@@ -127,29 +123,32 @@ enum AutoPunchEngine {
         var session: StoredSession
         if let existing = AuthStore.loadSession(), existing.hasUsableCookies {
             session = existing
-        } else if let recovered = await awaitRefreshedSession(component: component, trigger: "missing_session") {
-            Log.info(component, "session_refresh_recovered")
-            session = recovered
         } else {
-            Log.info(component, "session_refresh_timeout")
-            Log.error(component, "failed", ["reason": "missing_session"])
-            if !config.missedPunchNotificationEnabled {
-                notify(
-                    title: "\(appName) - Login Required",
-                    body: "Open ClockBar and sign in to 104 again.",
-                    sound: notificationErrorSound,
-                    dryRun: dryRun
-                )
+            let result = await awaitRefreshedSession(component: component, trigger: "missing_session")
+            if let recovered = result.session {
+                Log.info(component, "session_refresh_recovered", ["waited_s": result.waitedSeconds])
+                session = recovered
             } else {
-                await notifyMissedPunchAfterThresholdIfNeeded(
-                    action: action,
-                    schedule: schedule,
-                    scheduledDate: scheduledDate,
-                    threshold: max(0, config.missedPunchNotificationDelay),
-                    dryRun: dryRun
-                )
+                Log.info(component, "session_refresh_timeout", ["waited_s": result.waitedSeconds])
+                Log.error(component, "failed", ["reason": "missing_session"])
+                if !config.missedPunchNotificationEnabled {
+                    notify(
+                        title: "\(appName) - Login Required",
+                        body: "Open ClockBar and sign in to 104 again.",
+                        sound: notificationErrorSound,
+                        dryRun: dryRun
+                    )
+                } else {
+                    await notifyMissedPunchAfterThresholdIfNeeded(
+                        action: action,
+                        schedule: schedule,
+                        scheduledDate: scheduledDate,
+                        threshold: max(0, config.missedPunchNotificationDelay),
+                        dryRun: dryRun
+                    )
+                }
+                return 1
             }
-            return 1
         }
 
         // One getStatus → sendPunch → verify attempt; on `.unauthorized` request a
@@ -184,9 +183,11 @@ enum AutoPunchEngine {
                     )
                     return 1
                 }
-                guard let refreshed = await awaitRefreshedSession(component: component, trigger: "unauthorized")
-                else {
-                    Log.info(component, "session_refresh_timeout", ["after": "unauthorized"])
+                let refresh = await awaitRefreshedSession(component: component, trigger: "unauthorized")
+                guard let refreshed = refresh.session else {
+                    Log.info(
+                        component, "session_refresh_timeout",
+                        ["after": "unauthorized", "waited_s": refresh.waitedSeconds])
                     await unauthorizedFallout(
                         action: action,
                         config: config,
@@ -196,7 +197,9 @@ enum AutoPunchEngine {
                     )
                     return 1
                 }
-                Log.info(component, "session_refresh_recovered", ["after": "unauthorized"])
+                Log.info(
+                    component, "session_refresh_recovered",
+                    ["after": "unauthorized", "waited_s": refresh.waitedSeconds])
                 session = refreshed
                 didRefresh = true
             }
@@ -341,12 +344,12 @@ enum AutoPunchEngine {
         }
     }
 
-    /// Ping the app to silently refresh the 104 session, then poll the on-disk
-    /// session for a change — a refresh always re-stamps `lastValidatedAt` and
-    /// rewrites the cookie file. Returns the refreshed session, or nil on timeout
-    /// (the refresh wrote nothing, e.g. the OIDC session itself expired). Callers
-    /// log the `session_refresh_recovered` / `session_refresh_timeout` outcome.
-    private static func awaitRefreshedSession(component: String, trigger: String) async -> StoredSession? {
+    /// Asks the app to refresh the session and waits up to 60s for cookies
+    /// to change on disk. `waitedSeconds` much larger than the budget means
+    /// the helper was suspended through sleep.
+    private static func awaitRefreshedSession(component: String, trigger: String) async -> (
+        session: StoredSession?, waitedSeconds: Int
+    ) {
         let baseline = AuthStore.loadSession()
         let baselineValidatedAt = baseline?.lastValidatedAt ?? .distantPast
         let baselineHeader = baseline?.cookieHeader
@@ -357,16 +360,17 @@ enum AutoPunchEngine {
                 "timeout_s": Int(sessionRefreshTimeoutSeconds),
             ])
         SessionRefreshSignal.post()
-        let deadline = Date().addingTimeInterval(sessionRefreshTimeoutSeconds)
+        let started = Date()
+        let deadline = started.addingTimeInterval(sessionRefreshTimeoutSeconds)
         while Date() < deadline {
             try? await Task.sleep(nanoseconds: sessionRefreshPollIntervalNanos)
             guard let session = AuthStore.loadSession(), session.hasUsableCookies else { continue }
             let changed =
                 (session.lastValidatedAt ?? .distantPast) > baselineValidatedAt
                 || session.cookieHeader != baselineHeader
-            if changed { return session }
+            if changed { return (session, Int(Date().timeIntervalSince(started))) }
         }
-        return nil
+        return (nil, Int(Date().timeIntervalSince(started)))
     }
 
     private static func unauthorizedFallout(
