@@ -20,6 +20,18 @@ enum AutoPunchEngine {
         }
         defer { lock.release() }
 
+        // Hold a power assertion for the full punch attempt so the system
+        // can't idle-sleep mid-recovery. Without this, a Mac that wakes
+        // briefly to fire launchd can re-sleep while we're waiting for the
+        // app's silent session refresh — observed 2026-05-14: getStatus
+        // returned `unauthorized`, refresh hung 15 minutes through suspend,
+        // and the helper missed the punch.
+        let powerAssertion = PowerAssertion.preventIdleSleep(reason: "ClockBar auto-punch in progress")
+        if powerAssertion == nil {
+            Log.warn(component, "power_assertion_unavailable")
+        }
+        defer { powerAssertion?.release() }
+
         let config = ConfigManager.load()
 
         if FileManager.default.fileExists(atPath: autoPunchKillSwitchPath.path)
