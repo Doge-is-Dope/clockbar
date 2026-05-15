@@ -34,7 +34,7 @@ final class PunchReminderCoordinator {
 
         let today = DateFormatter.statusDate.string(from: now)
         let calendar = Calendar(identifier: .gregorian)
-        let grace = max(0, config.missedPunchNotificationDelay)
+        let grace = config.notificationDelaySeconds
 
         for action in ClockAction.allCases {
             if action == .clockout, status.clockIn == nil { continue }

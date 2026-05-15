@@ -126,9 +126,7 @@ final class WakeObserver {
                 Log.info("wake.autopunch", "skipped", ["reason": "already_punched", "action": action.rawValue])
                 continue
             }
-            let grace =
-                max(config.missedPunchNotificationDelay, autoPunchLatenessFloorSeconds)
-                + config.schedule.delayMax(for: action)
+            let grace = config.lateGraceSeconds(for: action)
             guard viewModel.punchWindowState(for: action, trailingGraceSeconds: grace) == .inWindow else {
                 Log.info("wake.autopunch", "skipped", ["reason": "outside_window", "action": action.rawValue])
                 continue

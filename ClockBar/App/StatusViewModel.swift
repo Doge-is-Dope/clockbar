@@ -195,20 +195,16 @@ final class StatusViewModel: ObservableObject {
         leadMinutes: Int = 0,
         trailingGraceSeconds: Int = 0
     ) -> PunchWindowState {
-        let calendar = Calendar(identifier: .gregorian)
-        guard let start = ScheduledTime(string: config.schedule.time(for: action)),
-            var startDate = calendar.date(bySettingHour: start.hour, minute: start.minute, second: 0, of: now)
-        else {
+        guard let start = ScheduledTime(string: config.schedule.time(for: action)) else {
             return .afterWindow
         }
+        var startDate = start.date(on: now)
 
         var endDate: Date
         if trailingGraceSeconds > 0 {
             endDate = startDate.addingTimeInterval(TimeInterval(trailingGraceSeconds))
-        } else if let end = ScheduledTime(string: config.schedule.endTime(for: action)),
-            let parsedEnd = calendar.date(bySettingHour: end.hour, minute: end.minute, second: 0, of: now)
-        {
-            endDate = parsedEnd
+        } else if let end = ScheduledTime(string: config.schedule.endTime(for: action)) {
+            endDate = end.date(on: now)
         } else {
             return .afterWindow
         }

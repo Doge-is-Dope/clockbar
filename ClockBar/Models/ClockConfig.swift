@@ -126,6 +126,24 @@ struct ClockConfig: Codable, Equatable {
         autopunchEnabled || missedPunchNotificationEnabled
     }
 
+    /// Stored delay can be a defensively-clamped Int; this is the value the
+    /// rest of the app should consume.
+    var notificationDelaySeconds: Int {
+        max(0, missedPunchNotificationDelay)
+    }
+
+    /// How late after the scheduled time we'll still complete a punch
+    /// (helper auto-punch, wake catch-up). Beyond this, the punch is missed
+    /// and only the reminder coordinator runs. Single source of truth — used
+    /// by `AutoPunchEngine.run` and `WakeObserver`.
+    func lateGraceSeconds(for action: ClockAction) -> Int {
+        max(notificationDelaySeconds, Self.latenessFloorSeconds) + schedule.delayMax(for: action)
+    }
+
+    /// Floor for the late-grace window — covers launchd jitter and the random
+    /// pre-punch wait the helper legitimately spends in `Task.sleep`.
+    static let latenessFloorSeconds = 300
+
     static let `default` = ClockConfig(
         schedule: .init(clockin: "09:00", clockinEnd: "09:15", clockout: "18:00", clockoutEnd: "18:15"),
         minWorkHours: 9,

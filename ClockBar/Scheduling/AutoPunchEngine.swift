@@ -1,7 +1,5 @@
 import Foundation
 
-let autoPunchLatenessFloorSeconds = 300
-
 enum AutoPunchEngine {
     static func run(action: ClockAction, dryRun: Bool = false) async -> Int32 {
         let component = "auto.\(action.rawValue)"
@@ -56,20 +54,13 @@ enum AutoPunchEngine {
         }
 
         let now = Date()
-        let calendar = Calendar(identifier: .gregorian)
-        let scheduledDate =
-            calendar.date(
-                bySettingHour: schedule.hour,
-                minute: schedule.minute,
-                second: 0,
-                of: now
-            ) ?? now
+        let scheduledDate = schedule.date(on: now)
         if notificationOnly {
             await notifyMissedPunchAfterThresholdIfNeeded(
                 action: action,
                 schedule: schedule,
                 scheduledDate: scheduledDate,
-                threshold: max(0, config.missedPunchNotificationDelay),
+                threshold: config.notificationDelaySeconds,
                 dryRun: dryRun
             )
             return 0
@@ -92,13 +83,10 @@ enum AutoPunchEngine {
 
         // If launchd misfired this job long after the schedule (e.g. Mac woke from
         // sleep well past target), don't auto-punch — let the app's reminder
-        // coordinator drive a Late or Missed notification instead. The grace
-        // accounts for the randomization window (`delayMax`) the helper
-        // legitimately slept toward, plus a 5-minute floor for launchd jitter.
+        // coordinator drive a Late or Missed notification instead.
         if !dryRun {
             let secondsLate = Int(Date().timeIntervalSince(scheduledDate))
-            let delayMax = config.schedule.delayMax(for: action)
-            let grace = max(config.missedPunchNotificationDelay, autoPunchLatenessFloorSeconds) + delayMax
+            let grace = config.lateGraceSeconds(for: action)
             if secondsLate > grace {
                 Log.info(
                     component, "skipped",
@@ -143,7 +131,7 @@ enum AutoPunchEngine {
                         action: action,
                         schedule: schedule,
                         scheduledDate: scheduledDate,
-                        threshold: max(0, config.missedPunchNotificationDelay),
+                        threshold: config.notificationDelaySeconds,
                         dryRun: dryRun
                     )
                 }
@@ -243,7 +231,7 @@ enum AutoPunchEngine {
                         action: action,
                         schedule: schedule,
                         scheduledDate: scheduledDate,
-                        threshold: max(0, config.missedPunchNotificationDelay),
+                        threshold: config.notificationDelaySeconds,
                         dryRun: dryRun
                     )
                 }
@@ -310,7 +298,7 @@ enum AutoPunchEngine {
                     action: action,
                     schedule: schedule,
                     scheduledDate: scheduledDate,
-                    threshold: max(0, config.missedPunchNotificationDelay),
+                    threshold: config.notificationDelaySeconds,
                     dryRun: dryRun
                 )
             }
@@ -336,7 +324,7 @@ enum AutoPunchEngine {
                     action: action,
                     schedule: schedule,
                     scheduledDate: scheduledDate,
-                    threshold: max(0, config.missedPunchNotificationDelay),
+                    threshold: config.notificationDelaySeconds,
                     dryRun: dryRun
                 )
             }
@@ -392,7 +380,7 @@ enum AutoPunchEngine {
                 action: action,
                 schedule: schedule,
                 scheduledDate: scheduledDate,
-                threshold: max(0, config.missedPunchNotificationDelay),
+                threshold: config.notificationDelaySeconds,
                 dryRun: dryRun
             )
         }
@@ -452,14 +440,7 @@ enum AutoPunchEngine {
             let targetTime = action == .clockin ? punch.clockin : punch.clockout
             if let target = ScheduledTime(string: targetTime) {
                 let now = Date()
-                let calendar = Calendar(identifier: .gregorian)
-                let targetDate =
-                    calendar.date(
-                        bySettingHour: target.hour,
-                        minute: target.minute,
-                        second: 0,
-                        of: now
-                    ) ?? now
+                let targetDate = target.date(on: now)
                 return DelayPlan(
                     delay: max(0, Int(targetDate.timeIntervalSince(now))),
                     target: target,

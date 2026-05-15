@@ -146,10 +146,7 @@ enum LaunchAgentManager {
         }
 
         let now = Date()
-        let calendar = Calendar(identifier: .gregorian)
-        if let target = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: now),
-            target.timeIntervalSince(now) < 60
-        {
+        if time.date(on: now).timeIntervalSince(now) < 60 {
             throw Clock104Error.scheduler(
                 "Time \(time.displayString) is within the next 60s or already passed — launchd may skip today's fire or not fire until tomorrow. Pick a time at least 1 minute in the future."
             )
