@@ -112,19 +112,22 @@ final class StatusViewModel: ObservableObject {
         status?.error == Self.sessionExpiredMessage
     }
 
-    var authStatusText: String {
-        if isAuthenticating {
-            return "Signing in…"
+    /// When the session was last validated against 104, or nil when there are
+    /// no usable cookies / it was never validated — nothing trustworthy to show.
+    var lastSyncedAt: Date? {
+        guard let session = AuthStore.loadSession(), session.hasUsableCookies else {
+            return nil
         }
+        return session.lastValidatedAt
+    }
 
-        guard let session = AuthStore.loadSession(), session.hasUsableCookies,
-            let lastValidatedAt = session.lastValidatedAt
-        else {
-            // Cookies on disk but never validated — nothing trustworthy to show.
-            return ""
+    /// Relative "Just synced" / "Synced 5 minutes ago" phrasing for the last
+    /// validated time, friendlier than a bare clock time.
+    static func syncedDescription(since date: Date, now: Date = Date()) -> String {
+        if now.timeIntervalSince(date) < 60 {
+            return "Just synced"
         }
-
-        return "Last synced \(Self.authFormatter.string(from: lastValidatedAt))"
+        return "Synced \(syncedRelativeFormatter.localizedString(for: date, relativeTo: now))"
     }
 
     var hasPendingWakeChanges: Bool {
@@ -810,10 +813,9 @@ final class StatusViewModel: ObservableObject {
     private static let reloginWarningThresholdDays: Double = 3
     private static let sessionExpiredMessage = Clock104Error.unauthorized.localizedDescription
 
-    private static let authFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
+    private static let syncedRelativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
         return formatter
     }()
 

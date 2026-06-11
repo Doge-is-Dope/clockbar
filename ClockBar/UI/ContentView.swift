@@ -47,25 +47,13 @@ struct ContentView: View {
             }
             .padding(.bottom, AppStyle.Spacing.sm)
 
-            if isStatusToday, viewModel.status?.clockIn != nil {
-                TimelineView(.everyMinute) { context in
-                    if let workedText = workedSummary(now: context.date) {
-                        Label(workedText, systemImage: "timer")
-                            .font(AppStyle.Font.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
             if viewModel.isHolidayToday {
                 Label(holidaySummaryText, systemImage: "sun.max.fill")
                     .font(AppStyle.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
-            if let authStatusText {
-                syncRow(title: authStatusText)
-            }
+            activityRow
 
             if let reloginNoticeText {
                 Text(reloginNoticeText)
@@ -89,22 +77,65 @@ struct ContentView: View {
         .padding(.vertical, AppStyle.Spacing.lg)
     }
 
-    private func syncRow(title: String) -> some View {
+    /// Worked-time and sync status share one line — worked on the left, the
+    /// tappable sync status pushed to the right. Both tick via one `TimelineView`
+    /// so the relative time stays current while the panel is open. `lastSyncedAt`
+    /// is read once here (it hits disk) and threaded down.
+    @ViewBuilder
+    private var activityRow: some View {
+        let syncedAt = viewModel.lastSyncedAt
+        let showSync = viewModel.isRefreshing || viewModel.isAuthenticating || syncedAt != nil
+        let showWorked = isStatusToday && viewModel.status?.clockIn != nil
+
+        if showWorked || showSync {
+            TimelineView(.everyMinute) { context in
+                HStack(spacing: AppStyle.Spacing.sm) {
+                    if showWorked, let workedText = workedSummary(now: context.date) {
+                        Label(workedText, systemImage: "timer")
+                            .font(AppStyle.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if showWorked, showSync {
+                        Spacer(minLength: AppStyle.Spacing.sm)
+                    }
+
+                    if showSync {
+                        syncRow(syncedAt: syncedAt, now: context.date)
+                    }
+                }
+            }
+        }
+    }
+
+    private func syncRow(syncedAt: Date?, now: Date) -> some View {
         Button {
             viewModel.refresh()
         } label: {
             HStack(spacing: AppStyle.Spacing.xs) {
-                Image(systemName: viewModel.isRefreshing ? "progress.indicator" : "arrow.clockwise")
-                    .symbolEffect(.rotate, isActive: viewModel.isRefreshing)
-                Text(viewModel.isRefreshing ? "Syncing…" : title)
+                SyncIcon(isSpinning: viewModel.isRefreshing)
+                syncLabel(syncedAt: syncedAt, now: now)
+                    .contentTransition(.opacity)
             }
             .font(AppStyle.Font.caption)
             .foregroundStyle(.tertiary)
             .contentShape(Rectangle())
+            .animation(AppStyle.Animation.standard, value: viewModel.isRefreshing)
         }
         .buttonStyle(.plain)
         .disabled(viewModel.isRefreshing)
         .help("Refresh status from 104")
+    }
+
+    @ViewBuilder
+    private func syncLabel(syncedAt: Date?, now: Date) -> some View {
+        if viewModel.isRefreshing {
+            Text("Syncing…")
+        } else if viewModel.isAuthenticating {
+            Text("Signing in…")
+        } else if let syncedAt {
+            Text(StatusViewModel.syncedDescription(since: syncedAt, now: now))
+        }
     }
 
     private var primaryActionButton: some View {
@@ -202,10 +233,6 @@ struct ContentView: View {
             .padding(.horizontal, AppStyle.Spacing.md)
     }
 
-    private var authStatusText: String? {
-        viewModel.authStatusText.trimmedNonEmpty
-    }
-
     private var reloginNoticeText: String? {
         viewModel.reloginNoticeText?.trimmedNonEmpty
     }
@@ -280,7 +307,7 @@ struct ContentView: View {
         guard minutes >= 0 else { return nil }
 
         let worked = formatDuration(minutes)
-        return viewModel.status?.clockOut == nil ? "Worked \(worked) so far" : "Worked \(worked) today"
+        return viewModel.status?.clockOut == nil ? "Worked \(worked) so far" : "Worked \(worked)"
     }
 
     private func formatDuration(_ minutes: Int) -> String {
@@ -326,6 +353,30 @@ struct ContentView: View {
 
     private func showSettings() {
         settingsController?.showSettings()
+    }
+}
+
+/// A refresh glyph that spins at a constant rate while `isSpinning`, then stops
+/// upright when idle. Rotation is derived from wall-clock time via
+/// `TimelineView(.animation)` rather than a `repeatForever` animation, which
+/// can't be reliably cancelled and stacks (each restart spins faster).
+private struct SyncIcon: View {
+    let isSpinning: Bool
+
+    /// Seconds per full rotation.
+    private let period: Double = 0.9
+
+    var body: some View {
+        if isSpinning {
+            TimelineView(.animation) { context in
+                let phase = (context.date.timeIntervalSinceReferenceDate / period)
+                    .truncatingRemainder(dividingBy: 1)
+                Image(systemName: "arrow.clockwise")
+                    .rotationEffect(.degrees(phase * 360))
+            }
+        } else {
+            Image(systemName: "arrow.clockwise")
+        }
     }
 }
 
