@@ -40,8 +40,12 @@ final class StatusViewModel: ObservableObject {
     /// OIDC session nearing expiry — shown as a notice line in the popover, or
     /// nil. Maintained by `checkReloginSoonNotification`.
     @Published var reloginNoticeText: String?
+    /// Transient "Clocked in/out at HH:MM" confirmation shown on the primary
+    /// button right after a successful manual punch.
+    @Published var punchConfirmation: String?
 
     private var timer: Timer?
+    private var punchConfirmationResetTask: Task<Void, Never>?
     private var didEnsureLaunchAtLogin = false
     private var authWindowController: AuthWindowController?
     private var wakeSyncStateResetTask: Task<Void, Never>?
@@ -86,6 +90,20 @@ final class StatusViewModel: ObservableObject {
         }
 
         return status?.error?.trimmedNonEmpty
+    }
+
+    /// Menu-bar symbol reflecting today's punch state at a glance.
+    var menuBarIconName: String {
+        if bannerText != nil {
+            return "clock.badge.exclamationmark"
+        }
+        if status?.clockIn != nil, status?.clockOut != nil {
+            return "clock.badge.checkmark"
+        }
+        if status?.clockIn != nil {
+            return "clock.fill"
+        }
+        return "clock"
     }
 
     /// Cookies exist on disk but 104 keeps rejecting them — the primary button
@@ -585,8 +603,10 @@ final class StatusViewModel: ObservableObject {
         if updatedStatus.error == nil {
             resetRecoveryThrottle()
             if updatedStatus.clockIn != beforeIn, let time = updatedStatus.clockIn {
+                showPunchConfirmation("Clocked in at \(time)")
                 NotificationManager.shared.send(appName, body: "Clocked in at \(time)")
             } else if updatedStatus.clockOut != beforeOut, let time = updatedStatus.clockOut {
+                showPunchConfirmation("Clocked out at \(time)")
                 NotificationManager.shared.send(appName, body: "Clocked out at \(time)")
             }
         } else {
@@ -595,6 +615,16 @@ final class StatusViewModel: ObservableObject {
                 body: "Punch failed",
                 sound: UNNotificationSound(named: UNNotificationSoundName(notificationErrorSound))
             )
+        }
+    }
+
+    private func showPunchConfirmation(_ text: String) {
+        punchConfirmation = text
+        punchConfirmationResetTask?.cancel()
+        punchConfirmationResetTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.punchConfirmationResetNanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.punchConfirmation = nil
         }
     }
 
@@ -770,9 +800,11 @@ final class StatusViewModel: ObservableObject {
         timer?.invalidate()
         syncScheduleTask?.cancel()
         wakeSyncStateResetTask?.cancel()
+        punchConfirmationResetTask?.cancel()
     }
 
     private static let wakeSyncStateResetNanoseconds: UInt64 = 2_000_000_000
+    private static let punchConfirmationResetNanoseconds: UInt64 = 2_500_000_000
     private static let recoveryBackoffInterval: TimeInterval = 60
     private static let maxRecoveryAttempts = 3
     private static let reloginWarningThresholdDays: Double = 3

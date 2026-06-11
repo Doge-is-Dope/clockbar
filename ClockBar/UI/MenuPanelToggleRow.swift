@@ -22,7 +22,7 @@ struct MenuPanelToggleRow: View {
 
             Spacer(minLength: AppStyle.Spacing.md)
 
-            Toggle("", isOn: $isOn)
+            Toggle(title, isOn: $isOn)
                 .toggleStyle(.switch)
                 .tint(AppStyle.Palette.accent)
                 .labelsHidden()

@@ -16,7 +16,7 @@ struct ClockBarApp: App {
             ContentView(viewModel: app.viewModel, settingsController: app.settingsController)
         } label: {
             if !isRunningInSwiftUIPreviews {
-                Image(systemName: app.viewModel.bannerText != nil ? "clock.badge.exclamationmark" : "clock")
+                Image(systemName: app.viewModel.menuBarIconName)
             }
         }
         .menuBarExtraStyle(.window)

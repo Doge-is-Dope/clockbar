@@ -31,7 +31,7 @@ struct ContentView: View {
     }
 
     private var summarySection: some View {
-        VStack(alignment: .trailing, spacing: AppStyle.Spacing.xl) {
+        VStack(alignment: .leading, spacing: AppStyle.Spacing.sm) {
             HStack(spacing: 0) {
                 StatusMetric(
                     title: ClockAction.clockin.displayName,
@@ -45,17 +45,32 @@ struct ContentView: View {
                     value: viewModel.status?.clockOut ?? "--:--"
                 )
             }
+            .padding(.bottom, AppStyle.Spacing.sm)
+
+            if isStatusToday, viewModel.status?.clockIn != nil {
+                TimelineView(.everyMinute) { context in
+                    if let workedText = workedSummary(now: context.date) {
+                        Label(workedText, systemImage: "timer")
+                            .font(AppStyle.Font.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            if viewModel.isHolidayToday {
+                Label(holidaySummaryText, systemImage: "sun.max.fill")
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             if let authStatusText {
-                Text(authStatusText)
-                    .font(AppStyle.Font.caption)
-                    .foregroundStyle(.tertiary)
+                syncRow(title: authStatusText)
             }
 
             if let reloginNoticeText {
                 Text(reloginNoticeText)
                     .font(AppStyle.Font.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -64,7 +79,7 @@ struct ContentView: View {
             if let errorText {
                 Label(errorText, systemImage: "exclamationmark.triangle.fill")
                     .font(AppStyle.Font.subheadlineMedium)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.orange)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -72,6 +87,24 @@ struct ContentView: View {
         }
         .padding(.horizontal, AppStyle.Spacing.xxl)
         .padding(.vertical, AppStyle.Spacing.lg)
+    }
+
+    private func syncRow(title: String) -> some View {
+        Button {
+            viewModel.refresh()
+        } label: {
+            HStack(spacing: AppStyle.Spacing.xs) {
+                Image(systemName: viewModel.isRefreshing ? "progress.indicator" : "arrow.clockwise")
+                    .symbolEffect(.rotate, isActive: viewModel.isRefreshing)
+                Text(viewModel.isRefreshing ? "Syncing…" : title)
+            }
+            .font(AppStyle.Font.caption)
+            .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(viewModel.isRefreshing)
+        .help("Refresh status from 104")
     }
 
     private var primaryActionButton: some View {
@@ -83,7 +116,10 @@ struct ContentView: View {
             }
         } label: {
             HStack(spacing: AppStyle.Spacing.lg) {
-                if viewModel.isPunching || viewModel.isAuthenticating {
+                if viewModel.punchConfirmation != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(AppStyle.Font.bodyMedium)
+                } else if viewModel.isPunching || viewModel.isAuthenticating {
                     Image(systemName: "progress.indicator")
                         .font(AppStyle.Font.bodyMedium)
                         .symbolEffect(.rotate, isActive: true)
@@ -95,7 +131,8 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PunchButtonStyle())
-        .disabled(viewModel.isPunching || viewModel.isAuthenticating)
+        .disabled(viewModel.isPunching || viewModel.isAuthenticating || viewModel.punchConfirmation != nil)
+        .animation(AppStyle.Animation.standard, value: viewModel.punchConfirmation)
         .padding(.horizontal, AppStyle.Spacing.xl)
         .padding(.vertical, AppStyle.Spacing.sm)
     }
@@ -132,9 +169,13 @@ struct ContentView: View {
                 Label("Quit", systemImage: "power")
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
+                Text("⌘Q")
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.tertiary)
             }
             .foregroundStyle(AppStyle.Palette.label)
         }
+        .keyboardShortcut("q", modifiers: .command)
         .padding(AppStyle.Spacing.md)
     }
 
@@ -144,9 +185,13 @@ struct ContentView: View {
                 Label("Settings", systemImage: "gearshape")
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
+                Text("⌘,")
+                    .font(AppStyle.Font.caption)
+                    .foregroundStyle(.tertiary)
             }
             .foregroundStyle(AppStyle.Palette.label)
         }
+        .keyboardShortcut(",", modifiers: .command)
         .padding(AppStyle.Spacing.md)
     }
 
@@ -174,6 +219,10 @@ struct ContentView: View {
     }
 
     private var primaryActionTitle: String {
+        if let confirmation = viewModel.punchConfirmation {
+            return confirmation
+        }
+
         if viewModel.isAuthenticating {
             return "Signing In..."
         }
@@ -198,7 +247,50 @@ struct ContentView: View {
             return ClockAction.clockout.displayName
         }
 
-        return "Punch Now"
+        return "Punch Again"
+    }
+
+    private var isStatusToday: Bool {
+        viewModel.status?.date == DateFormatter.statusDate.string(from: Date())
+    }
+
+    private var holidaySummaryText: String {
+        if let name = viewModel.holidayName.trimmedNonEmpty {
+            return "Holiday today — \(name)"
+        }
+        return "Holiday today"
+    }
+
+    /// "Worked 2h 10m so far" while clocked in, "Worked 9h 12m today" once
+    /// both punches exist; nil when the times can't be parsed or span days.
+    private func workedSummary(now: Date) -> String? {
+        guard let clockIn = viewModel.status?.clockIn,
+            let start = ScheduledTime(string: clockIn)
+        else { return nil }
+
+        let end: Date
+        if let clockOut = viewModel.status?.clockOut {
+            guard let out = ScheduledTime(string: clockOut) else { return nil }
+            end = out.date(on: now)
+        } else {
+            end = now
+        }
+
+        let minutes = Int(end.timeIntervalSince(start.date(on: now)) / 60)
+        guard minutes >= 0 else { return nil }
+
+        let worked = formatDuration(minutes)
+        return viewModel.status?.clockOut == nil ? "Worked \(worked) so far" : "Worked \(worked) today"
+    }
+
+    private func formatDuration(_ minutes: Int) -> String {
+        if minutes < 60 {
+            return "\(minutes)m"
+        }
+        if minutes.isMultiple(of: 60) {
+            return "\(minutes / 60)h"
+        }
+        return "\(minutes / 60)h \(minutes % 60)m"
     }
 
     private var punchWindowSummary: String {
@@ -240,7 +332,13 @@ struct ContentView: View {
 #Preview("Signed In – Light") {
     let vm = StatusViewModel()
     vm.isAuthenticated = true
-    vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: nil, clockInCode: nil, error: nil)
+    vm.status = PunchStatus(
+        date: DateFormatter.statusDate.string(from: Date()),
+        clockIn: "09:03",
+        clockOut: nil,
+        clockInCode: nil,
+        error: nil
+    )
     return ContentView(viewModel: vm)
         .preferredColorScheme(.light)
 }
@@ -248,7 +346,13 @@ struct ContentView: View {
 #Preview("Signed In – Dark") {
     let vm = StatusViewModel()
     vm.isAuthenticated = true
-    vm.status = PunchStatus(date: "2026/04/05", clockIn: "09:03", clockOut: "18:15", clockInCode: nil, error: nil)
+    vm.status = PunchStatus(
+        date: DateFormatter.statusDate.string(from: Date()),
+        clockIn: "09:03",
+        clockOut: "18:15",
+        clockInCode: nil,
+        error: nil
+    )
     return ContentView(viewModel: vm)
         .preferredColorScheme(.dark)
 }
