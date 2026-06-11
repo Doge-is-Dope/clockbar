@@ -133,7 +133,7 @@ struct ContentView: View {
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppStyle.Palette.label)
         }
         .padding(AppStyle.Spacing.md)
     }
@@ -145,7 +145,7 @@ struct ContentView: View {
                     .font(AppStyle.Font.body)
                 Spacer(minLength: AppStyle.Spacing.md)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppStyle.Palette.label)
         }
         .padding(AppStyle.Spacing.md)
     }
