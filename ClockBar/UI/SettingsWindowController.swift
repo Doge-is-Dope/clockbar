@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
+    private var keyMonitor: Any?
     private let viewModel: StatusViewModel
 
     init(viewModel: StatusViewModel) {
@@ -56,15 +57,38 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
 
         self.window = window
+        installKeyMonitor()
     }
 
     private func applyContentHeight(_ contentHeight: CGFloat) {
         guard contentHeight > 0, let window else { return }
 
-        var contentSize = window.contentRect(forFrameRect: window.frame).size
-        if contentSize.height != contentHeight {
-            contentSize.height = contentHeight
-            window.setContentSize(contentSize)
+        let frame = window.frame
+        var contentSize = window.contentRect(forFrameRect: frame).size
+        guard contentSize.height != contentHeight else { return }
+
+        // Keep the top edge fixed so the window grows downward like System
+        // Settings. No AppKit animation here: SwiftUI animates the content
+        // height and reports it every frame, so the window just follows —
+        // animating each tick ourselves makes the two systems fight (jank).
+        contentSize.height = contentHeight
+        var newFrame = window.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize))
+        newFrame.origin.x = frame.origin.x
+        newFrame.origin.y = frame.maxY - newFrame.height
+        window.setFrame(newFrame, display: true)
+    }
+
+    /// The app has no Window menu, so ⌘W gets no default handling — close the
+    /// Settings window ourselves while it's key.
+    private func installKeyMonitor() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, let window = self.window, window.isKeyWindow,
+                event.modifierFlags.contains(.command),
+                event.charactersIgnoringModifiers == "w"
+            else { return event }
+            window.performClose(nil)
+            return nil
         }
     }
 
@@ -72,6 +96,10 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         MainActor.assumeIsolated {
             if (notification.object as? NSWindow) === window {
                 window = nil
+                if let keyMonitor {
+                    NSEvent.removeMonitor(keyMonitor)
+                    self.keyMonitor = nil
+                }
             }
         }
     }

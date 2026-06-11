@@ -125,7 +125,7 @@ struct SettingsView: View {
             ) {
                 rowLabel(
                     title: "Minimum work time",
-                    subtitle: nil,
+                    subtitle: "Keeps the clock-out window at least this long after clock-in.",
                     icon: "clock.badge.checkmark"
                 )
             }
@@ -146,10 +146,16 @@ struct SettingsView: View {
         } header: {
             Text("Automation")
         } footer: {
-            if let warning = scheduleWarning {
-                Label(warning, systemImage: "exclamationmark.triangle.fill")
+            VStack(alignment: .leading, spacing: AppStyle.Spacing.xs) {
+                if let warning = scheduleWarning {
+                    Label(warning, systemImage: "exclamationmark.triangle.fill")
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.orange)
+                }
+
+                Text("Auto-punch fires at a random time inside each window, drawn fresh every day.")
                     .font(AppStyle.Font.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -194,7 +200,7 @@ struct SettingsView: View {
                 )
             ) {
                 rowLabel(
-                    title: "Wake Mac",
+                    title: "Wake Mac for clock-in",
                     subtitle: viewModel.wakeStatusMessage,
                     icon: "powersleep"
                 )
@@ -247,19 +253,27 @@ struct SettingsView: View {
 
     private var accountSection: some View {
         Section {
-            Button {
+            LabeledContent {
                 if viewModel.isAuthenticated {
-                    viewModel.signOut()
+                    Button("Sign Out", role: .destructive) {
+                        viewModel.signOut()
+                    }
                 } else {
-                    viewModel.beginAuthentication()
+                    Button(viewModel.isAuthenticating ? "Signing In…" : "Sign In") {
+                        viewModel.beginAuthentication()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(viewModel.isAuthenticating)
                 }
             } label: {
-                Label(accountActionTitle, systemImage: accountActionIcon)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+                rowLabel(
+                    title: accountStatusTitle,
+                    subtitle: accountStatusSubtitle,
+                    icon: "person.crop.circle"
+                )
             }
-            .buttonStyle(.plain)
-            .disabled(viewModel.isAuthenticating)
+        } header: {
+            Text("Account")
         } footer: {
             Text("ClockBar · v\(appVersion)")
                 .frame(maxWidth: .infinity)
@@ -349,16 +363,17 @@ struct SettingsView: View {
         return nil
     }
 
-    private var accountActionTitle: String {
-        if viewModel.isAuthenticated {
-            return "Sign Out"
-        }
-
-        return viewModel.isAuthenticating ? "Signing in..." : "Sign In"
+    private var accountStatusTitle: String {
+        viewModel.isAuthenticated ? "Signed in to 104" : "Signed out"
     }
 
-    private var accountActionIcon: String {
-        viewModel.isAuthenticated ? "rectangle.portrait.and.arrow.right" : "person.crop.circle"
+    private var accountStatusSubtitle: String? {
+        guard viewModel.isAuthenticated else {
+            return "Sign in to enable punch status and auto-punch."
+        }
+        // Quiet unless action is needed — the re-login notice appears within
+        // a few days of the session's hard expiry.
+        return viewModel.reloginNoticeText?.trimmedNonEmpty
     }
 
     private func durationText(_ seconds: Int, zeroLabel: String? = nil) -> String {
