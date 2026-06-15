@@ -1,4 +1,4 @@
-.PHONY: build install uninstall status clean menubar dmg lint format
+.PHONY: build install uninstall status clean menubar dmg lint format release
 
 VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' | grep . || echo "0.0.0-dev")
 DERIVED_DATA := build/DerivedData
@@ -45,6 +45,12 @@ dmg: ClockBar.app
 	ln -s /Applications dmg_staging/Applications
 	hdiutil create -volname "ClockBar" -srcfolder dmg_staging -ov -format UDZO "ClockBar-$(VERSION).dmg"
 	rm -rf dmg_staging
+
+# Cut a release: tag, build the DMG, publish a GitHub release.
+# Usage: make release TAG=vX.Y.Z   (append ARGS=--dry-run to rehearse)
+release:
+	@test -n "$(TAG)" || { echo "usage: make release TAG=vX.Y.Z [ARGS=--dry-run]"; exit 1; }
+	./scripts/release.sh $(TAG) $(ARGS)
 
 clean:
 	rm -rf ClockBar.app dmg_staging ClockBar-*.dmg
