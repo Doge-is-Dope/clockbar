@@ -26,7 +26,7 @@ final class SilentAuthRefresher: NSObject, WKNavigationDelegate {
             self.continuation = cont
             self.timeoutTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 15_000_000_000)
-                await self?.finish(false)
+                self?.finish(false)
             }
             _ = webView.load(URLRequest(url: baseURL))
         }

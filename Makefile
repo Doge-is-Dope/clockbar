@@ -10,7 +10,7 @@ SWIFT_FORMAT := $(shell command -v swift-format 2>/dev/null || echo xcrun swift-
 build: ClockBar.app
 
 ClockBar.app: $(SWIFT_SOURCES) ClockBar/Info.plist ClockBar.xcodeproj/project.pbxproj
-	xcodebuild -project ClockBar.xcodeproj -scheme ClockBar -configuration Release -destination "platform=macOS" -derivedDataPath $(DERIVED_DATA) MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
+	xcodebuild -project ClockBar.xcodeproj -scheme ClockBar -configuration Release -destination "generic/platform=macOS" -derivedDataPath $(DERIVED_DATA) MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
 	rm -rf ClockBar.app
 	cp -R "$(XCODE_APP)" ClockBar.app
 
@@ -23,9 +23,7 @@ format:
 menubar: ClockBar.app
 	-pkill -f ClockBar 2>/dev/null
 	@sleep 1
-	@# Prefer the installed copy; opening the repo build while /Applications/ClockBar.app
-	@# is registered with the same bundle ID makes LaunchServices return error -600.
-	@if [ -d /Applications/ClockBar.app ]; then open /Applications/ClockBar.app; else open ClockBar.app; fi
+	@open -n ClockBar.app
 
 install: ClockBar.app
 	cp -R ClockBar.app /Applications/
