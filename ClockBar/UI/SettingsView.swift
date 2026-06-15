@@ -17,25 +17,28 @@ struct SettingsView: View {
     private let calendar = Calendar(identifier: .gregorian)
 
     var body: some View {
-        Form {
-            automationSection
-            notificationsSection
-            wakeSection
-            accountSection
+        ScrollView {
+            Form {
+                automationSection
+                notificationsSection
+                wakeSection
+                accountSection
+            }
+            .formStyle(.grouped)
+            .fixedSize(horizontal: false, vertical: true)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: SettingsContentHeightPreferenceKey.self,
+                        value: proxy.size.height
+                    )
+                }
+            )
         }
-        .formStyle(.grouped)
-        .fixedSize(horizontal: false, vertical: true)
         .frame(
             minWidth: AppStyle.Layout.settingsMinWidth,
-            idealWidth: AppStyle.Layout.settingsIdealWidth
-        )
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: SettingsContentHeightPreferenceKey.self,
-                    value: proxy.size.height
-                )
-            }
+            idealWidth: AppStyle.Layout.settingsIdealWidth,
+            maxHeight: AppStyle.Layout.settingsMaxHeight
         )
         .onAppear {
             clockInDate = date(from: viewModel.config.schedule.clockin)

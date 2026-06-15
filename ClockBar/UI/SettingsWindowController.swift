@@ -65,13 +65,19 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
         let frame = window.frame
         var contentSize = window.contentRect(forFrameRect: frame).size
-        guard contentSize.height != contentHeight else { return }
+        let screenHeight = window.screen?.visibleFrame.height ?? AppStyle.Layout.settingsMaxHeight
+        let resolvedHeight = min(
+            contentHeight,
+            AppStyle.Layout.settingsMaxHeight,
+            screenHeight - AppStyle.Spacing.xxl * 2
+        )
+        guard contentSize.height != resolvedHeight else { return }
 
         // Keep the top edge fixed so the window grows downward like System
         // Settings. No AppKit animation here: SwiftUI animates the content
         // height and reports it every frame, so the window just follows —
         // animating each tick ourselves makes the two systems fight (jank).
-        contentSize.height = contentHeight
+        contentSize.height = resolvedHeight
         var newFrame = window.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize))
         newFrame.origin.x = frame.origin.x
         newFrame.origin.y = frame.maxY - newFrame.height

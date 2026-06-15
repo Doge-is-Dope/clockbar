@@ -68,6 +68,7 @@ enum AppStyle {
         static let timeRangeSeparatorHeight: CGFloat = 12
         static let settingsMinWidth: CGFloat = 480
         static let settingsIdealWidth: CGFloat = 520
+        static let settingsMaxHeight: CGFloat = 720
         static let dividerHeight: CGFloat = 1
         static let punchButtonScale: CGFloat = 0.985
         static let loginWindowSize = NSRect(x: 0, y: 0, width: 480, height: 680)
