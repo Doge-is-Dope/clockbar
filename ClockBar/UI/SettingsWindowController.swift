@@ -48,6 +48,15 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         window.title = "Settings"
         window.contentView = hostingView
         window.center()
+        // The window is created at height 0 and grows downward from its top edge
+        // once SwiftUI reports the real height (see applyContentHeight). center()
+        // on a height-0 window leaves the top edge at the screen's vertical
+        // center, so it would open in the lower half — anchor the top edge in the
+        // upper portion of the screen instead.
+        if let visible = window.screen?.visibleFrame {
+            window.setFrameTopLeftPoint(
+                NSPoint(x: window.frame.origin.x, y: visible.maxY - visible.height * 0.1))
+        }
         // With ARC, `self.window` owns the retain; AppKit's legacy close-time release
         // would otherwise over-release and leave a dangling pointer — crashing the
         // next showSettings().
