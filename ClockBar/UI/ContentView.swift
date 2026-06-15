@@ -91,9 +91,12 @@ struct ContentView: View {
             TimelineView(.everyMinute) { context in
                 HStack(spacing: AppStyle.Spacing.sm) {
                     if showWorked, let workedText = workedSummary(now: context.date) {
-                        Label(workedText, systemImage: "timer")
-                            .font(AppStyle.Font.caption)
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: AppStyle.Spacing.xs) {
+                            Image(systemName: "timer")
+                            Text(workedText)
+                        }
+                        .font(AppStyle.Font.caption)
+                        .foregroundStyle(.secondary)
                     }
 
                     if showWorked, showSync {
